@@ -1,0 +1,156 @@
+package org.theseed.p3api;
+
+import junit.framework.Test;
+
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.theseed.genome.Contig;
+import org.theseed.genome.Feature;
+import org.theseed.genome.Genome;
+import org.theseed.p3api.Connection.Table;
+
+import com.github.cliftonlabs.json_simple.JsonObject;
+
+/**
+ * Unit test for simple App.
+ */
+public class AppTest extends TestCase
+{
+    /**
+     * Create the test case
+     *
+     * @param testName name of the test case
+     */
+    public AppTest( String testName )
+    {
+        super( testName );
+    }
+
+    /**
+     * @return the suite of tests being tested
+     */
+    public static Test suite()
+    {
+        return new TestSuite( AppTest.class );
+    }
+
+    /**
+     * test the basic connection
+     */
+    public void testConnection() {
+        Connection p3 = new Connection();
+        JsonObject genome = p3.getRecord(Table.GENOME, "1798516.3", "genome_id,genome_name,genome_length,gc_content,taxon_lineage_names");
+        assertThat(Connection.getString(genome, "genome_id"), equalTo("1798516.3"));
+        assertThat(Connection.getString(genome, "genome_name"), equalTo("Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
+        assertThat(Connection.getInt(genome, "genome_length"), equalTo(426361));
+        assertThat(Connection.getDouble(genome, "gc_content"), closeTo(55.05, 0.005));
+        String[] taxonomy = Connection.getStringList(genome, "taxon_lineage_names");
+        assertThat(taxonomy, arrayContaining("cellular organisms", "Bacteria", "unclassified Bacteria", "Bacteria candidate phyla",
+                "Patescibacteria group", "Parcubacteria group", "Candidatus Kaiserbacteria",
+                "Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
+        List<JsonObject> genomes = p3.query(Table.GENOME, "genome_id,genome_name,contigs", Criterion.IN("genome_id", "1803813.4", "1803814.4"));
+        assertThat(genomes.size(), equalTo(2));
+        genome = genomes.get(0);
+        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
+        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
+        assertThat(Connection.getInt(genome, "contigs"), equalTo(177));
+        genome = genomes.get(1);
+        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
+        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
+        assertThat(Connection.getInt(genome, "contigs"), equalTo(194));
+        Collection<String> idList = new ArrayList<String>();
+        idList.add("1803813.4");
+        idList.add("1803814.4");
+        Map<String, JsonObject> genomeMap = p3.getRecords(Table.GENOME, idList, "genome_id,genome_name,contigs");
+        genome = genomeMap.get("1803813.4");
+        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
+        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
+        assertThat(Connection.getInt(genome, "contigs"), equalTo(177));
+        genome = genomeMap.get("1803814.4");
+        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
+        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
+        assertThat(Connection.getInt(genome, "contigs"), equalTo(194));
+        List<JsonObject> features = p3.query(Table.FEATURE, "patric_id,product", Criterion.EQ("product",
+                "LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"),
+                Criterion.EQ("genome_id", "1798516.3"));
+        assertThat(features.size(), equalTo(1));
+        JsonObject feature = features.get(0);
+        assertThat(Connection.getString(feature, "patric_id"), equalTo("fig|1798516.3.peg.45"));
+        assertThat(Connection.getString(feature, "product"),
+                equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
+    }
+
+    /**
+     * Test criteria
+     */
+    public void testCriteria() {
+        assertThat(Criterion.EQ("genome_id", "100.2"), equalTo("eq(genome_id,100.2)"));
+        assertThat(Criterion.NE("genome_type", "(plasmid)"),equalTo("ne(genome_type,+plasmid+)"));
+        assertThat(Criterion.EQ("taxonomicThing", "100::200::300"), equalTo("eq(taxonomicThing,100%3A%3A200%3A%3A300)"));
+        assertThat(Criterion.IN("product", "look / at # me", "I'm so happy"), equalTo("in(product,(look+%2F+at+%23+me,I%27m+so+happy))"));
+    }
+
+    /**
+     * Test genome creation
+     *
+     * @throws IOException
+     * @throws NumberFormatException
+     */
+    public void testP3Genome() throws NumberFormatException, IOException {
+        // Get the genome from disk and download a copy from PATRIC.
+        Connection p3 = new Connection();
+        Genome gto = new Genome(new File("src/test", "test.gto"));
+        P3Genome p3genome = new P3Genome(p3, gto.getId(), P3Genome.Details.STRUCTURE_ONLY);
+        assertThat(p3genome.getId(), equalTo(gto.getId()));
+        assertThat(p3genome.getName(), equalTo(gto.getName()));
+        assertThat(p3genome.getDomain(), equalTo(gto.getDomain()));
+        assertThat(p3genome.getLineage(), arrayContaining(gto.getLineage()));
+        assertThat(p3genome.getGeneticCode(), equalTo(gto.getGeneticCode()));
+        assertThat(p3genome.getTaxonomyId(), equalTo(gto.getTaxonomyId()));
+        assertThat(p3genome.getFeatureCount(), equalTo(gto.getFeatureCount()));
+        assertThat(p3genome.getContigCount(), equalTo(gto.getContigCount()));
+        Collection<Feature> fids = gto.getFeatures();
+        for (Feature fid : fids) {
+            Feature p3fid = p3genome.getFeature(fid.getId());
+            assertThat(p3fid.getFunction(), equalTo(fid.getFunction()));
+            assertThat(p3fid.getLocation(), equalTo(fid.getLocation()));
+            assertThat(p3fid.getPlfam(), equalTo(fid.getPlfam()));
+            assertThat(p3fid.getType(), equalTo(fid.getType()));
+        }
+        Collection<Contig> contigs = gto.getContigs();
+        for (Contig contig : contigs) {
+            Contig p3contig = p3genome.getContig(contig.getId());
+            assertThat(p3contig.length(), equalTo(contig.length()));
+        }
+        // Special check for the pheS protein.
+        Feature p3seedFid = p3genome.getFeature("fig|1916011.3.peg.100");
+        Feature seedFid = p3genome.getFeature("fig|1916011.3.peg.100");
+        assertThat(p3seedFid.getProteinTranslation(), equalTo(seedFid.getProteinTranslation()));
+        // Now boost the level to PROTEINS.
+        p3genome = new P3Genome(p3, gto.getId(), P3Genome.Details.PROTEINS);
+        fids = gto.getPegs();
+        for (Feature fid : fids) {
+            Feature p3fid = p3genome.getFeature(fid.getId());
+            assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
+        }
+        // Finally, FULL level.
+        p3genome = new P3Genome(p3, gto.getId(), P3Genome.Details.FULL);
+        for (Contig contig : contigs) {
+            Contig p3contig = p3genome.getContig(contig.getId());
+            assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
+        }
+    }
+
+
+}
