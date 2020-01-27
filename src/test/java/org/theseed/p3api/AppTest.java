@@ -108,10 +108,13 @@ public class AppTest extends TestCase
      * @throws NumberFormatException
      */
     public void testP3Genome() throws NumberFormatException, IOException {
-        // Get the genome from disk and download a copy from PATRIC.
         Connection p3 = new Connection();
+        // Verify we get null for nonexistent genomes.  2157 is a kingdom taxon, so it will never be on a genome ID.
+        P3Genome p3genome = P3Genome.Load(p3, "2157.4", P3Genome.Details.FULL);
+        assertNull(p3genome);
+        // Get the genome from disk and download a copy from PATRIC.
         Genome gto = new Genome(new File("src/test", "test.gto"));
-        P3Genome p3genome = new P3Genome(p3, gto.getId(), P3Genome.Details.STRUCTURE_ONLY);
+        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.STRUCTURE_ONLY);
         assertThat(p3genome.getId(), equalTo(gto.getId()));
         assertThat(p3genome.getName(), equalTo(gto.getName()));
         assertThat(p3genome.getDomain(), equalTo(gto.getDomain()));
@@ -138,14 +141,14 @@ public class AppTest extends TestCase
         Feature seedFid = p3genome.getFeature("fig|1916011.3.peg.100");
         assertThat(p3seedFid.getProteinTranslation(), equalTo(seedFid.getProteinTranslation()));
         // Now boost the level to PROTEINS.
-        p3genome = new P3Genome(p3, gto.getId(), P3Genome.Details.PROTEINS);
+        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.PROTEINS);
         fids = gto.getPegs();
         for (Feature fid : fids) {
             Feature p3fid = p3genome.getFeature(fid.getId());
             assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
         }
         // Finally, FULL level.
-        p3genome = new P3Genome(p3, gto.getId(), P3Genome.Details.FULL);
+        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.FULL);
         for (Contig contig : contigs) {
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
