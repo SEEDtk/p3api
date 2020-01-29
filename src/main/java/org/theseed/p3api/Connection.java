@@ -40,7 +40,7 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 public class Connection {
 
     /** logging facility */
-    private static Logger log = LoggerFactory.getLogger(Connection.class);
+    static Logger log = LoggerFactory.getLogger(Connection.class);
 
     /** maximum retries */
     private static final int MAX_TRIES = 5;
@@ -137,6 +137,10 @@ public class Connection {
     private int chunkSize;
     /** parameter buffer */
     private StringBuilder buffer;
+    /** table used in current request (for trace messages) */
+    private String table;
+    /** current position in response (for trace messages) */
+    private int chunk;
 
     // JSON KEY BUFFERS
     private static final KeyBuffer STRING = new KeyBuffer("", "");
@@ -221,6 +225,10 @@ public class Connection {
         this.buffer = new StringBuilder(MAX_LEN);
         // If the user is not logged in, this will be null.
         this.authToken = token;
+        // Default the trace stuff.
+        this.table = "<none>";
+        this.chunk = 0;
+
     }
 
     /**
@@ -354,10 +362,10 @@ public class Connection {
         String basicParms = this.buffer.toString();
         this.buffer.setLength(0);
         // Set up to loop through the chunks of response.
-        int position = 0;
+        this.chunk = 0;
         boolean done = false;
         while (! done) {
-            request.bodyString(String.format("%s&limit(%d,%d)", basicParms, this.chunkSize, position),
+            request.bodyString(String.format("%s&limit(%d,%d)", basicParms, this.chunkSize, this.chunk),
                     ContentType.APPLICATION_FORM_URLENCODED);
             this.buffer.setLength(0);
             HttpResponse resp = this.submitRequest(request);
@@ -371,9 +379,9 @@ public class Connection {
                 String value = range.getValue();
                 Matcher rMatcher = RANGE_INFO.matcher(value);
                 if (rMatcher.matches()) {
-                    position = Integer.valueOf(rMatcher.group(1));
+                    this.chunk = Integer.valueOf(rMatcher.group(1));
                     int total = Integer.valueOf(rMatcher.group(2));
-                    done = (position >= total);
+                    done = (this.chunk >= total);
                 } else {
                     log.debug("Range string did not match: \"{}\".", value);
                     done = true;
@@ -415,7 +423,8 @@ public class Connection {
                 long start = System.currentTimeMillis();
                 Response resp = request.execute();
                 if (log.isTraceEnabled()) {
-                    log.trace(String.format("%2.3f seconds for HTTP request.", (System.currentTimeMillis() - start) / 1000.0));
+                    log.trace(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
+                            (System.currentTimeMillis() - start) / 1000.0, this.table, this.chunk, tries));
                 }
                 // Check the response.
                 retVal = resp.returnResponse();
@@ -444,10 +453,10 @@ public class Connection {
      * @param parameters	parameter strings to store
      */
     private void addParameters(String... parameters) {
-            for (String parm : parameters) {
-                buffer.append('&');
-                buffer.append(parm);
-            }
+        for (String parm : parameters) {
+            buffer.append('&');
+            buffer.append(parm);
+        }
     }
 
     /**
@@ -459,6 +468,9 @@ public class Connection {
      */
     private Request requestBuilder(String table) {
         Request retVal = Request.Post(this.url + table);
+        // Save the name of the table for debugging purposes.
+        this.table = table;
+        // Denote we want a json response.
         retVal.addHeader("Accept", "application/json");
         // Attach authorization if we have a token.
         if (this.authToken != null) {

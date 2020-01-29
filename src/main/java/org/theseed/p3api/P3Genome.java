@@ -67,6 +67,7 @@ public class P3Genome extends Genome {
      */
     public static P3Genome Load(Connection p3, String genome_id, Details detail) {
         P3Genome retVal = null;
+        long start = System.currentTimeMillis();
         // Start by getting the genome-level data.
         JsonObject genomeData = p3.getRecord(Table.GENOME, genome_id,
                 "genome_id,genome_name,taxon_id,taxon_lineage_ids,kingdom");
@@ -117,6 +118,10 @@ public class P3Genome extends Genome {
                     feat.storeProtein(protein.getStringOrDefault(AA_SEQUENCE));
                 // Store the feature.
                 retVal.addFeature(feat);
+            }
+            if (Connection.log.isInfoEnabled()) {
+                long duration = System.currentTimeMillis() - start;
+                Connection.log.info("{} seconds to load {}.", String.format("%4.3f", duration / 1000.0), genome_id);
             }
         }
         return retVal;
