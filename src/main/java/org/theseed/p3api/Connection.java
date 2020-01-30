@@ -33,11 +33,16 @@ import com.github.cliftonlabs.json_simple.Jsoner;
 
 /**
  * This object represents a connection to PATRIC and provides methods for retrieving genome and feature data.
+ * The default API is at https://patric.theseed.org/services/data_api, but this can be overridden using the
+ * P3API_URL environment variable.
  *
  * @author Bruce Parrello
  *
  */
 public class Connection {
+
+    /** default URL */
+    private static final String DATA_API_URL = "https://p3.theseed.org/services/data_api/";
 
     /** logging facility */
     static Logger log = LoggerFactory.getLogger(Connection.class);
@@ -220,10 +225,16 @@ public class Connection {
      * @param token		an authorization token, or NULL if the connection is to be unauthorized.
      */
     protected void setup(String token) {
-        this.url = "https://p3.theseed.org/services/data_api/";
+        // Try to get the URL from the environment.
+        this.url = System.getenv("P3API_URL");
+        if (this.url == null) this.url = DATA_API_URL;
+        // Insure that it ends in a slash.
+        if (! StringUtils.endsWith(this.url, "/")) this.url += "/";
+        // Set the default chunk size and build the parm buffer.
         this.chunkSize = 25000;
         this.buffer = new StringBuilder(MAX_LEN);
-        // If the user is not logged in, this will be null.
+        // If the user is not logged in, this will be null and we won't be able to access
+        // private genomes.
         this.authToken = token;
         // Default the trace stuff.
         this.table = "<none>";
