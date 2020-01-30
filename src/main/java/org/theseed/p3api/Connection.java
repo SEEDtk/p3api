@@ -146,6 +146,8 @@ public class Connection {
     private String table;
     /** current position in response (for trace messages) */
     private int chunk;
+    /** last request sent */
+    private String basicParms;
 
     // JSON KEY BUFFERS
     private static final KeyBuffer STRING = new KeyBuffer("", "");
@@ -370,13 +372,13 @@ public class Connection {
     private List<JsonObject> getResponse(Request request) {
         List<JsonObject> retVal = new ArrayList<JsonObject>();
         // Move the parameters into the request.  Note we clear the buffer for next time.
-        String basicParms = this.buffer.toString();
+        this.basicParms = this.buffer.toString();
         this.buffer.setLength(0);
         // Set up to loop through the chunks of response.
         this.chunk = 0;
         boolean done = false;
         while (! done) {
-            request.bodyString(String.format("%s&limit(%d,%d)", basicParms, this.chunkSize, this.chunk),
+            request.bodyString(String.format("%s&limit(%d,%d)", this.basicParms, this.chunkSize, this.chunk),
                     ContentType.APPLICATION_FORM_URLENCODED);
             this.buffer.setLength(0);
             HttpResponse resp = this.submitRequest(request);
@@ -444,7 +446,8 @@ public class Connection {
                     // Here we succeeded.  Stop the loop.
                     done = true;
                 } else if (tries >= MAX_TRIES) {
-                    // Here we have tried too many times.
+                    // Here we have tried too many times.  Build a display string for the URL.
+                    log.error("Failing request was {}", StringUtils.abbreviate(this.basicParms, " ...", 100));
                     throw new RuntimeException("HTTP error: " + retVal.getStatusLine().getReasonPhrase());
                 } else {
                     // We have a server error, try again.
