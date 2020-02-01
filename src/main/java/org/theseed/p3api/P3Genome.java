@@ -3,12 +3,15 @@
  */
 package org.theseed.p3api;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
+import org.theseed.genome.TaxItem;
 import org.theseed.p3api.Connection.KeyBuffer;
 import org.theseed.p3api.Connection.Table;
 
@@ -74,7 +77,12 @@ public class P3Genome extends Genome {
         if (genomeData != null) {
             // Create the genome object.
             retVal = new P3Genome(genome_id);
-            retVal.p3Store(genomeData);
+            // Load the taxonomy data.
+            Collection<String> taxIDs = genomeData.getCollectionOrDefault(GenomeKeys.TAXON_LINEAGE_IDS);
+            Map<String, JsonObject> taxRecords = p3.getRecords(Table.TAXONOMY, taxIDs, "taxon_id,taxon_name,taxon_rank");
+            List<TaxItem> taxItems = new ArrayList<TaxItem>(taxRecords.size());
+            for (String taxID : taxIDs) taxItems.add(new TaxItem(taxRecords.get(taxID)));
+            retVal.p3Store(genomeData, taxItems);
             // Get the genetic code.  It only works if we have a lineage.  We default to 11.
             int code = 11;
             String[] lineages = retVal.getLineage();
