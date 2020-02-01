@@ -98,7 +98,7 @@ public class P3Genome extends Genome {
             retVal.p3Contigs(contigs);
             // Process the features.
             Collection<JsonObject> fidList = p3.query(Table.FEATURE,
-                    "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,plfam_id", Criterion.EQ("genome_id", genome_id),
+                    "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,plfam_id,pgfam_id", Criterion.EQ("genome_id", genome_id),
                     Criterion.EQ("annotation", "PATRIC"));
             // Set up for protein sequences if we want them.
             boolean wantSequences = detail.includes(Details.PROTEINS);
@@ -112,7 +112,8 @@ public class P3Genome extends Genome {
                 Feature feat = new Feature(Connection.getString(fid, "patric_id"), Connection.getString(fid, "product"),
                         Connection.getString(fid, "sequence_id"), Connection.getString(fid, "strand"),
                         Connection.getInt(fid, "start"), Connection.getInt(fid, "end"));
-                feat.storeLocalFamily(Connection.getString(fid, "plfam_id"));
+                feat.setPlfam(Connection.getString(fid, "plfam_id"));
+                feat.setPgfam(Connection.getString(fid, "pgfam_id"));
                 // Check to see if we are storing the protein translation.
                 JsonObject protein = null;
                 if (wantSequences) {
@@ -123,7 +124,7 @@ public class P3Genome extends Genome {
                     protein = p3.getRecord(Table.SEQUENCE, fid.getString(AA_MD5), "sequence");
                 }
                 if (protein != null)
-                    feat.storeProtein(protein.getStringOrDefault(AA_SEQUENCE));
+                    feat.setProteinTranslation(protein.getStringOrDefault(AA_SEQUENCE));
                 // Store the feature.
                 retVal.addFeature(feat);
             }
