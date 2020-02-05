@@ -3,6 +3,8 @@
  */
 package org.theseed.p3api;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -57,6 +59,37 @@ public class P3Genome extends Genome {
      */
     protected P3Genome(String genome_id) {
         super(genome_id);
+    }
+
+    /**
+     * Load a genome into memory from the PATRIC data API or a cache directory.
+     *
+     * @param p3			a connection to the PATRIC data API
+     * @param genome_id		the ID of the desired genome
+     * @param detail		the detail level to include
+     * @param cache			a directory to use as a cache of GTO files
+     *
+     * @throws IOException
+     */
+    public static Genome Load(Connection p3, String genome_id, Details detail, File cache) throws IOException {
+        // If there is no cache, we simply call through to the API method.
+        Genome retVal = null;
+        if (cache == null) {
+            retVal = Load(p3, genome_id, detail);
+        } else {
+            // Check the cache.
+            File gFile = new File(cache, genome_id + ".gto");
+            if (gFile.exists()) {
+                retVal = new Genome(gFile);
+            } else {
+                // Not in the cache.  Download the full genome.
+                retVal = Load(p3, genome_id, Details.FULL);
+                // Store it in the cache.
+                if (retVal != null)
+                    retVal.update(gFile);
+            }
+        }
+        return retVal;
     }
 
     /**

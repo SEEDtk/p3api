@@ -15,10 +15,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.p3api.Connection.Table;
+import org.theseed.p3api.P3Genome.Details;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -153,6 +155,34 @@ public class AppTest extends TestCase
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
+    }
+
+    /**
+     * test genome cache
+     *
+     * @throws IOException
+     */
+    public void testCache() throws IOException {
+        File gCache = new File("src/test/cache");
+        // Clean the cache.
+        for (File file : gCache.listFiles())
+            if (StringUtils.endsWith(file.getName(), ".gto"))
+                    file.delete();
+        // Read in a random genome.
+        Connection p3 = new Connection();
+        Genome g1 = P3Genome.Load(p3, "324602.8", Details.FULL, gCache);
+        assertNotNull(g1);
+        assertTrue(g1 instanceof P3Genome);
+        assertThat(g1.getId(), equalTo("324602.8"));
+        Genome g2 = P3Genome.Load(p3, "324602.8", Details.FULL, gCache);
+        assertFalse(g2 instanceof P3Genome);
+        for (Feature feat : g1.getPegs()) {
+            Feature feat2 = g2.getFeature(feat.getId());
+            assertThat(feat2.getProteinTranslation(), equalTo(feat.getProteinTranslation()));
+            assertThat(feat2.getFunction(), equalTo(feat.getFunction()));
+        }
+        File gFile = new File(gCache, "324602.8.gto");
+        assertTrue(gFile.exists());
     }
 
 
