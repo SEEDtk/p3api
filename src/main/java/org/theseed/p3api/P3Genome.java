@@ -114,7 +114,13 @@ public class P3Genome extends Genome {
             Collection<String> taxIDs = genomeData.getCollectionOrDefault(GenomeKeys.TAXON_LINEAGE_IDS);
             Map<String, JsonObject> taxRecords = p3.getRecords(Table.TAXONOMY, taxIDs, "taxon_id,taxon_name,taxon_rank");
             List<TaxItem> taxItems = new ArrayList<TaxItem>(taxRecords.size());
-            for (String taxID : taxIDs) taxItems.add(new TaxItem(taxRecords.get(taxID)));
+            for (String taxID : taxIDs) {
+                JsonObject taxRecord = taxRecords.get(taxID);
+                // Note that if the taxonomic ID is invalid, we will get NULL from the above query.
+                if (taxRecord != null) {
+                    taxItems.add(new TaxItem(taxRecord));
+                }
+            }
             retVal.p3Store(genomeData, taxItems);
             // Get the genetic code.  It only works if we have a lineage.  We default to 11.
             int code = 11;
