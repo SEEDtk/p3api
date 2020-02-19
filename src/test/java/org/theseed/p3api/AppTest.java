@@ -91,6 +91,48 @@ public class AppTest extends TestCase
         assertThat(Connection.getString(feature, "patric_id"), equalTo("fig|1798516.3.peg.45"));
         assertThat(Connection.getString(feature, "product"),
                 equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
+        Collection<String> genomeList = new ArrayList<String>();
+        genomeList.add("226186.12");
+        genomeList.add("300852.9");
+        List<JsonObject> contigs = p3.getRecords(Table.CONTIG, "genome_id", genomeList, "sequence_id,length");
+        assertThat(contigs.size(), equalTo(5));
+        for (JsonObject contig : contigs) {
+            String genomeId = Connection.getString(contig, "genome_id");
+            String seqId = Connection.getString(contig, "sequence_id");
+            int len = Connection.getInt(contig, "length");
+            switch (genomeId) {
+            case "226186.12" :
+                switch (seqId) {
+                case "NC_004703" :
+                    assertThat(len, equalTo(33038));
+                    break;
+                case "NC_004663" :
+                    assertThat(len, equalTo(6260361));
+                    break;
+                default :
+                    fail("Incorrect sequence ID " + seqId + " for 226186.12.");
+                }
+                break;
+            case "300852.9" :
+                switch (seqId) {
+                case "NC_006463" :
+                    assertThat(len, equalTo(9322));
+                    break;
+                case "NC_006462" :
+                    assertThat(len, equalTo(256992));
+                    break;
+                case "NC_006461" :
+                    assertThat(len, equalTo(1849742));
+                    break;
+                default :
+                    fail("Incorrect sequence ID " + seqId + " for 300852.9.");
+                }
+                break;
+            default :
+                fail("Incorrect genome ID " + genomeId + ".");
+            }
+
+        }
     }
 
     /**

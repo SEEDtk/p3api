@@ -297,21 +297,41 @@ public class Connection {
     /**
      * Request the specified fields from a set of records.
      *
-     * @param table		the table containing the record
-     * @param keys		a collection of the relevant keys
+     * @param table		the table containing the records
+     * @param keys		a collection of the relevant key values
      * @param fields	a comma-delimited list of the fields desired
      *
      * @return a collection of JsonObjects of the desired records
      */
     public Map<String, JsonObject> getRecords(Table table, Collection<String> keys, String fields) {
-        Map<String, JsonObject> retVal = new HashMap<String, JsonObject>();
+        String keyName = table.getKey();
+        List<JsonObject> records = getRecords(table, keyName, keys, fields);
+        Map<String, JsonObject> retVal = new HashMap<String, JsonObject>(records.size());
+        for (JsonObject record : records) {
+            retVal.put(Connection.getString(record, keyName), record);
+        }
+        return retVal;
+    }
+
+    /**
+     * Request the specified fields from a set of records using an alternate key.
+     *
+     * @param table		the table containing the records
+     * @param keyName	the name of the key field to use
+     * @param keys		a collection of the relevant key values
+     * @param fields	a comma-delimited list of the fields desired
+     *
+     * @return a collection of JsonObjects of the desired records
+     */
+    public List<JsonObject> getRecords(Table table, String keyName, Collection<String> keys, String fields) {
+        List<JsonObject> retVal = new ArrayList<JsonObject>(keys.size());
         // Insure we have the key field in the field list.
         String realFields = fields;
-        int kLoc = realFields.indexOf(table.getKey());
-        int kEnd = kLoc + table.getKey().length();
+        int kLoc = realFields.indexOf(keyName);
+        int kEnd = kLoc + keyName.length();
         if (kLoc < 0 || (kLoc != 0 && realFields.charAt(kLoc - 1) != ',') ||
                 (kEnd == fields.length() && realFields.charAt(kEnd) == ','))
-            realFields += "," + table.getKey();
+            realFields += "," + keyName;
         // Only proceed if the user wants at least one record.
         if (keys.size() > 0) {
             // Build the key list in the main string buffer.
@@ -322,7 +342,7 @@ public class Connection {
                     this.processBatch(table, retVal, realFields);
                 }
                 if (this.buffer.length() == 0)
-                    this.buffer.append("in(" + table.getKey() + ",(");
+                    this.buffer.append("in(" + keyName + ",(");
                 else
                     this.buffer.append(",");
                 this.buffer.append(key);
@@ -339,9 +359,7 @@ public class Connection {
      * @param records	map of keys to records
      * @param fields	comma-delimited list of desired fields
      */
-    private void processBatch(Table table, Map<String, JsonObject> records, String fields) {
-        // Get the table's key name.
-        String key = table.getKey();
+    private void processBatch(Table table, List<JsonObject> records, String fields) {
         // Build the HTTP request.
         Request request = this.requestBuilder(table.getName());
         // Close off the in-list.
@@ -350,18 +368,10 @@ public class Connection {
         this.buffer.append("&select(" + fields + ")");
         // Get the desired records.
         List<JsonObject> recordList = this.getResponse(request);
-        // Put them in the output map.
-        for (JsonObject record : recordList) {
-            String rKey = Connection.getString(record, key);
-            records.put(rKey, record);
-        }
+        // Put them in the output list.
+        records.addAll(recordList);
     }
 
-    /**
-     * Get fields from a single object.
-     *
-     * @param table		the SOLR table containing the object
-     */
     /**
      * Extract the response for a request.
      *
