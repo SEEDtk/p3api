@@ -45,7 +45,7 @@ public class Connection {
     private static final String DATA_API_URL = "https://p3.theseed.org/services/data_api/";
 
     /** logging facility */
-    static Logger log = LoggerFactory.getLogger(Connection.class);
+    protected static Logger log = LoggerFactory.getLogger(Connection.class);
 
     /** maximum retries */
     private static final int MAX_TRIES = 5;
@@ -55,6 +55,9 @@ public class Connection {
 
     /** pattern for extracting return ranges */
     private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
+
+    /** default timeout interval in milliseconds */
+    private static final int DEFAULT_TIMEOUT = 3 * 60 * 1000;
 
     /**
      * description of the major SOLR tables
@@ -148,6 +151,8 @@ public class Connection {
     private int chunk;
     /** last request sent */
     private String basicParms;
+    /** timeout interval */
+    private int timeout;
 
     // JSON KEY BUFFERS
     private static final KeyBuffer STRING = new KeyBuffer("", "");
@@ -241,6 +246,8 @@ public class Connection {
         // Default the trace stuff.
         this.table = "<none>";
         this.chunk = 0;
+        // Default the timeout.
+        this.timeout = DEFAULT_TIMEOUT;
 
     }
 
@@ -391,6 +398,7 @@ public class Connection {
             request.bodyString(String.format("%s&limit(%d,%d)", this.basicParms, this.chunkSize, this.chunk),
                     ContentType.APPLICATION_FORM_URLENCODED);
             this.buffer.setLength(0);
+            long start = System.currentTimeMillis();
             HttpResponse resp = this.submitRequest(request);
             // We have a good response. Check the result range.
             Header range = resp.getFirstHeader("content-range");
@@ -420,8 +428,15 @@ public class Connection {
             if (data == null) {
                 throw new RuntimeException("Unexpected JSON response: " + StringUtils.substring(jsonString, 0, 50));
             } else {
+                int count = 0;
                 for (Object record : data) {
                     retVal.add((JsonObject) record);
+                    count++;
+                }
+                if (log.isDebugEnabled()) {
+                    String flag = (done ? "" : " (partial result)");
+                    log.debug(String.format("%d records returned after %2.3f seconds%s.", count,
+                            (System.currentTimeMillis() - start) / 1000.0, flag));
                 }
             }
         }
@@ -437,19 +452,20 @@ public class Connection {
      */
     private HttpResponse submitRequest(Request request) {
         HttpResponse retVal = null;
-        try {
-            // We will retry after certain errors.  These variables manage the retrying.
-            int tries = 0;
-            boolean done = false;
-            while (! done) {
-                // Query the server for the data.
-                long start = System.currentTimeMillis();
-                Response resp = request.execute();
-                if (log.isTraceEnabled()) {
-                    log.trace(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
+        // We will retry after certain errors.  These variables manage the retrying.
+        int tries = 0;
+        boolean done = false;
+        while (! done) {
+            // Query the server for the data.
+            long start = System.currentTimeMillis();
+            Response resp = null;
+            try {
+                resp = request.execute();
+                if (log.isDebugEnabled()) {
+                    log.debug(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
                             (System.currentTimeMillis() - start) / 1000.0, this.table, this.chunk, tries));
                 }
-                // Check the response.
+            // Check the response.
                 retVal = resp.returnResponse();
                 int code = retVal.getStatusLine().getStatusCode();
                 if (code < 400) {
@@ -457,18 +473,34 @@ public class Connection {
                     done = true;
                 } else if (tries >= MAX_TRIES) {
                     // Here we have tried too many times.  Build a display string for the URL.
-                    log.error("Failing request was {}", StringUtils.abbreviate(this.basicParms, " ...", 100));
-                    throw new RuntimeException("HTTP error: " + retVal.getStatusLine().getReasonPhrase());
+                    throwHttpError(retVal.getStatusLine().getReasonPhrase());
                 } else {
                     // We have a server error, try again.
                     tries++;
                     log.debug("Retrying after error code {}.", code);
                 }
+            } catch (IOException e) {
+                // This is almost certainly a timeout error.  We either retry or percolate.
+                if (tries >= MAX_TRIES) {
+                    // Time to give up.  Throw an error.
+                    throwHttpError(e.getMessage());
+                } else {
+                    tries++;
+                    log.debug("Retrying after {}.", e.getMessage());
+                }
             }
-        } catch (IOException e) {
-            throw new RuntimeException("HTTP error: " + e.getMessage());
         }
         return retVal;
+    }
+
+    /**
+     * Record an unrecoverable HTTP error.
+     *
+     * @param errorType		description of the error
+     */
+    protected void throwHttpError(String errorType) {
+        log.error("Failing request was {}", StringUtils.abbreviate(this.basicParms, " ...", 100));
+        throw new RuntimeException("HTTP error: " + errorType);
     }
 
     /**
@@ -500,6 +532,15 @@ public class Connection {
         if (this.authToken != null) {
             retVal.addHeader("Authorization", this.authToken);
         }
+        // Set the timeout.
+        retVal.connectTimeout(this.timeout);
         return retVal;
+    }
+
+    /**
+     * @param timeout 	the timeout to set, in seconds
+     */
+    public void setTimeout(int timeout) {
+        this.timeout = timeout * 1000;
     }
 }

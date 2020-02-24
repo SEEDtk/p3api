@@ -12,10 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.genome.Contig;
 import org.theseed.p3api.Connection.Table;
 import org.theseed.sequence.MD5Hex;
-
 import com.github.cliftonlabs.json_simple.JsonObject;
 
 /**
@@ -27,6 +28,9 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 public class P3MD5Hex extends MD5Hex {
 
     // FIELDS
+
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(P3MD5Hex.class);
 
     /** connection to PATRIC */
     private Connection p3;
@@ -66,15 +70,18 @@ public class P3MD5Hex extends MD5Hex {
             genomeMap.put(genomeId, new ArrayList<Contig>(100));
         // Now read in the contigs.
         List<JsonObject> contigObjects = p3.getRecords(Table.CONTIG, "genome_id", genomes, "sequence_id,sequence");
+        log.debug("Processing {} contigs.", contigObjects.size());
         for (JsonObject contigObject : contigObjects) {
             Contig contig = new Contig(contigObject, 11);
             String genomeId = Connection.getString(contigObject, "genome_id");
             genomeMap.get(genomeId).add(contig);
         }
         // Process each genome that had contigs.
-        for (String genomeId : genomeMap.keySet()) {
-            Collection<Contig> contigs = genomeMap.get(genomeId);
+        log.debug("Processing {} genomes.", genomeMap.size());
+        for (Map.Entry<String,Collection<Contig>> genomeData : genomeMap.entrySet()) {
+            Collection<Contig> contigs = genomeData.getValue();
             if (contigs.size() > 0) {
+                String genomeId = genomeData.getKey();
                 String md5 = this.sequenceMD5(contigs);
                 retVal.put(genomeId, md5);
             }
