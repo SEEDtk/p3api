@@ -167,6 +167,7 @@ public class AppTest extends TestCase
         assertThat(p3genome.getTaxonomyId(), equalTo(gto.getTaxonomyId()));
         assertThat(p3genome.getFeatureCount(), equalTo(gto.getFeatureCount()));
         assertThat(p3genome.getContigCount(), equalTo(gto.getContigCount()));
+        assertFalse(p3genome.hasContigs());
         Collection<Feature> fids = gto.getFeatures();
         for (Feature fid : fids) {
             Feature p3fid = p3genome.getFeature(fid.getId());
@@ -191,12 +192,14 @@ public class AppTest extends TestCase
             Feature p3fid = p3genome.getFeature(fid.getId());
             assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
         }
+        assertFalse(p3genome.hasContigs());
         // Finally, FULL level.
         p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.FULL);
         for (Contig contig : contigs) {
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
+        assertTrue(p3genome.hasContigs());
     }
 
     /**
