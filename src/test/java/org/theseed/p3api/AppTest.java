@@ -91,6 +91,10 @@ public class AppTest extends TestCase
         assertThat(Connection.getString(feature, "patric_id"), equalTo("fig|1798516.3.peg.45"));
         assertThat(Connection.getString(feature, "product"),
                 equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
+        JsonObject feature2 = p3.getRecord(Table.FEATURE, "fig|1798516.3.peg.45", "patric_id,product");
+        assertThat(Connection.getString(feature2, "patric_id"), equalTo("fig|1798516.3.peg.45"));
+        assertThat(Connection.getString(feature2, "product"),
+                equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
         Collection<String> genomeList = new ArrayList<String>();
         genomeList.add("226186.12");
         genomeList.add("300852.9");

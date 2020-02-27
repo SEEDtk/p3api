@@ -51,7 +51,7 @@ public class Connection {
     private static final int MAX_TRIES = 5;
 
     /** maximum length of a key list (in characters) */
-    private static final int MAX_LEN = 5000;
+    private static final int MAX_LEN = 50000;
 
     /** pattern for extracting return ranges */
     private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
@@ -68,7 +68,8 @@ public class Connection {
         FEATURE("genome_feature", "patric_id"),
         TAXONOMY("taxonomy", "taxon_id"),
         CONTIG("genome_sequence", "sequence_id"),
-        SEQUENCE("feature_sequence", "md5");
+        SEQUENCE("feature_sequence", "md5"),
+        SUBSYSTEM_ITEM("subsystem", "id");
 
         // INTERNAL FIELDS
 
@@ -294,7 +295,7 @@ public class Connection {
      */
     public JsonObject getRecord(Table table, String key, String fields) {
         JsonObject retVal = null;
-        List<JsonObject> recordList = this.query(table, fields, String.format("eq(%s,%s)", table.getKey(), key));
+        List<JsonObject> recordList = this.query(table, fields, Criterion.EQ(table.getKey(), key));
         if (recordList.size() > 0) {
             retVal = (JsonObject) recordList.get(0);
         }
@@ -337,7 +338,7 @@ public class Connection {
         int kLoc = realFields.indexOf(keyName);
         int kEnd = kLoc + keyName.length();
         if (kLoc < 0 || (kLoc != 0 && realFields.charAt(kLoc - 1) != ',') ||
-                (kEnd == fields.length() && realFields.charAt(kEnd) == ','))
+                (kEnd != fields.length() && realFields.charAt(kEnd) != ','))
             realFields += "," + keyName;
         // Only proceed if the user wants at least one record.
         if (keys.size() > 0) {
@@ -352,7 +353,7 @@ public class Connection {
                     this.buffer.append("in(" + keyName + ",(");
                 else
                     this.buffer.append(",");
-                this.buffer.append(key);
+                this.buffer.append(Criterion.fix(key));
             }
             this.processBatch(table, retVal, realFields);
         }
