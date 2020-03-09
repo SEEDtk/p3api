@@ -322,16 +322,19 @@ public class Connection {
     }
 
     /**
-     * Request the specified fields from a set of records using an alternate key.
+     * Request the specified fields from a set of records using an alternate key and optional filtering
+     * criteria.
      *
      * @param table		the table containing the records
      * @param keyName	the name of the key field to use
      * @param keys		a collection of the relevant key values
      * @param fields	a comma-delimited list of the fields desired
+     * @param criteria	zero or more additional criteria
      *
      * @return a collection of JsonObjects of the desired records
      */
-    public List<JsonObject> getRecords(Table table, String keyName, Collection<String> keys, String fields) {
+    public List<JsonObject> getRecords(Table table, String keyName, Collection<String> keys, String fields,
+            String... criteria) {
         List<JsonObject> retVal = new ArrayList<JsonObject>(keys.size());
         // Insure we have the key field in the field list.
         String realFields = fields;
@@ -349,9 +352,13 @@ public class Connection {
                 if (this.buffer.length() + key.length() >= MAX_LEN) {
                     this.processBatch(table, retVal, realFields);
                 }
-                if (this.buffer.length() == 0)
+                if (this.buffer.length() == 0) {
+                    // Here we are starting a new buffer.  Put in the criteria and then
+                    // start the IN clause.
+                    this.buffer.append(StringUtils.join(criteria, ','));
+                    if (criteria.length > 0) this.buffer.append(',');
                     this.buffer.append("in(" + keyName + ",(");
-                else
+                } else
                     this.buffer.append(",");
                 this.buffer.append(Criterion.fix(key));
             }

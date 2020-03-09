@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -135,7 +136,39 @@ public class AppTest extends TestCase
             default :
                 fail("Incorrect genome ID " + genomeId + ".");
             }
-
+            idList = Arrays.asList("84725.3", "2698204.3", "86473.136", "1526414.4", "1766800.6", "2508882.3", "1069448.9");
+            features = p3.getRecords(Table.FEATURE, "genome_id", idList, "patric_id,pgfam_id",
+                    Criterion.EQ("product", "Phenylalanyl-tRNA synthetase alpha chain"));
+            assertThat(features.size(), equalTo(13));
+            for (JsonObject feat : features) {
+                String fid = Connection.getString(feat, "patric_id");
+                String fam = Connection.getString(feat, "pgfam_id");
+                switch (fid) {
+                case "fig|84725.3.peg.3359" :
+                case "fig|86473.136.peg.768" :
+                case "fig|1766800.6.peg.890" :
+                    assertThat(fam, equalTo(""));
+                    break;
+                case "fig|1069448.9.peg.2010" :
+                case "fig|2508882.3.peg.652" :
+                case "fig|2698204.3.peg.309" :
+                    assertThat(fam, equalTo("PGF_00038706"));
+                    break;
+                case "fig|84725.3.peg.6636" :
+                case "fig|1526414.4.peg.127" :
+                case "fig|1766800.6.peg.3951" :
+                case "fig|2698204.3.peg.2176" :
+                case "fig|1069448.9.peg.3497" :
+                case "fig|2508882.3.peg.2353" :
+                    assertThat(fam, equalTo("PGF_02019462"));
+                    break;
+                case "fig|1526414.4.peg.1156" :
+                    assertThat(fam, equalTo("PGF_02019462"));
+                    break;
+                default :
+                    fail("Incorrect feature ID " + fid + " from filtered query.");
+                }
+            }
         }
     }
 
