@@ -14,7 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.theseed.sequence.Sequence;
 
 /**
- * This class parses the keyword field in a GFF3 file.  Value fields are decoded; extra spaces and
+ * This class parses the keyword fields in a ViPR files.  Value fields are decoded; extra spaces and
  * fake parentheses are removed.
  *
  * @author Bruce Parrello

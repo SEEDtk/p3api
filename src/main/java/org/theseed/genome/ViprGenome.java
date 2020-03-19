@@ -7,11 +7,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 
+import org.theseed.counters.CountMap;
 import org.theseed.genome.Genome;
 import org.theseed.gff.ViprKeywords;
 import org.theseed.io.TabbedLineReader;
+import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
 
@@ -69,8 +73,24 @@ public class ViprGenome extends Genome {
                 genome.addContig(contig);
             }
         }
-        // Now we add the metadata and proteins.  The genome ID is also computed here.
+        // Now we add the metadata and proteins.  The genome ID is also computed here.  Each protein is represented
+        // by two standard GFF records and a FASTA record.  The first standard record is keyed by genbank genome
+        // ID with a type of "contig" and contains the taxon ID in the keyword column.  This is used to compute the
+        // real genome ID. The second record has a type of "CDS" and contains the location of the feature in the contig.
+        // It may also contain a swissprot alias, and one or more GO terms (as values of "Ontology_term").  The final
+        // record consists of four lines:  "##FASTA", ">" followed by a genbank genome ID, ">" followed by a protein
+        // function, and the protein DNA sequence.  This last needs to be translated, so we create a DNA translator.
+        DnaTranslator xlate = new DnaTranslator(code);
+        // The initial proteins are read from the beginning of the file.  The sequence and function data is read from
+        // the end.  The only way to associate them is via the order in which they appear, so we store the prototype
+        // features in this queue.
+        Queue<Feature> features = new LinkedList<Feature>();
+        // This counter map tracks the number of features produced per genome and is used to compute feature IDs.  The
+        // key is the genbank genome ID.
+        CountMap<String> pegCounts = new CountMap<String>();
+        // Now loop through the GFF3 file.
         try (TabbedLineReader proteinStream = new TabbedLineReader(proteinGff, 9)) {
+
             // TODO load proteins into genomes
         }
         // Return the genomes created.
