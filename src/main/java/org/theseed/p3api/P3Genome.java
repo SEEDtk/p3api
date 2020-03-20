@@ -137,8 +137,8 @@ public class P3Genome extends Genome {
             retVal.p3Contigs(contigs);
             // Process the features.
             Collection<JsonObject> fidList = p3.query(Table.FEATURE,
-                    "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,plfam_id,pgfam_id", Criterion.EQ("genome_id", genome_id),
-                    Criterion.EQ("annotation", "PATRIC"));
+                    "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,plfam_id,pgfam_id,go",
+                    Criterion.EQ("genome_id", genome_id), Criterion.EQ("annotation", "PATRIC"));
             // Set up for protein sequences if we want them.
             boolean wantSequences = detail.includes(Details.PROTEINS);
             Map<String, JsonObject> proteins = null;
@@ -153,6 +153,10 @@ public class P3Genome extends Genome {
                         Connection.getInt(fid, "start"), Connection.getInt(fid, "end"));
                 feat.setPlfam(Connection.getString(fid, "plfam_id"));
                 feat.setPgfam(Connection.getString(fid, "pgfam_id"));
+                String[] goStrings = Connection.getStringList(fid, "go");
+                for (String goString : goStrings) {
+                    feat.addGoTerm(goString);
+                }
                 // Check to see if we are storing the protein translation.
                 JsonObject protein = null;
                 if (wantSequences) {

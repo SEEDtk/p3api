@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
+import org.theseed.genome.GoTerm;
 import org.theseed.p3api.Connection.Table;
 import org.theseed.p3api.P3Genome.Details;
 
@@ -212,6 +213,11 @@ public class AppTest extends TestCase
             assertThat(p3fid.getLocation(), equalTo(fid.getLocation()));
             assertThat(p3fid.getPlfam(), equalTo(fid.getPlfam()));
             assertThat(p3fid.getType(), equalTo(fid.getType()));
+            Collection<GoTerm> fidGoTerms = fid.getGoTerms();
+            assertThat(p3fid.getGoTerms().size(), equalTo(fidGoTerms.size()));
+            for (GoTerm p3GoTerm : p3fid.getGoTerms()) {
+                assertThat(fidGoTerms, hasItem(p3GoTerm));
+            }
         }
         Collection<Contig> contigs = gto.getContigs();
         for (Contig contig : contigs) {
