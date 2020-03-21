@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
+import org.theseed.genome.GoTerm;
+import org.theseed.genome.TaxItem;
 import org.theseed.p3api.Connection.Table;
 import org.theseed.p3api.P3Genome.Details;
 
@@ -28,14 +31,14 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 /**
  * Unit test for simple App.
  */
-public class AppTest extends TestCase
+public class P3ApiTest extends TestCase
 {
     /**
      * Create the test case
      *
      * @param testName name of the test case
      */
-    public AppTest( String testName )
+    public P3ApiTest( String testName )
     {
         super( testName );
     }
@@ -45,7 +48,7 @@ public class AppTest extends TestCase
      */
     public static Test suite()
     {
-        return new TestSuite( AppTest.class );
+        return new TestSuite( P3ApiTest.class );
     }
 
     /**
@@ -205,13 +208,24 @@ public class AppTest extends TestCase
         assertThat(p3genome.getFeatureCount(), equalTo(gto.getFeatureCount()));
         assertThat(p3genome.getContigCount(), equalTo(gto.getContigCount()));
         assertFalse(p3genome.hasContigs());
-        Collection<Feature> fids = gto.getFeatures();
-        for (Feature fid : fids) {
-            Feature p3fid = p3genome.getFeature(fid.getId());
-            assertThat(p3fid.getFunction(), equalTo(fid.getFunction()));
-            assertThat(p3fid.getLocation(), equalTo(fid.getLocation()));
-            assertThat(p3fid.getPlfam(), equalTo(fid.getPlfam()));
-            assertThat(p3fid.getType(), equalTo(fid.getType()));
+        Collection<Feature> p3fids = p3genome.getFeatures();
+        for (Feature p3fid : p3fids) {
+            Feature fid = gto.getFeature(p3fid.getId());
+            assertNotNull("Extra feature " + p3fid, fid);
+            assertThat("Function error in " + p3fid, p3fid.getFunction(), equalTo(fid.getFunction()));
+            assertThat("Location error in " + p3fid, p3fid.getLocation(), equalTo(fid.getLocation()));
+            assertThat("Local family error in " + p3fid, p3fid.getPlfam(), equalTo(fid.getPlfam()));
+            assertThat("Type error in " + p3fid, p3fid.getType(), equalTo(fid.getType()));
+            Collection<String> fidAliases = fid.getAliases();
+            assertThat("Alias error in " + p3fid, p3fid.getAliases().size(), equalTo(fidAliases.size()));
+            for (String p3Alias : p3fid.getAliases()) {
+                assertThat("Alias " + p3Alias + " not found in " + fid, fidAliases, hasItem(p3Alias));
+            }
+            Collection<GoTerm> fidGoTerms = fid.getGoTerms();
+            assertThat("Go term error in " + p3fid, p3fid.getGoTerms().size(), equalTo(fidGoTerms.size()));
+            for (GoTerm p3goTerm : p3fid.getGoTerms()) {
+                assertThat("Go term " + p3goTerm + " not found in " + fid, fidGoTerms, hasItem(p3goTerm));
+            }
         }
         Collection<Contig> contigs = gto.getContigs();
         for (Contig contig : contigs) {
@@ -219,13 +233,13 @@ public class AppTest extends TestCase
             assertThat(p3contig.length(), equalTo(contig.length()));
         }
         // Special check for the pheS protein.
-        Feature p3seedFid = p3genome.getFeature("fig|1916011.3.peg.100");
-        Feature seedFid = p3genome.getFeature("fig|1916011.3.peg.100");
+        Feature p3seedFid = p3genome.getFeature("fig|243277.26.peg.1166");
+        Feature seedFid = p3genome.getFeature("fig|243277.26.peg.1166");
         assertThat(p3seedFid.getProteinTranslation(), equalTo(seedFid.getProteinTranslation()));
         // Now boost the level to PROTEINS.
         p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.PROTEINS);
-        fids = gto.getPegs();
-        for (Feature fid : fids) {
+        Collection<Feature> pegs = gto.getPegs();
+        for (Feature fid : pegs) {
             Feature p3fid = p3genome.getFeature(fid.getId());
             assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
         }
@@ -237,6 +251,16 @@ public class AppTest extends TestCase
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
         assertTrue(p3genome.hasContigs());
+        // Compute the lineage array for this genome.
+        TaxItem[] lineage = p3.getLineage(Integer.toString(p3genome.getTaxonomyId()));
+        Iterator<TaxItem> taxonomy = p3genome.taxonomy();
+        for (int i = lineage.length - 1; i > 0; i--) {
+            assertTrue(taxonomy.hasNext());
+            TaxItem taxon = taxonomy.next();
+            assertThat(taxon.getId(), equalTo(lineage[i].getId()));
+            assertThat(taxon.getName(), equalTo(lineage[i].getName()));
+            assertThat(taxon.getRank(), equalTo(lineage[i].getRank()));
+        }
     }
 
     /**
@@ -266,6 +290,5 @@ public class AppTest extends TestCase
         File gFile = new File(gCache, "324602.8.gto");
         assertTrue(gFile.exists());
     }
-
 
 }

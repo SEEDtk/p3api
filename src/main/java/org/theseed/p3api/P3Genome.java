@@ -137,8 +137,8 @@ public class P3Genome extends Genome {
             retVal.p3Contigs(contigs);
             // Process the features.
             Collection<JsonObject> fidList = p3.query(Table.FEATURE,
-                    "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,plfam_id,pgfam_id", Criterion.EQ("genome_id", genome_id),
-                    Criterion.EQ("annotation", "PATRIC"));
+                    "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,plfam_id,pgfam_id,gi,gene,gene_id,refseq_locus_tag,go",
+                    Criterion.EQ("genome_id", genome_id), Criterion.EQ("annotation", "PATRIC"));
             // Set up for protein sequences if we want them.
             boolean wantSequences = detail.includes(Details.PROTEINS);
             Map<String, JsonObject> proteins = null;
@@ -146,26 +146,39 @@ public class P3Genome extends Genome {
                 Collection<String> md5Keys = fidList.stream().map(x -> x.getStringOrDefault(AA_MD5)).filter(x -> ! x.isEmpty()).collect(Collectors.toList());
                 proteins = p3.getRecords(Table.SEQUENCE, md5Keys, "sequence");
             }
-            // Store the features.
+            // Store the features.  Note we skip the ones with empty IDs.
             for (JsonObject fid : fidList) {
-                Feature feat = new Feature(Connection.getString(fid, "patric_id"), Connection.getString(fid, "product"),
-                        Connection.getString(fid, "sequence_id"), Connection.getString(fid, "strand"),
-                        Connection.getInt(fid, "start"), Connection.getInt(fid, "end"));
-                feat.setPlfam(Connection.getString(fid, "plfam_id"));
-                feat.setPgfam(Connection.getString(fid, "pgfam_id"));
-                // Check to see if we are storing the protein translation.
-                JsonObject protein = null;
-                if (wantSequences) {
-                    // Here we are storing protein translations for all the features that have them.
-                    protein = proteins.get(fid.getStringOrDefault(AA_MD5));
-                } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
-                    // We always store the PheS protein.
-                    protein = p3.getRecord(Table.SEQUENCE, fid.getString(AA_MD5), "sequence");
+                String id = Connection.getString(fid, "patric_id");
+                if (id != null && id.length() > 0) {
+                    Feature feat = new Feature(Connection.getString(fid, "patric_id"), Connection.getString(fid, "product"),
+                            Connection.getString(fid, "sequence_id"), Connection.getString(fid, "strand"),
+                            Connection.getInt(fid, "start"), Connection.getInt(fid, "end"));
+                    feat.setPlfam(Connection.getString(fid, "plfam_id"));
+                    feat.setPgfam(Connection.getString(fid, "pgfam_id"));
+                    feat.formAlias("gi|", Connection.getString(fid, "gi"));
+                    feat.formAlias("", Connection.getString(fid, "gene"));
+                    feat.formAlias("", Connection.getString(fid, "refseq_locus_tag"));
+                    String geneId = Connection.getString(fid, "gene_id");
+                    if (geneId.length() > 0 && ! geneId.contentEquals("0"))
+                        feat.formAlias("GeneID:", geneId);
+                    // Add in the GO terms.
+                    String[] goTermList = Connection.getStringList(fid, "go");
+                    for (String goString : goTermList)
+                        feat.addGoTerm(goString);
+                    // Check to see if we are storing the protein translation.
+                    JsonObject protein = null;
+                    if (wantSequences) {
+                        // Here we are storing protein translations for all the features that have them.
+                        protein = proteins.get(fid.getStringOrDefault(AA_MD5));
+                    } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
+                        // We always store the PheS protein.
+                        protein = p3.getRecord(Table.SEQUENCE, fid.getString(AA_MD5), "sequence");
+                    }
+                    if (protein != null)
+                        feat.setProteinTranslation(protein.getStringOrDefault(AA_SEQUENCE));
+                    // Store the feature.
+                    retVal.addFeature(feat);
                 }
-                if (protein != null)
-                    feat.setProteinTranslation(protein.getStringOrDefault(AA_SEQUENCE));
-                // Store the feature.
-                retVal.addFeature(feat);
             }
             if (Connection.log.isInfoEnabled()) {
                 long duration = System.currentTimeMillis() - start;
