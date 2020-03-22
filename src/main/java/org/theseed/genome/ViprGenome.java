@@ -39,12 +39,15 @@ public class ViprGenome extends Genome {
      *
      * @param genomeId	ID of the virus genome
      * @param name		name of the genome
+     * @param genBankId genbank ID of the genome
      * @param code		genetic code for protein translation
      *
      */
-    protected ViprGenome(String name) {
+    protected ViprGenome(String name, String genBankId) {
         super(name, "Virus");
         this.setHome("ViPR");
+        this.setSource("GenBank");
+        this.setSourceId(genBankId);
     }
 
     /**
@@ -102,7 +105,7 @@ public class ViprGenome extends Genome {
                     ViprGenome genome = virusMap.get(genBankId);
                     if (genome != null)
                         throw new RuntimeException("Duplicate contig for genome " + genBankId + ": " + name);
-                    genome = new ViprGenome(name);
+                    genome = new ViprGenome(name, genBankId);
                     virusMap.put(genBankId, genome);
                     // Add this sequence as a contig.  We need to compute the contig ID, and we use a dummy genetic code.
                     String contigId = genBankId + ".con.0001";
@@ -132,7 +135,7 @@ public class ViprGenome extends Genome {
             this.p3 = new Connection();
             this.idServer = new IdClearinghouse();
             // Now loop through the GFF3 file.
-            try (TabbedLineReader proteinStream = new TabbedLineReader(proteinGff, 9)) {
+            try (TabbedLineReader proteinStream = new TabbedLineReader(proteinGff, 11)) {
                 // Verify the version.
                 if (! proteinStream.hasNext())
                     throw new RuntimeException("Protein GFF file is empty.");
@@ -148,7 +151,7 @@ public class ViprGenome extends Genome {
                         // Here we have the protein function and DNA sequence.
                         Feature feat = features.poll();
                        this.processSequence(proteinStream, feat);
-                    } else if (! id.isEmpty()) {
+                    } else if (! id.isEmpty() && ! id.startsWith("##")) {
                         // Here we have the genome's genbank ID and taxonomic ID.  If this genome does not have an
                         // ID yet, we need to compute the ID and lineage.
                         ViprGenome vGenome = virusMap.get(id);
@@ -196,7 +199,7 @@ public class ViprGenome extends Genome {
             line = proteinStream.next();
             if (line == null)
                 throw new RuntimeException("No data line for FASTA in GFF3 file.");
-            String protein = StringUtils.removeEnd(xlate.pegTranslate(line.get(0)), "*");
+            String protein = StringUtils.removeEnd(xlate.pegTranslate(line.get(0).toLowerCase()), "*");
             feat.setProteinTranslation(protein);
         }
 
@@ -216,8 +219,11 @@ public class ViprGenome extends Genome {
             int gc = this.xlateMap.get(taxonId).getGeneticCode();
             // Compute the genome ID.
             String genomeId = this.idServer.computeGenomeId(taxonId);
-            // Store the ID, genetic code, and lineage.
+            // Compute the name.
+            String name = keywordMap.get("Name");
+            // Store the ID, name, genetic code, and lineage.
             vGenome.setId(genomeId);
+            vGenome.setName(name);
             vGenome.setLineage(lineage);
             vGenome.setGeneticCode(gc);
         }
@@ -240,7 +246,7 @@ public class ViprGenome extends Genome {
                 retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
             // Store the DNA translator for this genetic code.
             int gc = Connection.getInt(taxonRecord, "genetic_code");
-            this.xlateMap.put(gc, new DnaTranslator(gc));
+            this.xlateMap.put(taxId, new DnaTranslator(gc));
             return retVal;
         }
 
@@ -264,16 +270,23 @@ public class ViprGenome extends Genome {
             // Create the feature and put it in the genome.
             Feature retVal = new Feature(pegId, "hypothetical protein", contigId, strand, line.getInt(3), line.getInt(4));
             vGenome.addFeature(retVal);
-            // Parse the keywords.
-            Map<String, String> keywords = ViprKeywords.gffParse(line.get(9));
+            // Parse the keywords.  Due to the insanity of the ViPR GFF files, the actual column number for the
+            // keywords may vary.
+            String keywordString = "";
+            for (int i = 10; i >= 0 && keywordString.isEmpty(); i--)
+                keywordString = line.get(i);
+            Map<String, String> keywords = ViprKeywords.gffParse(keywordString);
             String viprId = keywords.get("ID");
             retVal.formAlias("vipr:", viprId);
             String swissprot = keywords.get("swissprot");
             retVal.formAlias("swissprot:", swissprot);
             // Extract the GO terms.
-            String[] goTermList = StringUtils.split(keywords.get("Ontology_term").substring(3), ',');
-            for (String goTermItem : goTermList)
-                retVal.addGoTerm(goTermItem);
+            String goTermString = keywords.get("Ontology_term");
+            if (goTermString != null && goTermString.startsWith("GO:")) {
+                String[] goTermList = StringUtils.split(goTermString.substring(3), ',');
+                for (String goTermItem : goTermList)
+                    retVal.addGoTerm(goTermItem);
+            }
             // Return the feature.
             return retVal;
         }
