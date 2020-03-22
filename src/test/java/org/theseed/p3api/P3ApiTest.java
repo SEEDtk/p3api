@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
@@ -202,7 +203,7 @@ public class P3ApiTest extends TestCase
         assertThat(p3genome.getId(), equalTo(gto.getId()));
         assertThat(p3genome.getName(), equalTo(gto.getName()));
         assertThat(p3genome.getDomain(), equalTo(gto.getDomain()));
-        assertThat(p3genome.getLineage(), arrayContaining(gto.getLineage()));
+        assertThat(ArrayUtils.toObject(p3genome.getLineage()), arrayContaining(ArrayUtils.toObject(gto.getLineage())));
         assertThat(p3genome.getGeneticCode(), equalTo(gto.getGeneticCode()));
         assertThat(p3genome.getTaxonomyId(), equalTo(gto.getTaxonomyId()));
         assertThat(p3genome.getFeatureCount(), equalTo(gto.getFeatureCount()));

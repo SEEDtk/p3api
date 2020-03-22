@@ -124,9 +124,9 @@ public class P3Genome extends Genome {
             retVal.p3Store(genomeData, taxItems);
             // Get the genetic code.  It only works if we have a lineage.  We default to 11.
             int code = 11;
-            String[] lineages = retVal.getLineage();
+            int[] lineages = retVal.getLineage();
             if (lineages.length > 0) {
-                JsonObject taxData = p3.getRecord(Table.TAXONOMY, lineages[lineages.length - 1], "genetic_code");
+                JsonObject taxData = p3.getRecord(Table.TAXONOMY, Integer.toString(lineages[lineages.length - 1]), "genetic_code");
                 // Some of the genomes have invalid taxonomy data, so we have to check here.
                 if (taxData != null) code = Connection.getInt(taxData, "genetic_code");
             }

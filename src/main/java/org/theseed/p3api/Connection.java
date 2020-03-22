@@ -205,7 +205,7 @@ public class Connection {
      * Extract a list of strings from a record field.
      *
      * @param record	source record
-     * @param keyName	name of the field containing a floating-point number
+     * @param keyName	name of the field containing the strings
      *
      * @return an array of the strings in the field
      */
@@ -219,6 +219,23 @@ public class Connection {
         return retVal;
     }
 
+    /**
+     * Extract a list of integers from a record field.
+     *
+     * @param record	record containing the field
+     * @param keyName		name of the field containing the numbers
+     *
+     * @return an array of the integers in the field
+     */
+    private static int[] getIntegerList(JsonObject record, String keyName) {
+        JsonArray list = record.getCollectionOrDefault(COLLECTION.use(keyName));
+        int length = list.size();
+        int[] retVal = new int[length];
+        for (int i = 0; i < length; i++) {
+            retVal[i] = list.getInteger(i);
+        }
+        return retVal;
+    }
 
     /**
      * Initialize a connection.
@@ -560,7 +577,7 @@ public class Connection {
      */
     public TaxItem[] getLineage(String taxonId) {
         JsonObject taxonRecord = this.getRecord(Table.TAXONOMY, taxonId, "lineage_ids,lineage_names,lineage_ranks");
-        String[] ids = Connection.getStringList(taxonRecord, "lineage_ids");
+        int[] ids = Connection.getIntegerList(taxonRecord, "lineage_ids");
         String[] names = Connection.getStringList(taxonRecord, "lineage_names");
         String[] ranks = Connection.getStringList(taxonRecord, "lineage_ranks");
         TaxItem[] retVal = new TaxItem[ids.length];
@@ -568,4 +585,5 @@ public class Connection {
             retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
         return retVal;
     }
+
 }
