@@ -48,9 +48,9 @@ public class ViprTest extends TestCase {
      */
     public void testGenomeId() {
         IdClearinghouse idConnect = new IdClearinghouse();
-        String newId1 = idConnect.computeGenomeId("83333");
+        String newId1 = idConnect.computeGenomeId(83333);
         assertThat(newId1, startsWith("83333."));
-        String newId2 = idConnect.computeGenomeId("83333");
+        String newId2 = idConnect.computeGenomeId(83333);
         assertThat(newId2, startsWith("83333."));
         int suffix1 = Integer.parseInt(StringUtils.substringAfter(newId1, "."));
         int suffix2 = Integer.parseInt(StringUtils.substringAfter(newId2, "."));

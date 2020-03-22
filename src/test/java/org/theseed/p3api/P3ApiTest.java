@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +22,6 @@ import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.genome.GoTerm;
-import org.theseed.genome.TaxItem;
 import org.theseed.p3api.Connection.Table;
 import org.theseed.p3api.P3Genome.Details;
 
@@ -252,16 +250,6 @@ public class P3ApiTest extends TestCase
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
         assertTrue(p3genome.hasContigs());
-        // Compute the lineage array for this genome.
-        TaxItem[] lineage = p3.getLineage(Integer.toString(p3genome.getTaxonomyId()));
-        Iterator<TaxItem> taxonomy = p3genome.taxonomy();
-        for (int i = lineage.length - 1; i > 0; i--) {
-            assertTrue(taxonomy.hasNext());
-            TaxItem taxon = taxonomy.next();
-            assertThat(taxon.getId(), equalTo(lineage[i].getId()));
-            assertThat(taxon.getName(), equalTo(lineage[i].getName()));
-            assertThat(taxon.getRank(), equalTo(lineage[i].getRank()));
-        }
     }
 
     /**

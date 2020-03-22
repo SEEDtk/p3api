@@ -24,6 +24,8 @@ import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
 
+import com.github.cliftonlabs.json_simple.JsonObject;
+
 /**
  * This class represents a virus genome from the ViPR database.
  *
@@ -39,10 +41,9 @@ public class ViprGenome extends Genome {
      * @param name		name of the genome
      * @param code		genetic code for protein translation
      *
-     * @throws NumberFormatException
      */
-    protected ViprGenome(String name, int code) throws NumberFormatException {
-        super(name, "Virus", code);
+    protected ViprGenome(String name) {
+        super(name, "Virus");
         this.setHome("ViPR");
     }
 
@@ -57,8 +58,8 @@ public class ViprGenome extends Genome {
         // FIELDS
         /** map of GenBank IDs to genome objects */
         private Map<String, ViprGenome> virusMap;
-        /** DNA translator */
-        private DnaTranslator xlate;
+        /** DNA translator for each virus taxonomic ID */
+        private Map<Integer, DnaTranslator> xlateMap;
         /** queue of features in the current file */
         private Queue<Feature> features;
         /** counters for computing PEG IDs, keyed by genBank ID */
@@ -66,7 +67,7 @@ public class ViprGenome extends Genome {
         /** counters for computing peptide IDs, keyed by genBank ID */
         private CountMap<String> mpCounts;
         /** taxonomic lineage for each virus taxonomic ID */
-        private Map<String, TaxItem[]> lineageMap;
+        private Map<Integer, TaxItem[]> lineageMap;
         /** genome ID clearinghouse */
         private IdClearinghouse idServer;
         /** PATRIC connection for taxonomies */
@@ -86,7 +87,7 @@ public class ViprGenome extends Genome {
          * @throws IOException
          *
          */
-        public Collection<ViprGenome> Load(int code, File proteinGff, File contigFasta) throws IOException {
+        public Collection<ViprGenome> Load(File proteinGff, File contigFasta) throws IOException {
             // Create a map of GenBank IDs to genome objects.
             this.virusMap = new HashMap<String, ViprGenome>();
             // Here we build the genomes and create the contigs.
@@ -101,11 +102,11 @@ public class ViprGenome extends Genome {
                     ViprGenome genome = virusMap.get(genBankId);
                     if (genome != null)
                         throw new RuntimeException("Duplicate contig for genome " + genBankId + ": " + name);
-                    genome = new ViprGenome(name, code);
+                    genome = new ViprGenome(name);
                     virusMap.put(genBankId, genome);
-                    // Add this sequence as a contig.  We need to compute the contig ID.
+                    // Add this sequence as a contig.  We need to compute the contig ID, and we use a dummy genetic code.
                     String contigId = genBankId + ".con.0001";
-                    Contig contig = new Contig(contigId, contigSeq.getSequence(), code);
+                    Contig contig = new Contig(contigId, contigSeq.getSequence(), 1);
                     genome.addContig(contig);
                 }
             }
@@ -115,8 +116,8 @@ public class ViprGenome extends Genome {
             // real genome ID. The second record has a type of "CDS" and contains the location of the feature in the contig.
             // It may also contain a swissprot alias, and one or more GO terms (as values of "Ontology_term").  The final
             // record consists of four lines:  "##FASTA", ">" followed by a genbank genome ID, ">" followed by a protein
-            // function, and the protein DNA sequence.  This last needs to be translated, so we create a DNA translator.
-            this.xlate = new DnaTranslator(code);
+            // function, and the protein DNA sequence.  We will need DNA translators for the latter.
+            this.xlateMap = new HashMap<Integer, DnaTranslator>();
             // The initial proteins are read from the beginning of the file.  The sequence and function data is read from
             // the end.  The only way to associate them is via the order in which they appear, so we store the prototype
             // features in this queue.
@@ -126,7 +127,7 @@ public class ViprGenome extends Genome {
             this.pegCounts = new CountMap<String>();
             this.mpCounts = new CountMap<String>();
             // Initialize the taxonomy map.
-            this.lineageMap = new HashMap<String, TaxItem[]>();
+            this.lineageMap = new HashMap<Integer, TaxItem[]>();
             // Get the server connections.
             this.p3 = new Connection();
             this.idServer = new IdClearinghouse();
@@ -189,11 +190,13 @@ public class ViprGenome extends Genome {
                 throw new RuntimeException("No function line for FASTA in GFF3 file.");
             String function = StringUtils.substringAfter(line.get(0), " ");
             feat.setFunction(function);
+            // Locate the DNA translator for this genome.
+            DnaTranslator xlate = this.xlateMap.get(feat.getParent().getTaxonomyId());
             // Get the DNA and translate it.  Note we remove any trailing stop codon.
             line = proteinStream.next();
             if (line == null)
                 throw new RuntimeException("No data line for FASTA in GFF3 file.");
-            String protein = StringUtils.removeEnd(this.xlate.pegTranslate(line.get(0)), "*");
+            String protein = StringUtils.removeEnd(xlate.pegTranslate(line.get(0)), "*");
             feat.setProteinTranslation(protein);
         }
 
@@ -205,14 +208,40 @@ public class ViprGenome extends Genome {
          */
         private void initGenome(ViprGenome vGenome, String keywords) {
             Map<String,String> keywordMap = ViprKeywords.gffParse(keywords);
-            String taxonId = keywordMap.get("taxon");
+            int taxonId = Integer.parseUnsignedInt(keywordMap.get("taxon"));
             // Get the taxonomic lineage.
-            TaxItem[] lineage = this.lineageMap.computeIfAbsent(taxonId, k -> p3.getLineage(k));
+            TaxItem[] lineage = this.lineageMap.computeIfAbsent(taxonId, k -> this.getLineage(k));
+            // Get the genetic code. If we created a lineage above, the translator for that lineage
+            // will have been created, too.
+            int gc = this.xlateMap.get(taxonId).getGeneticCode();
             // Compute the genome ID.
             String genomeId = this.idServer.computeGenomeId(taxonId);
-            // Store the ID and lineage.
+            // Store the ID, genetic code, and lineage.
             vGenome.setId(genomeId);
             vGenome.setLineage(lineage);
+            vGenome.setGeneticCode(gc);
+        }
+        /**
+         * This method is called when we encounter a new taxonomic grouping.  It computes the genetic code and lineage.
+         *
+         * @param taxId		the incoming taxonomic ID
+         *
+         * @return a lineage array for the specified taxonomic grouping
+         */
+        public TaxItem[] getLineage(int taxId) {
+            // Get the data for this grouping.
+            JsonObject taxonRecord = this.p3.getRecord(Connection.Table.TAXONOMY, Integer.toString(taxId), "lineage_ids,lineage_names,lineage_ranks,genetic_code");
+            // Build the taxonomic lineage.
+            int[] ids = Connection.getIntegerList(taxonRecord, "lineage_ids");
+            String[] names = Connection.getStringList(taxonRecord, "lineage_names");
+            String[] ranks = Connection.getStringList(taxonRecord, "lineage_ranks");
+            TaxItem[] retVal = new TaxItem[ids.length];
+            for (int i = 0; i < retVal.length; i++)
+                retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
+            // Store the DNA translator for this genetic code.
+            int gc = Connection.getInt(taxonRecord, "genetic_code");
+            this.xlateMap.put(gc, new DnaTranslator(gc));
+            return retVal;
         }
 
         /**

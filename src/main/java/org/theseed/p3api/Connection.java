@@ -23,8 +23,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.theseed.genome.TaxItem;
-
 import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonKey;
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -227,7 +225,7 @@ public class Connection {
      *
      * @return an array of the integers in the field
      */
-    private static int[] getIntegerList(JsonObject record, String keyName) {
+    public static int[] getIntegerList(JsonObject record, String keyName) {
         JsonArray list = record.getCollectionOrDefault(COLLECTION.use(keyName));
         int length = list.size();
         int[] retVal = new int[length];
@@ -568,22 +566,6 @@ public class Connection {
      */
     public void setTimeout(int timeout) {
         this.timeout = timeout * 1000;
-    }
-
-    /**
-     * @return a lineage array for the specified taxonomic grouping
-     *
-     * @param taxonId	bottom-level taxonomic grouping whose lineage is desired
-     */
-    public TaxItem[] getLineage(String taxonId) {
-        JsonObject taxonRecord = this.getRecord(Table.TAXONOMY, taxonId, "lineage_ids,lineage_names,lineage_ranks");
-        int[] ids = Connection.getIntegerList(taxonRecord, "lineage_ids");
-        String[] names = Connection.getStringList(taxonRecord, "lineage_names");
-        String[] ranks = Connection.getStringList(taxonRecord, "lineage_ranks");
-        TaxItem[] retVal = new TaxItem[ids.length];
-        for (int i = 0; i < retVal.length; i++)
-            retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
-        return retVal;
     }
 
 }

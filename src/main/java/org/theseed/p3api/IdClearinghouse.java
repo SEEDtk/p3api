@@ -60,7 +60,7 @@ public class IdClearinghouse {
     /**
      * Request a new genome ID for the specified taxonomic ID.
      */
-    public String computeGenomeId(String taxId) {
+    public String computeGenomeId(int taxId) {
         String retVal = null;
         Request soapRequest = Request.Post(CLEARINGHOUSE_URL);
         // Look for a SOAP XML response.
@@ -69,7 +69,7 @@ public class IdClearinghouse {
         // Set the request limitations.
         soapRequest.connectTimeout(TIMEOUT);
         // Build the XML body.
-        HttpEntity soapBody = new StringEntity(REQUEST_PREFIX + taxId + REQUEST_SUFFIX, ContentType.TEXT_XML);
+        HttpEntity soapBody = new StringEntity(REQUEST_PREFIX + Integer.toString(taxId) + REQUEST_SUFFIX, ContentType.TEXT_XML);
         soapRequest.body(soapBody);
         // Send the request.
         int tries = 0;
