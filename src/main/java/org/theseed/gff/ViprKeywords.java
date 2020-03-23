@@ -76,7 +76,8 @@ public class ViprKeywords {
         for (String piece : pieces) {
             // The key and value are separated by a colon.
             String[] dbPieces = StringUtils.split(piece, ":", 2);
-            retVal.put(dbPieces[0], dbPieces[1]);
+            if (dbPieces.length == 2)
+                retVal.put(dbPieces[0], dbPieces[1]);
         }
         return retVal;
     }

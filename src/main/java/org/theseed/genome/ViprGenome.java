@@ -108,6 +108,7 @@ public class ViprGenome extends Genome {
                     Map<String, String> keywords = ViprKeywords.fastaParse(contigSeq);
                     String genBankId = keywords.get("gb");
                     String name = keywords.get("Organism");
+                    if (name == null) name = "unknown";
                     // Verify that this genome has only one contig.
                     ViprGenome genome = virusMap.get(genBankId);
                     if (genome != null)
