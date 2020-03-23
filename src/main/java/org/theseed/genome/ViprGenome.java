@@ -13,6 +13,8 @@ import java.util.Queue;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.counters.CountMap;
 import org.theseed.genome.Genome;
 import org.theseed.gff.ViprKeywords;
@@ -23,6 +25,7 @@ import org.theseed.p3api.IdClearinghouse;
 import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
+import org.theseed.utils.BaseProcessor;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -33,6 +36,9 @@ import com.github.cliftonlabs.json_simple.JsonObject;
  *
  */
 public class ViprGenome extends Genome {
+
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(BaseProcessor.class);
 
     /**
      * Initialize the genome.
@@ -94,6 +100,7 @@ public class ViprGenome extends Genome {
             // Create a map of GenBank IDs to genome objects.
             this.virusMap = new HashMap<String, ViprGenome>();
             // Here we build the genomes and create the contigs.
+            log.info("Reading contigs from FASTA file {}.", contigFasta);
             try (FastaInputStream contigStream = new FastaInputStream(contigFasta)) {
                 // Loop through the contigs in the input file.
                 for (Sequence contigSeq : contigStream) {
@@ -111,6 +118,7 @@ public class ViprGenome extends Genome {
                     String contigId = genBankId + ".con.0001";
                     Contig contig = new Contig(contigId, contigSeq.getSequence(), 1);
                     genome.addContig(contig);
+                    log.info("Contig found with length {} for GenBank virus {}.", contig.length(), genBankId);
                 }
             }
             // Now we add the metadata and proteins.  The genome ID is also computed here.  Each protein is represented
@@ -135,6 +143,7 @@ public class ViprGenome extends Genome {
             this.p3 = new Connection();
             this.idServer = new IdClearinghouse();
             // Now loop through the GFF3 file.
+            log.info("Reading proteins from GFF file {}.", proteinGff);
             try (TabbedLineReader proteinStream = new TabbedLineReader(proteinGff, 11)) {
                 // Verify the version.
                 if (! proteinStream.hasNext())
@@ -226,6 +235,7 @@ public class ViprGenome extends Genome {
             vGenome.setName(name);
             vGenome.setLineage(lineage);
             vGenome.setGeneticCode(gc);
+            log.info("GenBank virus {} will be {}.", vGenome.getSourceId(), vGenome);
         }
         /**
          * This method is called when we encounter a new taxonomic grouping.  It computes the genetic code and lineage.
