@@ -5,6 +5,7 @@ package org.theseed.genome;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -107,13 +108,11 @@ public class ViprGenome extends Genome {
                     // Get the keywords for this sequence.
                     Map<String, String> keywords = ViprKeywords.fastaParse(contigSeq);
                     String genBankId = keywords.get("gb");
-                    String name = keywords.get("Organism");
-                    if (name == null) name = "unknown";
                     // Verify that this genome has only one contig.
                     ViprGenome genome = virusMap.get(genBankId);
                     if (genome != null)
-                        throw new RuntimeException("Duplicate contig for genome " + genBankId + ": " + name);
-                    genome = new ViprGenome(name, genBankId);
+                        throw new RuntimeException("Duplicate contig for genome " + genBankId + ".");
+                    genome = new ViprGenome("", genBankId);
                     virusMap.put(genBankId, genome);
                     // Add this sequence as a contig.  We need to compute the contig ID, and we use a dummy genetic code.
                     String contigId = genBankId + ".con.0001";
@@ -162,23 +161,39 @@ public class ViprGenome extends Genome {
                         Feature feat = features.poll();
                        this.processSequence(proteinStream, feat);
                     } else if (! id.isEmpty() && ! id.startsWith("##")) {
-                        // Here we have the genome's genbank ID and taxonomic ID.  If this genome does not have an
-                        // ID yet, we need to compute the ID and lineage.
-                        ViprGenome vGenome = virusMap.get(id);
-                        if (vGenome.getId() == null) {
-                            String keywords = line.get(8);
-                            this.initGenome(vGenome, keywords);
-                        }
-                        // Create the feature from the following line and add it to the queue.  We will pull it off
-                        // when the feature's FASTA line shows up.
+                        // Here we have the genome's genbank ID and taxonomic ID.  Get the keywords and
+                        // step forward to the protein data line.
+                        String keywords = line.get(8);
                         line = proteinStream.next();
-                        Feature feat = this.createFeature(vGenome, line);
-                        features.add(feat);
+                        if (line == null)
+                            throw new RuntimeException("Protein GFF file is missing protein data line for " + id + ".");
+                        //If this genome does not have an ID yet, we need to compute the ID and lineage.
+                        ViprGenome vGenome = virusMap.get(id);
+                        if (vGenome == null) {
+                            // This is a bad error-- a virus with no contigs.
+                            log.warn("No contigs exist for genome {}.", id);
+                        } else {
+                            // We have a virus with this ID.  Now check for the ID.
+                            if (vGenome.getId() == null) {
+                                this.initGenome(vGenome, keywords);
+                            }
+                            // Create the feature from the protein line and add it to the queue.  We will pull it off
+                            // when the feature's FASTA line shows up.
+                            Feature feat = this.createFeature(vGenome, line);
+                            features.add(feat);
+                        }
                     }
                 }
             }
+            // Filter out the partial genomes.
+            Collection<ViprGenome> retVal = new ArrayList<ViprGenome>(virusMap.size());
+            for (ViprGenome vGenome : virusMap.values()) {
+                if (vGenome.getId() == null)
+                    log.warn("No proteins or metadata found for virus with genbank ID {}.", vGenome.getSourceId());
+                else
+                    retVal.add(vGenome);
+            }
             // Return the genomes created.
-            Collection<ViprGenome> retVal = virusMap.values();
             return retVal;
         }
 
