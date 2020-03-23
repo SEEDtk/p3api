@@ -245,17 +245,27 @@ public class ViprGenome extends Genome {
          * @return a lineage array for the specified taxonomic grouping
          */
         public TaxItem[] getLineage(int taxId) {
+            TaxItem[] retVal;
+            int gc;
             // Get the data for this grouping.
             JsonObject taxonRecord = this.p3.getRecord(Connection.Table.TAXONOMY, Integer.toString(taxId), "lineage_ids,lineage_names,lineage_ranks,genetic_code");
-            // Build the taxonomic lineage.
-            int[] ids = Connection.getIntegerList(taxonRecord, "lineage_ids");
-            String[] names = Connection.getStringList(taxonRecord, "lineage_names");
-            String[] ranks = Connection.getStringList(taxonRecord, "lineage_ranks");
-            TaxItem[] retVal = new TaxItem[ids.length];
-            for (int i = 0; i < retVal.length; i++)
-                retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
-            // Store the DNA translator for this genetic code.
-            int gc = Connection.getInt(taxonRecord, "genetic_code");
+            if (taxonRecord == null) {
+                log.warn("No taxonomy information found for {}.", taxId);
+                // We have to punt here.  We use an empty lineage with just Virus and the leaf
+                // and the default virus genetic code of 1.
+                retVal = new TaxItem[] { new TaxItem(10239, "Viruses", "superkingdom"), new TaxItem(taxId, "unknown virus", "no rank") };
+                gc = 1;
+            } else {
+                // Build the taxonomic lineage.
+                int[] ids = Connection.getIntegerList(taxonRecord, "lineage_ids");
+                String[] names = Connection.getStringList(taxonRecord, "lineage_names");
+                String[] ranks = Connection.getStringList(taxonRecord, "lineage_ranks");
+                retVal = new TaxItem[ids.length];
+                for (int i = 0; i < retVal.length; i++)
+                    retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
+                // Compute the genetic code.
+                gc = Connection.getInt(taxonRecord, "genetic_code");
+            }
             this.xlateMap.put(taxId, new DnaTranslator(gc));
             return retVal;
         }
