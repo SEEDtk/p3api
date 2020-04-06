@@ -51,6 +51,28 @@ public class P3ApiTest extends TestCase
     }
 
     /**
+     * test detail levels
+     */
+    public void testDetails() {
+        P3Genome.Details level = P3Genome.Details.FULL;
+        assertTrue(level.includesContigs());
+        assertTrue(level.includesFeatures());
+        assertTrue(level.includesProteins());
+        level = P3Genome.Details.CONTIGS;
+        assertTrue(level.includesContigs());
+        assertFalse(level.includesFeatures());
+        assertFalse(level.includesProteins());
+        level = P3Genome.Details.PROTEINS;
+        assertFalse(level.includesContigs());
+        assertTrue(level.includesFeatures());
+        assertTrue(level.includesProteins());
+        level = P3Genome.Details.STRUCTURE_ONLY;
+        assertFalse(level.includesContigs());
+        assertTrue(level.includesFeatures());
+        assertFalse(level.includesProteins());
+    }
+
+    /**
      * test the basic connection
      */
     public void testConnection() {
@@ -243,13 +265,22 @@ public class P3ApiTest extends TestCase
             assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
         }
         assertFalse(p3genome.hasContigs());
-        // Finally, FULL level.
+        // Now, FULL level.
         p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.FULL);
         for (Contig contig : contigs) {
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
         assertTrue(p3genome.hasContigs());
+        // Finally, CONTIGS level.
+        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.CONTIGS);
+        assertTrue(p3genome.hasContigs());
+        Collection<Feature> fids = p3genome.getFeatures();
+        assertThat(fids.size(), equalTo(0));
+        for (Contig contig : contigs) {
+            Contig p3contig = p3genome.getContig(contig.getId());
+            assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
+        }
     }
 
     /**
