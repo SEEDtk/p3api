@@ -139,7 +139,7 @@ public class P3Genome extends Genome {
             }
             retVal.setGeneticCode(code);
             // Process the contigs.  If the detail level is FULL or CONTIGS, we get the DNA, too.
-            String contigFields = (detail.includesContigs() ? "sequence_id,sequence" : "sequence_id,length");
+            String contigFields = "sequence_id,accession,description," + (detail.includesContigs() ? "sequence" : "length");
             Collection<JsonObject> contigs = p3.query(Table.CONTIG, contigFields, Criterion.EQ("genome_id", genome_id));
             retVal.p3Contigs(contigs);
             // Process the features if we want them.

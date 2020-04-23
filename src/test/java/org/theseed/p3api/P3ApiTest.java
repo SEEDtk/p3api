@@ -252,6 +252,8 @@ public class P3ApiTest extends TestCase
         for (Contig contig : contigs) {
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.length(), equalTo(contig.length()));
+            assertThat(p3contig.getAccession(), equalTo(contig.getAccession()));
+            assertThat(p3contig.getDescription(), equalTo(contig.getDescription()));
         }
         // Special check for the pheS protein.
         Feature p3seedFid = p3genome.getFeature("fig|243277.26.peg.1166");
