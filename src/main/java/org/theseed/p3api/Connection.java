@@ -5,15 +5,18 @@ package org.theseed.p3api;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -23,6 +26,12 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.genome.Genome;
+import org.theseed.genome.TaxItem;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonKey;
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -42,6 +51,9 @@ public class Connection {
 
     /** default URL */
     private static final String DATA_API_URL = "https://p3.theseed.org/services/data_api/";
+
+    /** taxonomy URL format */
+    private static final String NCBI_TAX_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=%d";
 
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(Connection.class);
@@ -265,7 +277,8 @@ public class Connection {
         this.chunk = 0;
         // Default the timeout.
         this.timeout = DEFAULT_TIMEOUT;
-
+        // Turn off the stupid cookie message.
+        java.util.logging.Logger.getLogger("org.apache.http.client.protocol.ResponseProcessCookies").setLevel(Level.OFF);
     }
 
     /**
@@ -566,6 +579,124 @@ public class Connection {
      */
     public void setTimeout(int timeout) {
         this.timeout = timeout * 1000;
+    }
+
+    /**
+     * Compute the taxonomic information for a grouping and store it in a genome.
+     *
+     * @param genome	target genome
+     * @param taxId		relevant taxonomy ID
+     *
+     * @return TRUE if successful, else FALSE
+     */
+    public boolean computeLineage(Genome genome, int taxId) {
+        boolean retVal = false;
+        // Get the data for this grouping.
+        Request ncbiRequest = Request.Get(String.format(NCBI_TAX_URL, taxId));
+        ncbiRequest.addHeader("Accept", "text/xml");
+        ncbiRequest.connectTimeout(this.timeout);
+        // Send the request.
+        int tries = 0;
+        Document taxonDoc = null;
+        while (tries < MAX_TRIES && taxonDoc == null) {
+            try {
+                tries++;
+                Response resp = ncbiRequest.execute();
+                // Check the response.
+                HttpResponse rawResponse = resp.returnResponse();
+                int statusCode = rawResponse.getStatusLine().getStatusCode();
+                if (statusCode < 400) {
+                    String xmlString = EntityUtils.toString(rawResponse.getEntity());
+                    InputSource xmlSource = new InputSource(new StringReader(xmlString));
+                    taxonDoc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                            .parse(xmlSource);
+                } else if (tries < MAX_TRIES) {
+                    log.debug("Retrying taxonomy request after error code {}.", statusCode);
+                } else {
+                    throw new RuntimeException("Taxonomy request failed with error " + statusCode + " " +
+                            rawResponse.getStatusLine().getReasonPhrase());
+                }
+            } catch (IOException e) {
+                // This is usually a timeout error.
+                if (tries >= MAX_TRIES)
+                    throw new RuntimeException("HTTP error in genome ID request: " + e.getMessage());
+                else {
+                    tries++;
+                    log.debug("Retrying genome ID request after " + e.getMessage());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Error parsing XML for taxonomy query: " + e.getMessage());
+            }
+        }
+        // Now we have the taxonomy information.
+        if (taxonDoc == null) {
+            log.warn("No taxonomy information found for {}.", taxId);
+        } else {
+            // Get the genetic code.
+            Node gcNode = taxonDoc.getElementsByTagName("GCId").item(0);
+            int gc = Integer.valueOf(gcNode.getTextContent());
+            // Everything is under the "Taxon" node.  We need to save all the
+            // children of LineageEx, plus the ScientificName and Rank
+            // at the top.
+            String leafName = String.format("Unknown %s", genome.getDomain());
+            String leafRank = "no rank";
+            Node rootTaxon = taxonDoc.getElementsByTagName("Taxon").item(0);
+            NodeList children = rootTaxon.getChildNodes();
+            ArrayList<TaxItem> taxItems = new ArrayList<TaxItem>(30);
+            for (int i = 0; i < children.getLength(); i++) {
+                Node child = children.item(i);
+                String type = child.getNodeName();
+                switch (type) {
+                case "ScientificName" :
+                    leafName = child.getTextContent();
+                    break;
+                case "Rank" :
+                    leafRank = child.getTextContent();
+                    break;
+                case "LineageEx" :
+                    // Here we have the full lineage, and we need to convert it to tax items.
+                    NodeList lineageChildren = child.getChildNodes();
+                    for (int j = 0; j < lineageChildren.getLength(); j++) {
+                        Node lineageChild = lineageChildren.item(j);
+                        if (lineageChild.getNodeName().contentEquals("Taxon")) {
+                            NodeList lineageItems = lineageChild.getChildNodes();
+                            // The lineage node has 3 children-- TaxId, ScientificName, Rank.
+                            int taxNum = 0;
+                            String taxName = "";
+                            String taxRank = "no rank";
+                            for (int c = 0; c < lineageItems.getLength(); c++) {
+                                Node grandChild = lineageItems.item(c);
+                                String subType = grandChild.getNodeName();
+                                switch (subType) {
+                                case "TaxId" :
+                                    taxNum = Integer.valueOf(grandChild.getTextContent());
+                                    break;
+                                case "ScientificName" :
+                                    taxName = grandChild.getTextContent();
+                                    break;
+                                case "Rank" :
+                                    taxRank = grandChild.getTextContent();
+                                    break;
+                                }
+                            }
+                            TaxItem item = new TaxItem(taxNum, taxName, taxRank);
+                            taxItems.add(item);
+                        }
+                    }
+                }
+            }
+            // Add the leaf to the end.
+            taxItems.add(new TaxItem(taxId, leafName, leafRank));
+            // Convert the list to an array.
+            TaxItem[] lineage = new TaxItem[taxItems.size()];
+            lineage = taxItems.toArray(lineage);
+            // Store the array and the genetic code.
+            genome.setGeneticCode(gc);
+            genome.setLineage(lineage);
+            // Denote we were successful.
+            retVal = true;
+        }
+        return retVal;
     }
 
 }

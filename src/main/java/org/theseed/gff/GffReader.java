@@ -119,6 +119,8 @@ public class GffReader implements Iterable<GffReader.Line>, Iterator<GffReader.L
 
         /**
          * @return the value of the specified attribute
+         *
+         * @param key	name of the desired attribute
          */
         public String getAttribute(String key) {
             String retVal = this.attributes.get(key);
@@ -126,6 +128,15 @@ public class GffReader implements Iterable<GffReader.Line>, Iterator<GffReader.L
                 throw new RuntimeException("Missing attribute " + key + " for GFF sequence ID "
                         + this.id + " of type " + this.type + ".");
             return retVal;
+        }
+
+        /**
+         * @return the value of the specified attribute, or an empty string if it is not found
+         *
+         * @param key	name of the desired attribute
+         */
+        public String getAttributeOrEmpty(String key) {
+            return this.attributes.getOrDefault(key, "");
         }
 
     }
