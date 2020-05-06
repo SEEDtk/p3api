@@ -104,7 +104,7 @@ public class GffGenome extends Genome {
                     // Here it is a new contig.
                     contigCount++;
                     String contigId = String.format("%s.con.%04d", genomeId, contigCount);
-                    contig = new Contig(contigId, contigSeq.getSequence(), this.getGeneticCode());
+                    contig = new Contig(contigId, contigSeq.getSequence().toLowerCase(), this.getGeneticCode());
                     this.addContig(contig);
                     log.info("New contig {} added as {}.", oldId, contigId);
                 } else {
