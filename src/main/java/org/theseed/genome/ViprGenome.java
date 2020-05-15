@@ -26,8 +26,6 @@ import org.theseed.p3api.IdClearinghouse;
 import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
-import org.theseed.utils.BaseProcessor;
-
 import com.github.cliftonlabs.json_simple.JsonObject;
 
 /**
@@ -39,7 +37,7 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 public class ViprGenome extends Genome {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(BaseProcessor.class);
+    protected static Logger log = LoggerFactory.getLogger(ViprGenome.class);
 
     /**
      * Initialize the genome.
