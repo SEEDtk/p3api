@@ -12,8 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.counters.CountMap;
 import org.theseed.gff.GffReader;
-import org.theseed.p3api.Connection;
-import org.theseed.p3api.IdClearinghouse;
 import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
@@ -24,7 +22,7 @@ import org.theseed.sequence.Sequence;
  * @author Bruce Parrello
  *
  */
-public class GffGenome extends Genome {
+public class GffGenome extends NewGenome {
 
     // FIELDS
     /** logging facility */
@@ -123,40 +121,6 @@ public class GffGenome extends Genome {
             }
             log.info("Genome {} loaded.", genomeId);
         }
-    }
-
-    /**
-     * Fill in the taxonomic information for this genome.
-     *
-     * @param taxon		taxonomic grouping for this genome
-     *
-     * @return a unique ID for this genome
-     */
-    private String getGenomeId(String taxon) {
-        IdClearinghouse idConnection = new IdClearinghouse();
-        int taxId = Integer.valueOf(taxon);
-        String retVal = idConnection.computeGenomeId(taxId);
-        this.setId(retVal);
-        // Fill in the taxonomy.
-        Connection p3 = new Connection();
-        boolean taxFound = p3.computeLineage(this, taxId);
-        String name;
-        if (! taxFound) {
-            // Nothing we can do here, but we default the genetic code and the name.
-            String domain = this.getDomain();
-            int gc = 1;
-            if (domain.contentEquals("Bacteria") || domain.contentEquals("Archaea"))
-                gc = 11;
-            this.setGeneticCode(gc);
-            name = String.format("Unknown %s", this.getDomain());
-        } else {
-            // Build the name from the bottom taxonomic value.
-            name = this.getTaxonomyName();
-            if (! this.getName().isEmpty())
-                name += " " + this.getName();
-        }
-        this.setName(name);
-        return retVal;
     }
 
 }
