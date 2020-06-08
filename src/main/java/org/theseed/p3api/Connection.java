@@ -150,7 +150,7 @@ public class Connection {
     // FIELDS
 
     /** data API url */
-    private String url;
+    protected String url;
     /** security token */
     private String authToken;
     /** chunk size */
@@ -560,7 +560,7 @@ public class Connection {
      * @return a request builder with any required authorization and the proper URL
      */
     private Request requestBuilder(String table) {
-        Request retVal = Request.Post(this.url + table);
+        Request retVal = createRequest(table);
         // Save the name of the table for debugging purposes.
         this.table = table;
         // Denote we want a json response.
@@ -572,6 +572,16 @@ public class Connection {
         // Set the timeout.
         retVal.connectTimeout(this.timeout);
         return retVal;
+    }
+
+    /**
+     * Create a request to get data from the specified table.
+     *
+     * @param table		name of the target table
+     * @return
+     */
+    protected Request createRequest(String table) {
+        return Request.Post(this.url + table);
     }
 
     /**
