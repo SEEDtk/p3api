@@ -80,7 +80,8 @@ public class Connection {
         TAXONOMY("taxonomy", "taxon_id"),
         CONTIG("genome_sequence", "sequence_id"),
         SEQUENCE("feature_sequence", "md5"),
-        SUBSYSTEM_ITEM("subsystem", "id");
+        SUBSYSTEM_ITEM("subsystem", "id"),
+        FAMILY("protein_family_ref", "family_id");
 
         // INTERNAL FIELDS
 

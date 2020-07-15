@@ -3,12 +3,8 @@
  */
 package org.theseed.p3api;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is used to build criteria for calls to the PATRIC API.  It handles the URL encoding of unsafe values.
@@ -33,16 +29,24 @@ public class Criterion {
      * @param value		value to make safe
      */
     public static String fix(String value) {
-        // First we have to delete parentheses.  It's a SOLR thing.
-        String retVal = StringUtils.replaceChars(value, "()", "  ");
-        try {
-            // URL-encode everything else.
-            retVal = URLEncoder.encode(retVal, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("UTF-8 not supported for parameter \"" + value + "\".");
+        // Delete special characters.  It's a SOLR thing.
+        StringBuffer retVal = new StringBuffer(value.length());
+        char last = 'X';
+        for (int i = 0; i < value.length(); i++) {
+            char curr = value.charAt(i);
+            if (curr >= 'a' && curr <= 'z' || curr >= 'A' && curr <= 'Z' ||
+                    curr >= '0' && curr <= '9' || curr == '-' ||
+                    curr == '.' || curr == '_') {
+                retVal.append(curr);
+                last = curr;
+            } else if (curr == '|') {
+                retVal.append("%7C");
+            } else if (last != ' ') {
+                retVal.append('+');
+                last = ' ';
+            }
         }
-        return retVal;
-
+        return retVal.toString();
     }
 
     /**

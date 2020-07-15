@@ -202,8 +202,8 @@ public class P3ApiTest extends TestCase
     public void testCriteria() {
         assertThat(Criterion.EQ("genome_id", "100.2"), equalTo("eq(genome_id,100.2)"));
         assertThat(Criterion.NE("genome_type", "(plasmid)"),equalTo("ne(genome_type,+plasmid+)"));
-        assertThat(Criterion.EQ("taxonomicThing", "100::200::300"), equalTo("eq(taxonomicThing,100%3A%3A200%3A%3A300)"));
-        assertThat(Criterion.IN("product", "look / at # me", "I'm so happy"), equalTo("in(product,(look+%2F+at+%23+me,I%27m+so+happy))"));
+        assertThat(Criterion.EQ("taxonomicThing", "100::200::300"), equalTo("eq(taxonomicThing,100+200+300)"));
+        assertThat(Criterion.IN("product", "look / at # me", "I'm so happy"), equalTo("in(product,(look+at+me,I+m+so+happy))"));
     }
 
     /**
