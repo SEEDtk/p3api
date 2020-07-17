@@ -4,7 +4,7 @@ import org.theseed.p3api.Connection;
 import org.theseed.p3api.IdClearinghouse;
 
 /**
- * This is a subclass for creating new genomes.  It provides common utilities for such processes.
+ * This is a subclass for creating brand-new genomes.  It provides common utilities for such processes.
  *
  * @author Bruce Parrello
  */
