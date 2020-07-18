@@ -49,7 +49,7 @@ public class CoreGenome extends Genome {
     protected static Logger log = LoggerFactory.getLogger(CoreGenome.class);
 
     /** list of valid domains */
-    public static final Set<String> DOMAINS = (Set<String>) Stream.of("Bacteria", "Archaea", "Eukaryota", "Virus")
+    public static final Set<String> DOMAINS = (Set<String>) Stream.of("Bacteria", "Archaea", "Eukaryota", "Viruses")
               .collect(Collectors.toCollection(HashSet::new));
 
     /** list of protein feature types */
@@ -75,6 +75,7 @@ public class CoreGenome extends Genome {
      */
     public CoreGenome(Connection p3, File inDir) throws IOException {
         super(inDir.getName());
+        log.info("Loading SEED genome from {}.", inDir);
         this.setHome("CORE");
         this.setSource("RAST");
         // Save the directory and the PATRIC connection.
@@ -193,9 +194,11 @@ public class CoreGenome extends Genome {
     private void readFeatures() throws IOException {
         // The first task is to get the assigned functions.  We will pull in the functions for deleted as
         // well as real pegs.  If there are duplicates, the second assignment wins.
+        log.debug("Processing functions.");
         Map<String, String> functionMap = this.readMap("assigned_functions", 2);
         // Now we do the same thing with protein families, but this is tricky since both types are in the
         // same file.
+        log.debug("Processing protein families.");
         Map<String, String> gFamilyMap = new HashMap<String, String>(functionMap.size());
         Map<String, String> lFamilyMap = new HashMap<String, String>(functionMap.size());
         File famFile = new File(this.orgDir, "pattyfams.txt");
@@ -217,6 +220,7 @@ public class CoreGenome extends Genome {
         File featureDir = new File(this.orgDir, "Features");
         File[] typeDirs = featureDir.listFiles(File::isDirectory);
         for (File typeDir : typeDirs) {
+            log.debug("Processing feature directory {}.", typeDir);
             // Get the set of deleted features.
             Set<String> deleted = this.readSet(new File(typeDir, "deleted.features"));
             // Determine if this is an aSDomain.
@@ -332,6 +336,7 @@ public class CoreGenome extends Genome {
         if (! fastaFile.exists())
             log.error("No contig file found for genome directory {}.", this.orgDir);
         else {
+            log.debug("Reading contigs.");
             try (FastaInputStream fastaStream = new FastaInputStream(fastaFile)) {
                 for (Sequence seq : fastaStream) {
                     Contig contig = new Contig(seq.getLabel(), seq.getSequence(), this.getGeneticCode());
