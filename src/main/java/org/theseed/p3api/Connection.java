@@ -166,6 +166,8 @@ public class Connection {
     private String basicParms;
     /** timeout interval */
     private int timeout;
+    /** time of last NCBI query */
+    private long lastNcbiQuery;
 
     // JSON KEY BUFFERS
     private static final KeyBuffer STRING = new KeyBuffer("", "");
@@ -278,6 +280,8 @@ public class Connection {
         this.chunk = 0;
         // Default the timeout.
         this.timeout = DEFAULT_TIMEOUT;
+        // Denote no NCBI queries yet.
+        this.lastNcbiQuery = 0;
         // Turn off the stupid cookie message.
         java.util.logging.Logger.getLogger("org.apache.http.client.protocol.ResponseProcessCookies").setLevel(Level.OFF);
     }
@@ -606,10 +610,19 @@ public class Connection {
         Request ncbiRequest = Request.Get(String.format(NCBI_TAX_URL, taxId));
         ncbiRequest.addHeader("Accept", "text/xml");
         ncbiRequest.connectTimeout(this.timeout);
-        // Send the request.
+        // We will now try to send the request.
         int tries = 0;
         Document taxonDoc = null;
         while (tries < MAX_TRIES && taxonDoc == null) {
+            // Verify we are not asking NCBI too often.
+            long diff = System.currentTimeMillis() - this.lastNcbiQuery;
+            if (diff < 334)
+                try {
+                    Thread.sleep(334 - diff);
+                    log.debug("NCBI throttle (diff = {}).", diff);
+                } catch (InterruptedException e1) { }
+            this.lastNcbiQuery = System.currentTimeMillis();
+            // Now make the request.
             try {
                 tries++;
                 Response resp = ncbiRequest.execute();
