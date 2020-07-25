@@ -4,6 +4,7 @@
 package org.theseed.p3api;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
@@ -81,4 +82,15 @@ public class Criterion {
         return retVal;
     }
 
+    /**
+     * @return the criterion string for an inclusion request
+     *
+     * @param field		field name
+     * @param values	field values
+     */
+    public static String IN(String field, Collection<String> values) {
+        String prefix = "in(" + field + ",(";
+        String retVal = values.stream().map(x -> fix(x)).collect(Collectors.joining(",", prefix, "))"));
+        return retVal;
+    }
 }

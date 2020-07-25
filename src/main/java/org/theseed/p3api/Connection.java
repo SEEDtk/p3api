@@ -81,7 +81,9 @@ public class Connection {
         CONTIG("genome_sequence", "sequence_id"),
         SEQUENCE("feature_sequence", "md5"),
         SUBSYSTEM_ITEM("subsystem", "id"),
-        FAMILY("protein_family_ref", "family_id");
+        FAMILY("protein_family_ref", "family_id"),
+        SUBSYSTEM("subsystem_ref", "subsystem_id")
+        ;
 
         // INTERNAL FIELDS
 
