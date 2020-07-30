@@ -52,11 +52,6 @@ public class P3Genome extends Genome {
             return (this == PROTEINS || this == FULL);
         }
 
-        public boolean includesSubsystems() {
-            return (this == FULL);
-        }
-
-
     }
 
     /** JsonKeys for extracting sequences */
