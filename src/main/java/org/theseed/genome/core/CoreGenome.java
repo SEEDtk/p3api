@@ -219,83 +219,87 @@ public class CoreGenome extends Genome {
         // The actual processing of the features requires looping through subdirectories.
         File featureDir = new File(this.orgDir, "Features");
         File[] typeDirs = featureDir.listFiles(File::isDirectory);
-        for (File typeDir : typeDirs) {
-            log.debug("Processing feature directory {}.", typeDir);
-            // Get the set of deleted features.
-            Set<String> deleted = this.readSet(new File(typeDir, "deleted.features"));
-            // Determine if this is an aSDomain.
-            boolean asFlag = typeDir.getName().contentEquals("aSDomain");
-            // If this is a protein type, get the protein translations.  If it's an aSDomain, we need a blank map.
-            Map<String, String> proteinMap = EMPTY_MAP;
-            if (PROTEINS.contains(typeDir.getName()))
-                proteinMap = this.readProteins(typeDir);
-            else if (asFlag)
-                proteinMap = new HashMap<String, String>();
-            // Get the locations and the aliases.
-            Map<String, Location> locationMap = new HashMap<String, Location>();
-            Map<String, Collection<String>> aliasMap = new HashMap<String, Collection<String>>();
-            File tblFile = new File(typeDir, "tbl");
-            if (! tblFile.exists())
-                log.warn("No features in type directory {}.", typeDir);
-            else {
-                try (LineReader tblStream = new LineReader(new File(typeDir, "tbl"))) {
-                    for (String line : tblStream) {
-                        String[] fields = StringUtils.split(line, '\t');
-                        String fid = fields[0];
-                        // Only proceed if the feature is not deleted.
-                        if (! deleted.contains(fid)) {
-                            if (fields.length < 2 || fields[1].isEmpty())
-                                log.warn("Location missing from feature line {} in {}.", fields[0], typeDir);
-                            else {
-                                // We need to compute the location from the second column.  We start by
-                                // parsing the first region to get the contig and strand.
-                                String[] regions = StringUtils.split(fields[1]);
-                                Location loc = Location.parseSeedLocation(regions[0]);
-                                for (int i = 1; i < regions.length; i++) {
-                                    Location locI = Location.parseSeedLocation(regions[i]);
-                                    loc.add(locI);
-                                }
-                                locationMap.put(fid, loc);
-                                // If this is aSDomain, the alias is a protein translation. Otherwise,
-                                // we need to collect the aliases.
-                                Collection<String> aliases = Collections.emptyList();
-                                if (asFlag) {
-                                    proteinMap.put(fid, fields[2]);
-                                } else if (fields.length >= 3) {
-                                    // Otherwise we do the aliases.
-                                    aliases = new ArrayList<String>(fields.length - 2);
-                                    for (int i = 2; i < fields.length; i++) {
-                                        if (! fields[i].isEmpty())
-                                            aliases.add(fields[i]);
+        if (typeDirs == null)
+            log.warn("No feature directories for {}.", this.orgDir);
+        else {
+            for (File typeDir : typeDirs) {
+                log.debug("Processing feature directory {}.", typeDir);
+                // Get the set of deleted features.
+                Set<String> deleted = this.readSet(new File(typeDir, "deleted.features"));
+                // Determine if this is an aSDomain.
+                boolean asFlag = typeDir.getName().contentEquals("aSDomain");
+                // If this is a protein type, get the protein translations.  If it's an aSDomain, we need a blank map.
+                Map<String, String> proteinMap = EMPTY_MAP;
+                if (PROTEINS.contains(typeDir.getName()))
+                    proteinMap = this.readProteins(typeDir);
+                else if (asFlag)
+                    proteinMap = new HashMap<String, String>();
+                // Get the locations and the aliases.
+                Map<String, Location> locationMap = new HashMap<String, Location>();
+                Map<String, Collection<String>> aliasMap = new HashMap<String, Collection<String>>();
+                File tblFile = new File(typeDir, "tbl");
+                if (! tblFile.exists())
+                    log.warn("No features in type directory {}.", typeDir);
+                else {
+                    try (LineReader tblStream = new LineReader(new File(typeDir, "tbl"))) {
+                        for (String line : tblStream) {
+                            String[] fields = StringUtils.split(line, '\t');
+                            String fid = fields[0];
+                            // Only proceed if the feature is not deleted.
+                            if (! deleted.contains(fid)) {
+                                if (fields.length < 2 || fields[1].isEmpty())
+                                    log.warn("Location missing from feature line {} in {}.", fields[0], typeDir);
+                                else {
+                                    // We need to compute the location from the second column.  We start by
+                                    // parsing the first region to get the contig and strand.
+                                    String[] regions = StringUtils.split(fields[1]);
+                                    Location loc = Location.parseSeedLocation(regions[0]);
+                                    for (int i = 1; i < regions.length; i++) {
+                                        Location locI = Location.parseSeedLocation(regions[i]);
+                                        loc.add(locI);
                                     }
+                                    locationMap.put(fid, loc);
+                                    // If this is aSDomain, the alias is a protein translation. Otherwise,
+                                    // we need to collect the aliases.
+                                    Collection<String> aliases = Collections.emptyList();
+                                    if (asFlag) {
+                                        proteinMap.put(fid, fields[2]);
+                                    } else if (fields.length >= 3) {
+                                        // Otherwise we do the aliases.
+                                        aliases = new ArrayList<String>(fields.length - 2);
+                                        for (int i = 2; i < fields.length; i++) {
+                                            if (! fields[i].isEmpty())
+                                                aliases.add(fields[i]);
+                                        }
+                                    }
+                                    aliasMap.put(fid, aliases);
                                 }
-                                aliasMap.put(fid, aliases);
                             }
                         }
                     }
                 }
-            }
-            // Loop through the features we are keeping.
-            for (Map.Entry<String, Location> featureLocation : locationMap.entrySet()) {
-                String fid = featureLocation.getKey();
-                Location loc = featureLocation.getValue();
-                String function = functionMap.getOrDefault(fid, "");
-                Feature feat = new Feature(fid, function, loc);
-                this.addFeature(feat);
-                // Check for aliases.
-                Collection<String> aliases = aliasMap.get(fid);
-                for (String alias : aliases)
-                    feat.addAlias(alias);
-                // Check for a protein translation.
-                if (proteinMap.containsKey(fid))
-                    feat.setProteinTranslation(proteinMap.get(fid));
-                // Check for protein families.
-                if (lFamilyMap.containsKey(fid))
-                    feat.setPlfam(lFamilyMap.get(fid));
-                if (gFamilyMap.containsKey(fid))
-                    feat.setPgfam(gFamilyMap.get(fid));
-                // Add the feature to the genome.
-                this.addFeature(feat);
+                // Loop through the features we are keeping.
+                for (Map.Entry<String, Location> featureLocation : locationMap.entrySet()) {
+                    String fid = featureLocation.getKey();
+                    Location loc = featureLocation.getValue();
+                    String function = functionMap.getOrDefault(fid, "");
+                    Feature feat = new Feature(fid, function, loc);
+                    this.addFeature(feat);
+                    // Check for aliases.
+                    Collection<String> aliases = aliasMap.get(fid);
+                    for (String alias : aliases)
+                        feat.addAlias(alias);
+                    // Check for a protein translation.
+                    if (proteinMap.containsKey(fid))
+                        feat.setProteinTranslation(proteinMap.get(fid));
+                    // Check for protein families.
+                    if (lFamilyMap.containsKey(fid))
+                        feat.setPlfam(lFamilyMap.get(fid));
+                    if (gFamilyMap.containsKey(fid))
+                        feat.setPgfam(gFamilyMap.get(fid));
+                    // Add the feature to the genome.
+                    this.addFeature(feat);
+                }
             }
         }
     }
