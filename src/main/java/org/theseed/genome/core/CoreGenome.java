@@ -241,7 +241,7 @@ public class CoreGenome extends Genome {
                 if (! tblFile.exists())
                     log.warn("No features in type directory {}.", typeDir);
                 else {
-                    try (LineReader tblStream = new LineReader(new File(typeDir, "tbl"))) {
+                    try (LineReader tblStream = new LineReader(tblFile)) {
                         for (String line : tblStream) {
                             String[] fields = StringUtils.split(line, '\t');
                             String fid = fields[0];
