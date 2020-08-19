@@ -17,7 +17,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.counters.CountMap;
-import org.theseed.genome.Genome;
 import org.theseed.gff.ViprKeywords;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.io.TabbedLineReader.Line;
