@@ -28,7 +28,7 @@ public class GffTest extends TestCase {
      * @throws IOException
      */
     public void testGffReader() throws IOException {
-        try (GffReader reader = new GffReader(new File("src/test", "short.gff"))) {
+        try (GffReader reader = new GffReader(new File("data", "short.gff"))) {
             assertTrue(reader.hasNext());
             GffReader.Line line = reader.next();
             assertThat(line, not(nullValue()));

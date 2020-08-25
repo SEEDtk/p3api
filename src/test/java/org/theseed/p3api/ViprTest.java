@@ -95,8 +95,8 @@ public class ViprTest extends TestCase {
      * @throws IOException
      */
     public void testVirusLoad() throws IOException {
-        File viprGff = new File("src/test", "CVgroup.gff");
-        File viprFasta = new File("src/test", "CVgroup.fasta");
+        File viprGff = new File("data", "CVgroup.gff");
+        File viprFasta = new File("data", "CVgroup.fasta");
         ViprGenome.Builder loader = new ViprGenome.Builder();
         Collection<ViprGenome> viruses = loader.Load(viprGff, viprFasta);
         Set<String> genBankIds = Stream.of("JX993988", "JX993987", "KJ473812", "KJ473811", "KJ473813",

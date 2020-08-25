@@ -217,7 +217,7 @@ public class P3ApiTest extends TestCase
         P3Genome p3genome = P3Genome.Load(p3, "2157.4", P3Genome.Details.FULL);
         assertNull(p3genome);
         // Get the genome from disk and download a copy from PATRIC.
-        Genome gto = new Genome(new File("src/test", "test.gto"));
+        Genome gto = new Genome(new File("data", "test.gto"));
         p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.STRUCTURE_ONLY);
         assertThat(p3genome.getId(), equalTo(gto.getId()));
         assertThat(p3genome.getName(), equalTo(gto.getName()));
@@ -290,7 +290,7 @@ public class P3ApiTest extends TestCase
      * @throws IOException
      */
     public void testCache() throws IOException {
-        File gCache = new File("src/test/cache");
+        File gCache = new File("data/cache");
         // Clean the cache.
         for (File file : gCache.listFiles())
             if (StringUtils.endsWith(file.getName(), ".gto"))

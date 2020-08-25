@@ -28,7 +28,7 @@ public class CoreTest extends TestCase {
      */
     public void testLoad() throws IOException {
         Connection p3 = new Connection();
-        File master = new File("src/test", "core");
+        File master = new File("data", "core");
         OrganismDirectories orgDirs = new OrganismDirectories(master);
         for (String genomeId : orgDirs) {
             File orgDir = new File(master, genomeId);
