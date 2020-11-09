@@ -170,6 +170,8 @@ public class Connection {
     private int timeout;
     /** time of last NCBI query */
     private long lastNcbiQuery;
+    /** NCBI API key */
+    private String apiKey;
 
     // JSON KEY BUFFERS
     private static final KeyBuffer STRING = new KeyBuffer("", "");
@@ -282,6 +284,9 @@ public class Connection {
         this.chunk = 0;
         // Default the timeout.
         this.timeout = DEFAULT_TIMEOUT;
+        // Read the API key.
+        File apiFile = new File(System.getProperty("user.home"), ".ncbi_token");
+        this.apiKey = readToken(apiFile);
         // Denote no NCBI queries yet.
         this.lastNcbiQuery = 0;
         // Turn off the stupid cookie message.
@@ -292,15 +297,27 @@ public class Connection {
      * Initialize a connection for the currently-logged-in user.
      */
     public Connection() {
-        String token = null;
         File tokenFile = new File(System.getProperty("user.home"), ".patric_token");
+        String token = readToken(tokenFile);
+        this.setup(token);
+    }
+
+    /**
+     * Read a security token from a token file.
+     *
+     * @param tokenFile		file containing the token
+     *
+     * @return the token string, or NULL if none was found
+     */
+    protected static String readToken(File tokenFile) {
+        String retVal = null;
         if (tokenFile.canRead()) {
             // If any IO fails, we just operate without a token.
             try (Scanner tokenScanner = new Scanner(tokenFile)) {
-                token = tokenScanner.nextLine();
+                retVal = tokenScanner.nextLine();
             } catch (IOException e) { }
         }
-        this.setup(token);
+        return retVal;
     }
 
     /**
@@ -609,7 +626,14 @@ public class Connection {
     public boolean computeLineage(Genome genome, int taxId) {
         boolean retVal = false;
         // Get the data for this grouping.
-        Request ncbiRequest = Request.Get(String.format(NCBI_TAX_URL, taxId));
+        String url = String.format(NCBI_TAX_URL, taxId);
+        // Handle the NCBI API key.  If we have one, we can do 5 queries a second instead of 2.
+        long speed = 500;
+        if (this.apiKey != null) {
+            url += ";api_key=" + this.apiKey;
+            speed = 200;
+        }
+        Request ncbiRequest = Request.Get(url);
         ncbiRequest.addHeader("Accept", "text/xml");
         ncbiRequest.connectTimeout(this.timeout);
         // We will now try to send the request.
@@ -618,16 +642,16 @@ public class Connection {
         while (tries < MAX_TRIES && taxonDoc == null) {
             // Verify we are not asking NCBI too often.
             long diff = System.currentTimeMillis() - this.lastNcbiQuery;
-            if (diff < 334)
+            if (diff < speed)
                 try {
-                    Thread.sleep(334 - diff);
+                    Thread.sleep(speed - diff);
                     log.debug("NCBI throttle (diff = {}).", diff);
                 } catch (InterruptedException e1) { }
-            this.lastNcbiQuery = System.currentTimeMillis();
             // Now make the request.
             try {
                 tries++;
                 Response resp = ncbiRequest.execute();
+                this.lastNcbiQuery = System.currentTimeMillis();
                 // Check the response.
                 HttpResponse rawResponse = resp.returnResponse();
                 int statusCode = rawResponse.getStatusLine().getStatusCode();

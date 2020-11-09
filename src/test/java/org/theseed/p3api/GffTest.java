@@ -85,7 +85,7 @@ public class GffTest extends TestCase {
         TaxItem item = iter.next();
         assertThat(item.getId(),equalTo(559292));
         assertThat(item.getName(), equalTo("Saccharomyces cerevisiae S288C"));
-        assertThat(item.getRank(), equalTo("no rank"));
+        assertThat(item.getRank(), equalTo("strain"));
         item = iter.next();
         assertThat(item.getId(),equalTo(4932));
         assertThat(item.getName(), equalTo("Saccharomyces cerevisiae"));
