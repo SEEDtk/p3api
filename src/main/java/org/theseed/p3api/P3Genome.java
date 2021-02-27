@@ -92,7 +92,7 @@ public class P3Genome extends Genome {
                 retVal = Load(p3, genome_id, Details.FULL);
                 // Store it in the cache.
                 if (retVal != null)
-                    retVal.update(gFile);
+                    retVal.save(gFile);
             }
         }
         return retVal;
