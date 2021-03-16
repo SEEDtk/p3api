@@ -32,7 +32,7 @@ public class IdClearinghouse {
     protected static Logger log = LoggerFactory.getLogger(IdClearinghouse.class);
 
     /** default URL */
-    private static final String CLEARINGHOUSE_URL = "http://clearinghouse.theseed.org/Clearinghouse/clearinghouse_services.cgi";
+    private static final String CLEARINGHOUSE_URL = "https://clearinghouse.theseed.org/Clearinghouse/clearinghouse_services.cgi";
 
     /** XML prefix */
     private static final String REQUEST_PREFIX = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:soapenc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"><soap:Body><register_genome xmlns=\"http://www.soaplite.com/Scripts\"><c-gensym3 xsi:type=\"xsd:int\">";
