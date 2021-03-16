@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.theseed.io.TabbedLineReader;
@@ -30,6 +31,8 @@ public class MultiDirectoryTest {
     @Test
     public void testCreate() throws IOException {
         File newDir = new File("data", "newMaster");
+        if (! newDir.isDirectory())
+            FileUtils.forceMkdir(newDir);
         // Here we expect an exception.
         try {
             GenomeMultiDirectory.create(newDir, false);
