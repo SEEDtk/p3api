@@ -1,14 +1,13 @@
 /**
  *
  */
-package org.theseed.p3api;
+package org.theseed.genome.core;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.theseed.genome.Genome;
-import org.theseed.genome.core.CoreGenome;
-import org.theseed.genome.core.OrganismDirectories;
+import org.theseed.p3api.Connection;
 
 import junit.framework.TestCase;
 

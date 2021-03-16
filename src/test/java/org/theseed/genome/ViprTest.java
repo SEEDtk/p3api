@@ -1,7 +1,7 @@
 /**
  *
  */
-package org.theseed.p3api;
+package org.theseed.genome;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -19,10 +19,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
-import org.theseed.genome.Feature;
-import org.theseed.genome.ViprGenome;
 import org.theseed.gff.ViprKeywords;
 import org.theseed.locations.Location;
+import org.theseed.p3api.IdClearinghouse;
 import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.Sequence;
 

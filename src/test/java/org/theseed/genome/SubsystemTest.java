@@ -1,7 +1,7 @@
 /**
  *
  */
-package org.theseed.p3api;
+package org.theseed.genome;
 
 import junit.framework.TestCase;
 import static org.hamcrest.Matchers.*;
@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.theseed.genome.Feature;
-import org.theseed.genome.SubsystemRow;
-
+import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Genome;
+import org.theseed.p3api.P3SubsystemProjector;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
