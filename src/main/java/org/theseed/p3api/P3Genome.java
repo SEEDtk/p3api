@@ -57,6 +57,8 @@ public class P3Genome extends Genome {
     /** JsonKeys for extracting sequences */
     private static final KeyBuffer AA_MD5 = new KeyBuffer("aa_sequence_md5", "");
     private static final KeyBuffer AA_SEQUENCE = new KeyBuffer("sequence", "");
+    private static final KeyBuffer NA_MD5 = new KeyBuffer("na_sequence_md5", "");
+    private static final KeyBuffer NA_SEQUENCE = new KeyBuffer("sequence", "");
 
     /**
      * Construct an empty genome object/
@@ -144,7 +146,7 @@ public class P3Genome extends Genome {
             // Process the features if we want them.
             if (detail.includesFeatures()) {
                 Collection<JsonObject> fidList = p3.query(Table.FEATURE,
-                        "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,plfam_id,pgfam_id,gi,gene,gene_id,refseq_locus_tag,go",
+                        "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,na_sequence_md5,plfam_id,pgfam_id,gi,gene,gene_id,refseq_locus_tag,go",
                         Criterion.EQ("genome_id", genome_id), Criterion.EQ("annotation", "PATRIC"));
                 // Set up for protein sequences if we want them.
                 boolean wantSequences = detail.includesProteins();
@@ -153,6 +155,8 @@ public class P3Genome extends Genome {
                     Collection<String> md5Keys = fidList.stream().map(x -> x.getStringOrDefault(AA_MD5)).filter(x -> ! x.isEmpty()).collect(Collectors.toList());
                     proteins = p3.getRecords(Table.SEQUENCE, md5Keys, "sequence");
                 }
+                // Assume until we prove otherwise that we don't have an SSU rRNA in this genome.
+                String ssuRRna = "";
                 // Store the features.  Note we skip the ones with empty IDs.
                 for (JsonObject fid : fidList) {
                     String id = Connection.getString(fid, "patric_id");
@@ -172,17 +176,34 @@ public class P3Genome extends Genome {
                         String[] goTermList = Connection.getStringList(fid, "go");
                         for (String goString : goTermList)
                             feat.addGoTerm(goString);
-                        // Check to see if we are storing the protein translation.
-                        JsonObject protein = null;
-                        if (wantSequences) {
-                            // Here we are storing protein translations for all the features that have them.
-                            protein = proteins.get(fid.getStringOrDefault(AA_MD5));
-                        } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
-                            // We always store the PheS protein.
-                            protein = p3.getRecord(Table.SEQUENCE, fid.getString(AA_MD5), "sequence");
+                        // Process the translation according to the feature type.
+                        switch (feat.getType()) {
+                        case "CDS" :
+                            // This is a protein. Check to see if we are storing the protein translation.
+                            JsonObject protein = null;
+                            if (wantSequences) {
+                                // Here we are storing protein translations for all the features that have them.
+                                protein = proteins.get(fid.getStringOrDefault(AA_MD5));
+                            } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
+                                // We always store the PheS protein.
+                                protein = p3.getRecord(Table.SEQUENCE, fid.getString(AA_MD5), "sequence");
+                            }
+                            if (protein != null)
+                                feat.setProteinTranslation(protein.getStringOrDefault(AA_SEQUENCE));
+                            break;
+                        case "rna" :
+                            // This is an RNA.  Check for the SSU rRNA.
+                            if (feat.getLocation().getLength() > ssuRRna.length() &&
+                                    Genome.SSU_R_RNA.matcher(feat.getPegFunction()).find()) {
+                                // We need the nucleotide sequence of this RNA feature.
+                                JsonObject dnaSeq = p3.getRecord(Table.SEQUENCE, fid.getString(NA_MD5), "sequence");
+                                if (dnaSeq != null)
+                                    ssuRRna = dnaSeq.getStringOrDefault(NA_SEQUENCE);
+                            }
+                            break;
                         }
-                        if (protein != null)
-                            feat.setProteinTranslation(protein.getStringOrDefault(AA_SEQUENCE));
+                        // Store the SSU rRNA.
+                        retVal.setSsuRRna(ssuRRna);
                         // Store the feature.
                         retVal.addFeature(feat);
                     }

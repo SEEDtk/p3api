@@ -254,10 +254,20 @@ public class P3ApiTest extends TestCase
             assertThat(p3contig.getAccession(), equalTo(contig.getAccession()));
             assertThat(p3contig.getDescription(), equalTo(contig.getDescription()));
         }
+        // Special check for SSU rRNA.
+        String ssu = p3genome.getSsuRRna();
+        assertThat(ssu, not(emptyString()));
+        assertThat(ssu, equalTo(gto.getSsuRRna()));
         // Special check for the pheS protein.
         Feature p3seedFid = p3genome.getFeature("fig|243277.26.peg.1166");
         Feature seedFid = p3genome.getFeature("fig|243277.26.peg.1166");
         assertThat(p3seedFid.getProteinTranslation(), equalTo(seedFid.getProteinTranslation()));
+        // Test save and restore.
+        File tempFile = new File("data", "p3gto.ser");
+        p3genome.save(tempFile);
+        Genome gto2 = new Genome(tempFile);
+        assertThat(gto2.getSsuRRna(), equalTo(gto.getSsuRRna()));
+        assertThat(gto2.getName(), equalTo(gto.getName()));
         // Now boost the level to PROTEINS.
         p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.PROTEINS);
         Collection<Feature> pegs = gto.getPegs();
@@ -282,6 +292,15 @@ public class P3ApiTest extends TestCase
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
+    }
+
+    /***
+     * test special SSU RRNA situations
+     */
+    public void testSsuMissing() {
+        Connection p3 = new Connection();
+        P3Genome p3Genome = P3Genome.Load(p3, "1262806.3", P3Genome.Details.STRUCTURE_ONLY);
+        assertThat(p3Genome.getSsuRRna(), emptyString());
     }
 
     /**
