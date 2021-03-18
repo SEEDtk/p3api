@@ -109,13 +109,17 @@ public class GenomeMultiDirectory implements Iterable<Genome> {
                 File[] gtoFiles = subDir.listFiles(FILE_FILTER);
                 for (File gtoFile : gtoFiles) {
                     String genomeId = StringUtils.substring(gtoFile.getName(), 0, -EXTENSION.length());
-                    this.gtoMap.put(genomeId, gtoFile);
+                    // If there is a duplicate, choose the most recent.
+                    File oldFile = this.gtoMap.get(genomeId);
+                    if (oldFile == null || gtoFile.lastModified() > oldFile.lastModified())
+                        this.gtoMap.put(genomeId, gtoFile);
                 }
                 if (dirNum > newDirNum) {
                     newDir = subDir;
                     newDirNum = dirNum;
                     newDirSize = gtoFiles.length;
                 }
+                log.debug("{} genomes found.", this.gtoMap.size());
             } catch (NumberFormatException e) {
                 log.warn("Skipping unexpected subdirectory {}.", subDir);
             }
@@ -174,8 +178,11 @@ public class GenomeMultiDirectory implements Iterable<Genome> {
             this.newDirSize = 0;
             FileUtils.forceMkdir(this.newDir);
         }
+        // Check for an existing version.
         String genomeId = genome.getId();
-        File gFile = new File(this.newDir, genomeId + EXTENSION);
+        File gFile = this.gtoMap.get(genomeId);
+        if (gFile == null)
+            gFile = new File(this.newDir, genomeId + EXTENSION);
         // Note we write using GZIP compression.
         try (FileOutputStream outStream = new FileOutputStream(gFile);
                 GZIPOutputStream zipStream = new GZIPOutputStream(outStream);
