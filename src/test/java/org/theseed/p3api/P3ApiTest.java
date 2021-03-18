@@ -214,11 +214,11 @@ public class P3ApiTest extends TestCase
     public void testP3Genome() throws NumberFormatException, IOException {
         Connection p3 = new Connection();
         // Verify we get null for nonexistent genomes.  2157 is a kingdom taxon, so it will never be on a genome ID.
-        P3Genome p3genome = P3Genome.Load(p3, "2157.4", P3Genome.Details.FULL);
+        P3Genome p3genome = P3Genome.load(p3, "2157.4", P3Genome.Details.FULL);
         assertNull(p3genome);
         // Get the genome from disk and download a copy from PATRIC.
         Genome gto = new Genome(new File("data", "test.gto"));
-        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.STRUCTURE_ONLY);
+        p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.STRUCTURE_ONLY);
         assertThat(p3genome.getId(), equalTo(gto.getId()));
         assertThat(p3genome.getName(), equalTo(gto.getName()));
         assertThat(p3genome.getDomain(), equalTo(gto.getDomain()));
@@ -269,7 +269,7 @@ public class P3ApiTest extends TestCase
         assertThat(gto2.getSsuRRna(), equalTo(gto.getSsuRRna()));
         assertThat(gto2.getName(), equalTo(gto.getName()));
         // Now boost the level to PROTEINS.
-        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.PROTEINS);
+        p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.PROTEINS);
         Collection<Feature> pegs = gto.getPegs();
         for (Feature fid : pegs) {
             Feature p3fid = p3genome.getFeature(fid.getId());
@@ -277,14 +277,14 @@ public class P3ApiTest extends TestCase
         }
         assertFalse(p3genome.hasContigs());
         // Now, FULL level.
-        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.FULL);
+        p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.FULL);
         for (Contig contig : contigs) {
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
         assertTrue(p3genome.hasContigs());
         // Finally, CONTIGS level.
-        p3genome = P3Genome.Load(p3, gto.getId(), P3Genome.Details.CONTIGS);
+        p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.CONTIGS);
         assertTrue(p3genome.hasContigs());
         Collection<Feature> fids = p3genome.getFeatures();
         assertThat(fids.size(), equalTo(0));
@@ -299,7 +299,7 @@ public class P3ApiTest extends TestCase
      */
     public void testSsuMissing() {
         Connection p3 = new Connection();
-        P3Genome p3Genome = P3Genome.Load(p3, "1262806.3", P3Genome.Details.STRUCTURE_ONLY);
+        P3Genome p3Genome = P3Genome.load(p3, "1262806.3", P3Genome.Details.STRUCTURE_ONLY);
         assertThat(p3Genome.getSsuRRna(), emptyString());
     }
 
@@ -316,11 +316,11 @@ public class P3ApiTest extends TestCase
                     file.delete();
         // Read in a random genome.
         Connection p3 = new Connection();
-        Genome g1 = P3Genome.Load(p3, "324602.8", Details.FULL, gCache);
+        Genome g1 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
         assertNotNull(g1);
         assertTrue(g1 instanceof P3Genome);
         assertThat(g1.getId(), equalTo("324602.8"));
-        Genome g2 = P3Genome.Load(p3, "324602.8", Details.FULL, gCache);
+        Genome g2 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
         assertFalse(g2 instanceof P3Genome);
         for (Feature feat : g1.getPegs()) {
             Feature feat2 = g2.getFeature(feat.getId());

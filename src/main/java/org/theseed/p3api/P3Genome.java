@@ -79,11 +79,11 @@ public class P3Genome extends Genome {
      *
      * @throws IOException
      */
-    public static Genome Load(Connection p3, String genome_id, Details detail, File cache) throws IOException {
+    public static Genome load(Connection p3, String genome_id, Details detail, File cache) throws IOException {
         // If there is no cache, we simply call through to the API method.
         Genome retVal = null;
         if (cache == null) {
-            retVal = Load(p3, genome_id, detail);
+            retVal = load(p3, genome_id, detail);
         } else {
             // Check the cache.
             File gFile = new File(cache, genome_id + ".gto");
@@ -91,7 +91,7 @@ public class P3Genome extends Genome {
                 retVal = new Genome(gFile);
             } else {
                 // Not in the cache.  Download the full genome.
-                retVal = Load(p3, genome_id, Details.FULL);
+                retVal = load(p3, genome_id, Details.FULL);
                 // Store it in the cache.
                 if (retVal != null)
                     retVal.save(gFile);
@@ -109,7 +109,7 @@ public class P3Genome extends Genome {
      *
      * @return the genome object, or NULL if the genome does not exist
      */
-    public static P3Genome Load(Connection p3, String genome_id, Details detail) {
+    public static P3Genome load(Connection p3, String genome_id, Details detail) {
         P3Genome retVal = null;
         long start = System.currentTimeMillis();
         // Start by getting the genome-level data.

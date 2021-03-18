@@ -17,9 +17,13 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.theseed.genome.iterator.GenomeSource;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.p3api.Connection;
 import org.theseed.p3api.P3Genome;
+import org.theseed.utils.ParseFailureException;
 
 /**
  *
@@ -28,8 +32,12 @@ import org.theseed.p3api.P3Genome;
  */
 public class MultiDirectoryTest {
 
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(MultiDirectoryTest.class);
+
+
     @Test
-    public void testCreate() throws IOException {
+    public void testCreate() throws IOException, ParseFailureException {
         File newDir = new File("data", "newMaster");
         if (! newDir.isDirectory())
             FileUtils.forceMkdir(newDir);
@@ -49,12 +57,16 @@ public class MultiDirectoryTest {
         Connection p3 = new Connection();
         Map<String, Genome> saved = new HashMap<String, Genome>(gList.size());
         for (String genomeId : gList) {
-            Genome genome = P3Genome.Load(p3, genomeId, P3Genome.Details.STRUCTURE_ONLY);
+            Genome genome = P3Genome.load(p3, genomeId, P3Genome.Details.STRUCTURE_ONLY);
             multiDir.add(genome);
             saved.put(genomeId, genome);
         }
         assertThat(multiDir.size(), equalTo(gList.size()));
         for (Genome genome : multiDir)
+            checkSaved(saved, genome);
+        GenomeSource sourceDir = GenomeSource.Type.MASTER.create(newDir);
+        assertThat(sourceDir.size(), equalTo(gList.size()));
+        for (Genome genome : sourceDir)
             checkSaved(saved, genome);
         Genome genome1 = multiDir.get("904345.3");
         checkSaved(saved, genome1);
@@ -93,6 +105,33 @@ public class MultiDirectoryTest {
             assertThat(genome.getId(), not(equalTo(lastGID)));
         }
 
+    }
+
+    /**
+     * Test the other genome sources.
+     *
+     * @throws IOException
+     * @throws ParseFailureException
+     */
+    @Test
+    public void genomeSourceTest() throws IOException, ParseFailureException {
+        // Read the test genome directory.
+        File gtDir = new File("data", "gto_test");
+        GenomeDirectory base = new GenomeDirectory(gtDir);
+        Map<String, Genome> saved = new HashMap<String, Genome>();
+        for (Genome genome : base)
+            saved.put(genome.getId(), genome);
+        // Now verify it against the same directory as a source.
+        GenomeSource.Type[] types = new GenomeSource.Type[] { GenomeSource.Type.DIR, GenomeSource.Type.PATRIC };
+        File[] files = new File[] { gtDir, new File("data/gto_test", "pList.tbl") };
+        for (int i = 0; i < types.length; i++) {
+            String label = types[i].toString();
+            log.info("Processing source type {}.", label);
+            GenomeSource source = types[i].create(files[i]);
+            assertThat(label, source.size(), equalTo(saved.size()));
+            for (Genome genome : source)
+                checkSaved(saved, genome);
+        }
     }
 
     /**

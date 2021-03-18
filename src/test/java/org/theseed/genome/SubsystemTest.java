@@ -29,7 +29,7 @@ public class SubsystemTest extends TestCase {
         Connection p3 = new Connection();
         P3SubsystemProjector projector = new P3SubsystemProjector(p3);
         assertThat("A", equalTo("A"));
-        P3Genome testGenome = P3Genome.Load(p3, "1313.7001", P3Genome.Details.PROTEINS);
+        P3Genome testGenome = P3Genome.load(p3, "1313.7001", P3Genome.Details.PROTEINS);
         projector.project(testGenome);
         Collection<SubsystemRow> subsystems = testGenome.getSubsystems();
         assertThat(subsystems.size(), equalTo(200));
