@@ -12,6 +12,7 @@ import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.zip.GZIPInputStream;
@@ -200,6 +201,13 @@ public class GenomeMultiDirectory implements Iterable<Genome> {
     }
 
     /**
+     * @return an iterator through this object's genome IDs
+     */
+    public Iterator<String> idIterator() {
+        return this.gtoMap.keySet().iterator();
+    }
+
+    /**
      * This is the class for iterating through the genomes.  It supports removal; however,
      * adding a genome during iteration will cause a ConcurrentMapException.
      */
@@ -308,5 +316,12 @@ public class GenomeMultiDirectory implements Iterable<Genome> {
      protected int getLastDirSize() {
          return this.newDirSize;
      }
+
+    /**
+     * @return the full set of available genome IDs
+     */
+    public Set<String> getIDs() {
+        return this.gtoMap.keySet();
+    }
 
 }

@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -115,15 +116,19 @@ public class MultiDirectoryTest {
      */
     @Test
     public void genomeSourceTest() throws IOException, ParseFailureException {
-        // Read the test genome directory.
+        // Read the test genome directory and copy it to a master.
         File gtDir = new File("data", "gto_test");
+        File mDir = new File("data", "newMaster");
         GenomeDirectory base = new GenomeDirectory(gtDir);
+        GenomeMultiDirectory master = GenomeMultiDirectory.create(mDir, true);
         Map<String, Genome> saved = new HashMap<String, Genome>();
-        for (Genome genome : base)
+        for (Genome genome : base) {
             saved.put(genome.getId(), genome);
+            master.add(genome);
+        }
         // Now verify it against the same directory as a source.
-        GenomeSource.Type[] types = new GenomeSource.Type[] { GenomeSource.Type.DIR, GenomeSource.Type.PATRIC };
-        File[] files = new File[] { gtDir, new File("data/gto_test", "pList.tbl") };
+        GenomeSource.Type[] types = new GenomeSource.Type[] { GenomeSource.Type.MASTER, GenomeSource.Type.DIR, GenomeSource.Type.PATRIC };
+        File[] files = new File[] { mDir, gtDir, new File("data/gto_test", "pList.tbl") };
         for (int i = 0; i < types.length; i++) {
             String label = types[i].toString();
             log.info("Processing source type {}.", label);
@@ -132,6 +137,25 @@ public class MultiDirectoryTest {
             for (Genome genome : source)
                 checkSaved(saved, genome);
         }
+        // Do it again with filtering.
+        Set<String> badGenomes = new TreeSet<String>();
+        badGenomes.add("1079.16");
+        badGenomes.add("1206109.5");
+        badGenomes.add("83333.1");
+        for (int i = 0; i < types.length; i++) {
+            String label = types[i].toString();
+            log.info("Processing source type {}.", label);
+            GenomeSource source = types[i].create(files[i]);
+            source.setSkipSet(badGenomes);
+            assertThat(label, source.size(), equalTo(saved.size() - 2));
+            for (Genome genome : source) {
+                assertThat(genome.toString(), badGenomes.contains(genome.getId()), isFalse());
+                checkSaved(saved, genome);
+            }
+        }
+
+
+
     }
 
     /**
