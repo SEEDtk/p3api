@@ -196,9 +196,12 @@ public class P3Genome extends Genome {
                             if (feat.getLocation().getLength() > ssuRRna.length() &&
                                     Genome.SSU_R_RNA.matcher(feat.getPegFunction()).find()) {
                                 // We need the nucleotide sequence of this RNA feature.
-                                JsonObject dnaSeq = p3.getRecord(Table.SEQUENCE, fid.getString(NA_MD5), "sequence");
-                                if (dnaSeq != null)
-                                    ssuRRna = dnaSeq.getStringOrDefault(NA_SEQUENCE);
+                                String na_md5 = fid.getString(NA_MD5);
+                                if (na_md5 != null && ! na_md5.isEmpty()) {
+                                    JsonObject dnaSeq = p3.getRecord(Table.SEQUENCE, fid.getString(NA_MD5), "sequence");
+                                    if (dnaSeq != null)
+                                        ssuRRna = dnaSeq.getStringOrDefault(NA_SEQUENCE);
+                                }
                             }
                             break;
                         }
