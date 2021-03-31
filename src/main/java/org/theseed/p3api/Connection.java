@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -69,6 +70,9 @@ public class Connection {
 
     /** default timeout interval in milliseconds */
     private static final int DEFAULT_TIMEOUT = 3 * 60 * 1000;
+
+    /** list of domains for prokaryotes */
+    public static final List<String> DOMAINS = Arrays.asList("Bacteria", "Archaea");
 
     /**
      * description of the major SOLR tables
@@ -749,4 +753,13 @@ public class Connection {
         return retVal;
     }
 
+    /**
+     * Put the ID and name of every public, prokaryotic genomes in PATRIC into the specified collection.
+     *
+     * @param genomes	collection to contain the genome list.
+     */
+    public void addAllProkaryotes(Collection<JsonObject> genomes) {
+        genomes.addAll(this.getRecords(Table.GENOME, "kingdom", DOMAINS, "genome_id,genome_name", Criterion.EQ("public", "1"),
+                Criterion.NE("genome_status", "Plasmid")));
+    }
 }
