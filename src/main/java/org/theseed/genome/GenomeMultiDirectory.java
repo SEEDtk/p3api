@@ -289,7 +289,7 @@ public class GenomeMultiDirectory implements Iterable<Genome> {
         try (FileInputStream inStream = new FileInputStream(gFile);
                 GZIPInputStream zipStream = new GZIPInputStream(inStream);
                 LineReader reader = new LineReader(zipStream)) {
-                retVal = Genome.fromJson(reader.next());
+            retVal = Genome.fromJson(reader.next());
         }
         return retVal;
     }
