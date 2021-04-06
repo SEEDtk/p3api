@@ -18,7 +18,12 @@ public enum GenomeTargetType {
     MASTER {
         @Override
         public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
-            return GenomeMultiDirectory.create(directory, clearFlag);
+            GenomeMultiDirectory retVal;
+            if (clearFlag)
+                retVal = GenomeMultiDirectory.create(directory, true);
+            else
+                retVal = new GenomeMultiDirectory(directory);
+            return retVal;
         }
     }, DIR {
         @Override

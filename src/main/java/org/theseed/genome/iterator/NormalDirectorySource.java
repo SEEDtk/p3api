@@ -59,7 +59,7 @@ public class NormalDirectorySource extends GenomeSource implements IGenomeTarget
     }
 
     @Override
-    protected Set<String> getIDs() {
+    public Set<String> getIDs() {
         return source.getGenomeIDs();
     }
 

@@ -105,7 +105,7 @@ public class PatricFileSource extends GenomeSource {
     }
 
     @Override
-    protected Set<String> getIDs() {
+    public Set<String> getIDs() {
         return this.genomeIDs;
     }
 

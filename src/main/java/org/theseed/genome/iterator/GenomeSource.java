@@ -63,9 +63,9 @@ public abstract class GenomeSource implements Iterable<Genome> {
     protected abstract void validate(File inFile) throws IOException, ParseFailureException;
 
     /**
-     * @return the number of genomes at the source
+     * @return the list of genomes at the source
      */
-    protected abstract Set<String> getIDs();
+    public abstract Set<String> getIDs();
 
     /**
      * @return the size of this set
@@ -93,6 +93,15 @@ public abstract class GenomeSource implements Iterable<Genome> {
      * @throws IOException
      */
     protected abstract Genome getGenome(String genomeId, P3Genome.Details level);
+
+    /**
+     * @return the genome withbthe specified ID, or NULL if it is not available
+     *
+     * @param genomeId	ID of the desired genome
+     */
+    public Genome getGenome(String genomeId) {
+        return this.getGenome(genomeId, P3Genome.Details.FULL);
+    }
 
     /**
      * Specify a set of genome IDs to be skipped.
