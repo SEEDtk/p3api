@@ -23,6 +23,7 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.genome.iterator.IGenomeTarget;
 import org.theseed.io.LineReader;
 
 /**
@@ -41,7 +42,7 @@ import org.theseed.io.LineReader;
  * @author Bruce Parrello
  *
  */
-public class GenomeMultiDirectory implements Iterable<Genome> {
+public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
 
     // FIELDS
     /** logging facility */
@@ -168,6 +169,7 @@ public class GenomeMultiDirectory implements Iterable<Genome> {
 
     /**
      * Add a genome to the directories.  Note we write it in compressed format.
+     * If the genome already exists, it will be overwritten.
      *
      * @param gto	genome to add
      */

@@ -9,20 +9,25 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.genome.Genome;
 import org.theseed.genome.GenomeDirectory;
 import org.theseed.p3api.P3Genome.Details;
 import org.theseed.utils.ParseFailureException;
 
 /**
- * This allows the client to iterate over a standard single-level genome directory.
+ * This allows the client to iterate over or store into a standard single-level genome directory.
  *
  * @author Bruce Parrello
  *
  */
-public class NormalDirectorySource extends GenomeSource {
+public class NormalDirectorySource extends GenomeSource implements IGenomeTarget {
 
     // FIELDS
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(NormalDirectorySource.class);
     /** genome directory to iterate over */
     private GenomeDirectory source;
 
@@ -56,6 +61,39 @@ public class NormalDirectorySource extends GenomeSource {
     @Override
     protected Set<String> getIDs() {
         return source.getGenomeIDs();
+    }
+
+    @Override
+    public boolean contains(String genomeId) {
+        return this.source.contains(genomeId);
+    }
+
+    @Override
+    public void add(Genome genome) throws IOException {
+        this.source.store(genome);
+    }
+
+    /**
+     * Create a normal genome directory, optionally clearing existing files.
+     *
+     * @param directory		file name of directory
+     * @param clearFlag		TRUE to erase existing files
+     *
+     * @return the genome directory source created
+     *
+     * @throws IOException
+     */
+    public static NormalDirectorySource create(File directory, boolean clearFlag) throws IOException {
+        if (! directory.isDirectory()) {
+            log.info("Creating new genome directory {}.", directory);
+            FileUtils.forceMkdir(directory);
+        } else if (clearFlag) {
+            log.info("Erasing genome directory {}.", directory);
+            FileUtils.cleanDirectory(directory);
+        }
+        NormalDirectorySource retVal = new NormalDirectorySource();
+        retVal.init(directory);
+        return retVal;
     }
 
 
