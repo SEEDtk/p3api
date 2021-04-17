@@ -93,12 +93,13 @@ public class CopyTask extends CliTask {
      * Copy a remote directory to a temporary local location and return a file list.
      *
      * @param sourceFolder		full name of the source folder
+     * @param keep				if TRUE, the local folder will not be deleted on exit
      *
      * @return a list of file objects for the temporary files copied
      *
      * @throws IOException
      */
-    public File[] copyRemoteFolder(String sourceFolder) throws IOException {
+    public File[] copyRemoteFolder(String sourceFolder, boolean keep) throws IOException {
         // Extract the name of the folder.  Note this is a remote folder so there's no ambiguity about the
         // directory separator.
         String baseName = StringUtils.substringAfterLast(sourceFolder, "/");
@@ -116,7 +117,8 @@ public class CopyTask extends CliTask {
         if (! tempDir.isDirectory())
             throw new RuntimeException("PATRIC copy command for " + sourceFolder + " failed to create directory.");
         // Insure the target directory is deleted when we're done.
-        FileUtils.forceDeleteOnExit(tempDir);
+        if (! keep)
+            FileUtils.forceDeleteOnExit(tempDir);
         // Get the files copied.
         File[] retVal = tempDir.listFiles();
         return retVal;
