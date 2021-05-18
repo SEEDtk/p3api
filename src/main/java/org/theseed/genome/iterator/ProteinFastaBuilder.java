@@ -1,3 +1,4 @@
+
 /**
  *
  */
@@ -57,7 +58,7 @@ public class ProteinFastaBuilder implements IGenomeTarget {
             // Create the genome map.  Note that we use a tree map so that the output file is ordered by genome ID.
             this.fileMap = new TreeMap<String, File>();
             // Create the temporary directory.
-            Path dirPath = fastaFile.getParentFile().toPath();
+            Path dirPath = fastaFile.getAbsoluteFile().getParentFile().toPath();
             this.tempDir = Files.createTempDirectory(dirPath, "fasta").toFile();
             if (fastaFile.exists() && ! clearFlag) {
                 // Here we want to preserve the genomes already in the file.  We presume that we created the file, which
