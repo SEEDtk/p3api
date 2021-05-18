@@ -327,7 +327,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
     }
 
     @Override
-    public void close() {
+    public void finish() {
     }
 
 }

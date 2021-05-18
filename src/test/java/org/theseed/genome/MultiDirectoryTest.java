@@ -47,68 +47,65 @@ public class MultiDirectoryTest {
             GenomeMultiDirectory.create(newDir, false);
             assertThat("Missing IO exception.", false);
         } catch (IOException e) { }
-        Set<String> gList;
-        Map<String, Genome> saved;
-        try (GenomeMultiDirectory multiDir = GenomeMultiDirectory.create(newDir, true)) {
-            assertThat(multiDir.size(), equalTo(0));
-            // Create an artifically small directory limit.
-            GenomeMultiDirectory.MAX_FILES_PER_DIRECTORY = 10;
-            // Get a list of PATRIC genomes.
-            gList = TabbedLineReader.readSet(new File("data", "glist.txt"), "genome_id");
-            assertThat(gList.size(), greaterThan(10));
-            // Connect to PATRIC and add the genomes.
-            Connection p3 = new Connection();
-            saved = new HashMap<String, Genome>(gList.size());
-            for (String genomeId : gList) {
-                Genome genome = P3Genome.load(p3, genomeId, P3Genome.Details.STRUCTURE_ONLY);
-                multiDir.add(genome);
-                saved.put(genomeId, genome);
-            }
-            assertThat(multiDir.size(), equalTo(gList.size()));
-            for (Genome genome : multiDir)
-                checkSaved(saved, genome);
-            GenomeSource sourceDir = GenomeSource.Type.MASTER.create(newDir);
-            assertThat(sourceDir.size(), equalTo(gList.size()));
-            for (Genome genome : sourceDir)
-                checkSaved(saved, genome);
-            Genome genome1 = multiDir.get("904345.3");
-            checkSaved(saved, genome1);
-            genome1 = multiDir.get("83333.1");
-            assertThat(genome1, nullValue());
-            assertThat(multiDir.contains("904345.3"), isTrue());
-            assertThat(multiDir.contains("83333.1"), isFalse());
+        GenomeMultiDirectory multiDir = GenomeMultiDirectory.create(newDir, true);
+        assertThat(multiDir.size(), equalTo(0));
+        // Create an artifically small directory limit.
+        GenomeMultiDirectory.MAX_FILES_PER_DIRECTORY = 10;
+        // Get a list of PATRIC genomes.
+        Set<String> gList = TabbedLineReader.readSet(new File("data", "glist.txt"), "genome_id");
+        assertThat(gList.size(), greaterThan(10));
+        // Connect to PATRIC and add the genomes.
+        Connection p3 = new Connection();
+        Map<String, Genome> saved = new HashMap<String, Genome>(gList.size());
+        for (String genomeId : gList) {
+            Genome genome = P3Genome.load(p3, genomeId, P3Genome.Details.STRUCTURE_ONLY);
+            multiDir.add(genome);
+            saved.put(genomeId, genome);
         }
+        assertThat(multiDir.size(), equalTo(gList.size()));
+        for (Genome genome : multiDir)
+            checkSaved(saved, genome);
+        GenomeSource sourceDir = GenomeSource.Type.MASTER.create(newDir);
+        assertThat(sourceDir.size(), equalTo(gList.size()));
+        for (Genome genome : sourceDir)
+            checkSaved(saved, genome);
+        Genome genome1 = multiDir.get("904345.3");
+        checkSaved(saved, genome1);
+        genome1 = multiDir.get("83333.1");
+        assertThat(genome1, nullValue());
+        assertThat(multiDir.contains("904345.3"), isTrue());
+        assertThat(multiDir.contains("83333.1"), isFalse());
         // Reload the multi-directory.  This time we will delete during iteration.
-        try (GenomeMultiDirectory multiDir = new GenomeMultiDirectory(newDir)) {
-            assertThat(multiDir.size(), equalTo(gList.size()));
-            Iterator<Genome> gIter = multiDir.iterator();
-            String lastGID = "";
-            while (gIter.hasNext()) {
-                Genome genome = gIter.next();
-                String gid = genome.getId();
-                assertThat(gid, greaterThan(lastGID));
-                lastGID = gid;
-                if (gid.contentEquals("904345.3")) {
-                    gIter.remove();
-                    assertThat(multiDir.contains("904345.3"), isFalse());
-                    assertThat(multiDir.size(), equalTo(gList.size() - 1));
-                } else
-                    checkSaved(saved, genome);
-            }
-            File lastDir = multiDir.getLastDir();
-            File[] lastFiles = lastDir.listFiles();
-            assertThat(multiDir.getLastDirSize(), equalTo(lastFiles.length));
-            lastGID = StringUtils.substring(lastFiles[0].getName(), 0, -GenomeMultiDirectory.EXTENSION.length());
-            assertThat(multiDir.contains(lastGID), isTrue());
-            multiDir.remove(lastGID);
-            assertThat(multiDir.contains(lastGID), isFalse());
-            assertThat(multiDir.getLastDirSize(), equalTo(lastFiles.length - 1));
-            assertThat(multiDir.getLastDir(), equalTo(lastDir));
-            assertThat(multiDir.size(), equalTo(gList.size() - 2));
-            for (Genome genome : multiDir) {
-                assertThat(genome.getId(), not(equalTo(lastGID)));
-            }
+        multiDir = new GenomeMultiDirectory(newDir);
+        assertThat(multiDir.size(), equalTo(gList.size()));
+        Iterator<Genome> gIter = multiDir.iterator();
+        String lastGID = "";
+        while (gIter.hasNext()) {
+            Genome genome = gIter.next();
+            String gid = genome.getId();
+            assertThat(gid, greaterThan(lastGID));
+            lastGID = gid;
+            if (gid.contentEquals("904345.3")) {
+                gIter.remove();
+                assertThat(multiDir.contains("904345.3"), isFalse());
+                assertThat(multiDir.size(), equalTo(gList.size() - 1));
+            } else
+                checkSaved(saved, genome);
         }
+        File lastDir = multiDir.getLastDir();
+        File[] lastFiles = lastDir.listFiles();
+        assertThat(multiDir.getLastDirSize(), equalTo(lastFiles.length));
+        lastGID = StringUtils.substring(lastFiles[0].getName(), 0, -GenomeMultiDirectory.EXTENSION.length());
+        assertThat(multiDir.contains(lastGID), isTrue());
+        multiDir.remove(lastGID);
+        assertThat(multiDir.contains(lastGID), isFalse());
+        assertThat(multiDir.getLastDirSize(), equalTo(lastFiles.length - 1));
+        assertThat(multiDir.getLastDir(), equalTo(lastDir));
+        assertThat(multiDir.size(), equalTo(gList.size() - 2));
+        for (Genome genome : multiDir) {
+            assertThat(genome.getId(), not(equalTo(lastGID)));
+        }
+
     }
 
     /**

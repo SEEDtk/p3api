@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -56,7 +57,8 @@ public class ProteinFastaBuilder implements IGenomeTarget {
             // Create the genome map.  Note that we use a tree map so that the output file is ordered by genome ID.
             this.fileMap = new TreeMap<String, File>();
             // Create the temporary directory.
-            this.tempDir = Files.createTempDirectory("fasta").toFile();
+            Path dirPath = fastaFile.getParentFile().toPath();
+            this.tempDir = Files.createTempDirectory(dirPath, "fasta").toFile();
             if (fastaFile.exists() && ! clearFlag) {
                 // Here we want to preserve the genomes already in the file.  We presume that we created the file, which
                 // means that it is sorted in genome order.  If this is NOT the case, an error will be thrown.
@@ -140,7 +142,7 @@ public class ProteinFastaBuilder implements IGenomeTarget {
     }
 
     @Override
-    public void close() {
+    public void finish() {
         // Now we need to unspool all the saved genomes to the output file.
         try {
             try (FastaOutputStream outStream = new FastaOutputStream(this.outFile)) {
