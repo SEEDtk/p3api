@@ -13,7 +13,7 @@ import org.theseed.genome.Genome;
  * @author Bruce Parrello
  *
  */
-public interface IGenomeTarget {
+public interface IGenomeTarget extends AutoCloseable {
 
     /**
      * @return TRUE if the genome is found in this directory, else FALSE
@@ -28,5 +28,10 @@ public interface IGenomeTarget {
      * @param gto	genome to add
      */
     public void add(Genome genome) throws IOException;
+
+    /**
+     * Release all the open file resources held by this object.
+     */
+    public void close();
 
 }

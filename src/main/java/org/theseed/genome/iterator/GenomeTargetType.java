@@ -30,6 +30,12 @@ public enum GenomeTargetType {
         public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
             return NormalDirectorySource.create(directory, clearFlag);
         }
+    }, PFASTA {
+        @Override
+        public IGenomeTarget create(File fastaFile, boolean clearFlag) throws IOException {
+            return new ProteinFastaBuilder(fastaFile, clearFlag);
+        }
+
     };
 
     /**

@@ -96,5 +96,9 @@ public class NormalDirectorySource extends GenomeSource implements IGenomeTarget
         return retVal;
     }
 
+    @Override
+    public void close() {
+    }
+
 
 }

@@ -326,4 +326,8 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
         return this.gtoMap.keySet();
     }
 
+    @Override
+    public void close() {
+    }
+
 }
