@@ -146,7 +146,7 @@ public class P3Genome extends Genome {
             // Process the features if we want them.
             if (detail.includesFeatures()) {
                 Collection<JsonObject> fidList = p3.query(Table.FEATURE,
-                        "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,na_sequence_md5,plfam_id,pgfam_id,gi,gene,gene_id,refseq_locus_tag,go",
+                        "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,na_sequence_md5,plfam_id,pgfam_id,figfam_id,gi,gene,gene_id,refseq_locus_tag,go",
                         Criterion.EQ("genome_id", genome_id), Criterion.EQ("annotation", "PATRIC"));
                 // Set up for protein sequences if we want them.
                 boolean wantSequences = detail.includesProteins();
@@ -166,6 +166,7 @@ public class P3Genome extends Genome {
                                 Connection.getInt(fid, "start"), Connection.getInt(fid, "end"));
                         feat.setPlfam(Connection.getString(fid, "plfam_id"));
                         feat.setPgfam(Connection.getString(fid, "pgfam_id"));
+                        feat.setFigfam(Connection.getString(fid, "figfam_id"));
                         feat.formAlias("gi|", Connection.getString(fid, "gi"));
                         feat.formAlias("", Connection.getString(fid, "gene"));
                         feat.formAlias("", Connection.getString(fid, "refseq_locus_tag"));

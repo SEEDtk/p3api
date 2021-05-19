@@ -235,6 +235,8 @@ public class P3ApiTest extends TestCase
             assertThat("Function error in " + p3fid, p3fid.getFunction(), equalTo(fid.getFunction()));
             assertThat("Location error in " + p3fid, p3fid.getLocation(), equalTo(fid.getLocation()));
             assertThat("Local family error in " + p3fid, p3fid.getPlfam(), equalTo(fid.getPlfam()));
+            assertThat("Global family error in " + p3fid, p3fid.getPgfam(), equalTo(fid.getPgfam()));
+            assertThat("FIG family error in " + p3fid, p3fid.getFigfam(), equalTo(fid.getFigfam()));
             assertThat("Type error in " + p3fid, p3fid.getType(), equalTo(fid.getType()));
             Collection<String> fidAliases = fid.getAliases();
             assertThat("Alias error in " + p3fid, p3fid.getAliases().size(), equalTo(fidAliases.size()));
