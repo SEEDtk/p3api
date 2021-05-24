@@ -11,15 +11,19 @@ import java.util.Iterator;
 import org.apache.commons.io.FileUtils;
 import org.theseed.genome.CompareGenomes;
 import org.theseed.genome.Genome;
+import org.theseed.genome.iterator.GenomeSource;
 import org.theseed.genome.iterator.GenomeTargetType;
 import org.theseed.genome.iterator.IGenomeTarget;
 import org.theseed.io.MarkerFile;
 import org.theseed.p3api.Connection;
 import org.theseed.sequence.Sequence;
+import org.theseed.utils.ParseFailureException;
+
 import junit.framework.TestCase;
 
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.theseed.test.Matchers.*;
 
 /**
  * @author Bruce Parrello
@@ -47,10 +51,7 @@ public class CoreTest extends TestCase {
         }
     }
 
-    /**
-     * test save and load
-     */
-    public void testTarget() throws IOException {
+    public void testTarget() throws IOException, ParseFailureException {
         Connection p3 = new Connection();
         // Create a temporary organism directory.
         File tempTarget = new File("data", "tempCore");
@@ -63,11 +64,30 @@ public class CoreTest extends TestCase {
             coreTarget.add(test1gto);
             coreTarget.add(test2gto);
             // Read the GTOs back and compare them.
-            File orgDir = new File(tempTarget, "Organisms");
-            Genome test1core = new CoreGenome(p3, new File(orgDir, "1123388.3"));
-            Genome test2core = new CoreGenome(p3, new File(orgDir, "1121911.3"));
+            OrganismDirectories orgDir = new OrganismDirectories(new File(tempTarget, "Organisms"));
+            assertThat(orgDir.size(), equalTo(2));
+            Genome test1core = new CoreGenome(p3, orgDir.getDir("1123388.3"));
+            Genome test2core = new CoreGenome(p3, orgDir.getDir("1121911.3"));
             CompareGenomes.test(test1gto, test1core, false);
             CompareGenomes.test(test2gto, test2core, false);
+            assertThat(coreTarget.contains(test1gto.getId()), isTrue());
+            assertThat(coreTarget.contains(test2gto.getId()), isTrue());
+            assertThat(coreTarget.contains("83333.1"), isFalse());
+            // Do it again using a genome source.
+            GenomeSource coreSource = GenomeSource.Type.CORE.create(tempTarget);
+            assertThat(coreSource.size(), equalTo(2));
+            for (Genome genome : coreSource) {
+                switch (genome.getId()) {
+                case "1123388.3" :
+                    CompareGenomes.test(test1gto, genome, false);
+                    break;
+                case "1121911.3" :
+                    CompareGenomes.test(test2gto, genome, false);
+                    break;
+                default:
+                    fail("Invalid genome ID.");
+                }
+            }
         } finally {
             FileUtils.forceDelete(tempTarget);
         }
@@ -78,7 +98,7 @@ public class CoreTest extends TestCase {
      * test organism directories
      */
     public void testOrgDir() {
-        OrganismDirectories orgDir = new OrganismDirectories(new File("data", "core"));
+        OrganismDirectories orgDir = new OrganismDirectories(new File("data", "core.test"));
         assertThat(orgDir.size(), equalTo(3));
         Iterator<String> orgIter = orgDir.iterator();
         assertTrue(orgIter.hasNext());

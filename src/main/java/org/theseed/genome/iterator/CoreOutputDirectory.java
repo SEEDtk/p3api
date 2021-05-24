@@ -4,7 +4,6 @@
 package org.theseed.genome.iterator;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +22,7 @@ import org.theseed.genome.Annotation;
 import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
+import org.theseed.genome.core.OrganismDirectories;
 import org.theseed.io.MarkerFile;
 import org.theseed.locations.Location;
 import org.theseed.sequence.FastaOutputStream;
@@ -43,33 +42,10 @@ public class CoreOutputDirectory implements IGenomeTarget {
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(CoreOutputDirectory.class);
     /** main organism directory */
-    private File orgDir;
-    /** map of genome IDs to organism directories */
-    private Map<String, File> genomeMap;
-    /** pattern for matching genome IDs */
-    private static final Pattern GENOME_ID = Pattern.compile("\\d+\\.\\d+");
+    private OrganismDirectories orgDir;
     /** pattern for extracting feature type */
     private static final Pattern FEATURE_TYPE = Pattern.compile("fig\\|\\d+\\.\\d+\\.(\\w+)\\.\\d+");
-    /** filter for getting genome directories */
-    private static FileFilter GENOME_DIR_FILTER = new GenomeDirs();
 
-
-    /**
-     * This is a file filter for returning only genome directories.
-     */
-    public static class GenomeDirs implements FileFilter {
-
-        @Override
-        public boolean accept(File pathname) {
-            boolean retVal = pathname.isDirectory();
-            if (retVal) {
-                String baseName = pathname.getName();
-                retVal = (GENOME_ID.matcher(baseName).matches());
-            }
-            return retVal;
-        }
-
-    }
 
     /**
      * Construct a CoreSEED genome target.
@@ -79,41 +55,33 @@ public class CoreOutputDirectory implements IGenomeTarget {
      */
     public CoreOutputDirectory(File coreDir, boolean clearFlag) throws IOException {
         // Get the organism directory.
-        this.orgDir = new File(coreDir, "Organisms");
-        // Create the genome map.
-        this.genomeMap = new TreeMap<String, File>();
+        File baseDir = new File(coreDir, "Organisms");
         // Check for clearing and validate the directory.
-        if (this.orgDir.exists()) {
+        if (baseDir.exists()) {
             // Here the directory already exists.
             if (clearFlag) {
                 // The client wants to erase it.
-                log.info("Erasing organism directory {}.", this.orgDir);
-                FileUtils.cleanDirectory(this.orgDir);
-            } else {
-                // Here we are adding to the directory. List the genomes already there.
-                File[] genomeDirs = this.orgDir.listFiles(GENOME_DIR_FILTER);
-                for (File genomeDir : genomeDirs) {
-                    String genomeId = genomeDir.getName();
-                    this.genomeMap.put(genomeId, genomeDir);
-                }
-                log.info("{} genomes found in organism directory {}.", this.genomeMap.size(), this.orgDir);
+                log.info("Erasing organism directory {}.", baseDir);
+                FileUtils.cleanDirectory(baseDir);
             }
         } else {
             // Here we must create the directory.
-            log.info("Creating organism directory {}.", this.orgDir);
-            FileUtils.forceMkdir(this.orgDir);
+            log.info("Creating organism directory {}.", baseDir);
+            FileUtils.forceMkdir(baseDir);
         }
+        // Create the genome map.
+        this.orgDir = new OrganismDirectories(baseDir);
     }
 
     @Override
     public boolean contains(String genomeId) {
-        return this.genomeMap.containsKey(genomeId);
+        return this.orgDir.contains(genomeId);
     }
 
     @Override
     public void add(Genome genome) throws IOException {
         // First, insure the directory exists.
-        File genomeDir = new File(this.orgDir, genome.getId());
+        File genomeDir = this.orgDir.computeDir(genome.getId());
         if (! genomeDir.isDirectory()) {
             log.info("Creating genome directory {}.", genomeDir);
             FileUtils.forceMkdir(genomeDir);
@@ -209,8 +177,6 @@ public class CoreOutputDirectory implements IGenomeTarget {
                 }
             }
         }
-        // Insure the genome is in the map.
-        this.genomeMap.put(genome.getId(), genomeDir);
     }
 
     /**

@@ -95,7 +95,7 @@ public abstract class GenomeSource implements Iterable<Genome> {
     protected abstract Genome getGenome(String genomeId, P3Genome.Details level);
 
     /**
-     * @return the genome withbthe specified ID, or NULL if it is not available
+     * @return the genome with the specified ID, or NULL if it is not available
      *
      * @param genomeId	ID of the desired genome
      */
@@ -209,6 +209,13 @@ public abstract class GenomeSource implements Iterable<Genome> {
             @Override
             public GenomeSource create(File inFile) throws IOException, ParseFailureException {
                 return this.setup(new PatricFileSource(), inFile);
+            }
+        },
+        /** load from a CoreSEED directory */
+        CORE {
+            @Override
+            public GenomeSource create(File inFile) throws IOException, ParseFailureException {
+                return this.setup(new CoreInputDirectory(), inFile);
             }
         };
 
