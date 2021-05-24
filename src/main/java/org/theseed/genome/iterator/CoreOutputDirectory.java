@@ -1,0 +1,244 @@
+/**
+ *
+ */
+package org.theseed.genome.iterator;
+
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.theseed.genome.Annotation;
+import org.theseed.genome.Contig;
+import org.theseed.genome.Feature;
+import org.theseed.genome.Genome;
+import org.theseed.io.MarkerFile;
+import org.theseed.locations.Location;
+import org.theseed.sequence.FastaOutputStream;
+import org.theseed.sequence.Sequence;
+
+/**
+ * This object is a genome target for a CoreSEED organism directory.  It will output the main files used by the CoreGenome
+ * object and the basic FIG scripts-- annotations, assigned_functions, contigs, GENOME, pattyfams.txt, TAXONOMY, TAXONOMY_ID,
+ * and the Features directory complex (fasta and tbl for each feature type).
+ *
+ * @author Bruce Parrello
+ *
+ */
+public class CoreOutputDirectory implements IGenomeTarget {
+
+    // FIELDS
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(CoreOutputDirectory.class);
+    /** main organism directory */
+    private File orgDir;
+    /** map of genome IDs to organism directories */
+    private Map<String, File> genomeMap;
+    /** pattern for matching genome IDs */
+    private static final Pattern GENOME_ID = Pattern.compile("\\d+\\.\\d+");
+    /** pattern for extracting feature type */
+    private static final Pattern FEATURE_TYPE = Pattern.compile("fig\\|\\d+\\.\\d+\\.(\\w+)\\.\\d+");
+    /** filter for getting genome directories */
+    private static FileFilter GENOME_DIR_FILTER = new GenomeDirs();
+
+
+    /**
+     * This is a file filter for returning only genome directories.
+     */
+    public static class GenomeDirs implements FileFilter {
+
+        @Override
+        public boolean accept(File pathname) {
+            boolean retVal = pathname.isDirectory();
+            if (retVal) {
+                String baseName = pathname.getName();
+                retVal = (GENOME_ID.matcher(baseName).matches());
+            }
+            return retVal;
+        }
+
+    }
+
+    /**
+     * Construct a CoreSEED genome target.
+     *
+     * @param coreDir		main CoreSEED directory
+     * @param clearFlag		TRUE to erase the directory before starting
+     */
+    public CoreOutputDirectory(File coreDir, boolean clearFlag) throws IOException {
+        // Get the organism directory.
+        this.orgDir = new File(coreDir, "Organisms");
+        // Create the genome map.
+        this.genomeMap = new TreeMap<String, File>();
+        // Check for clearing and validate the directory.
+        if (this.orgDir.exists()) {
+            // Here the directory already exists.
+            if (clearFlag) {
+                // The client wants to erase it.
+                log.info("Erasing organism directory {}.", this.orgDir);
+                FileUtils.cleanDirectory(this.orgDir);
+            } else {
+                // Here we are adding to the directory. List the genomes already there.
+                File[] genomeDirs = this.orgDir.listFiles(GENOME_DIR_FILTER);
+                for (File genomeDir : genomeDirs) {
+                    String genomeId = genomeDir.getName();
+                    this.genomeMap.put(genomeId, genomeDir);
+                }
+                log.info("{} genomes found in organism directory {}.", this.genomeMap.size(), this.orgDir);
+            }
+        } else {
+            // Here we must create the directory.
+            log.info("Creating organism directory {}.", this.orgDir);
+            FileUtils.forceMkdir(this.orgDir);
+        }
+    }
+
+    @Override
+    public boolean contains(String genomeId) {
+        return this.genomeMap.containsKey(genomeId);
+    }
+
+    @Override
+    public void add(Genome genome) throws IOException {
+        // First, insure the directory exists.
+        File genomeDir = new File(this.orgDir, genome.getId());
+        if (! genomeDir.isDirectory()) {
+            log.info("Creating genome directory {}.", genomeDir);
+            FileUtils.forceMkdir(genomeDir);
+        } else {
+            log.info("Erasing genome directory {}.", genomeDir);
+            FileUtils.cleanDirectory(genomeDir);
+        }
+        // Now create the marker files.
+        MarkerFile.write(new File(genomeDir, "GENOME"), genome.getName());
+        MarkerFile.write(new File(genomeDir, "TAXONOMY"), genome.getTaxString());
+        MarkerFile.write(new File(genomeDir, "TAXONOMY_ID"), genome.getTaxonomyId());
+        // Next write the contig fasta.
+        try (FastaOutputStream contigStream = new FastaOutputStream(new File(genomeDir, "contigs"))) {
+            for (Contig contig : genome.getContigs()) {
+                Sequence contigSequence = new Sequence(contig.getId(), contig.getDescription(), contig.getSequence());
+                contigStream.write(contigSequence);
+            }
+        }
+        // We are going to process features next.  We will collect the feature types in here.
+        Map<String, List<Feature>> typeMap = new HashMap<String, List<Feature>>(10);
+        // Prepare a large list for pegs.
+        typeMap.put("peg", new ArrayList<Feature>(4000));
+        // Set up some counters.
+        int fidCount = 0;
+        int annoCount = 0;
+        int funCount = 0;
+        // Now we are going to do assigned functions, annotations, and pattyfams in a single pass.
+        try (PrintWriter annoStream = new PrintWriter(new File(genomeDir, "annotation"));
+                PrintWriter funStream = new PrintWriter(new File(genomeDir, "assigned_functions"));
+                PrintWriter famStream = new PrintWriter(new File(genomeDir, "pattyfams.txt"))) {
+            for (Feature feat : genome.getFeatures()) {
+                // First, get the feature type from the feature ID.
+                String fid = feat.getId();
+                List<Feature> flist = typeMap.computeIfAbsent(getFidType(fid), x -> new ArrayList<Feature>());
+                flist.add(feat);
+                fidCount++;
+                // Process the annotations.
+                for (Annotation anno : feat.getAnnotations()) {
+                    annoStream.println(fid);
+                    annoStream.format("%d%n", (long) anno.getAnnotationTime());
+                    annoStream.println(anno.getAnnotator());
+                    annoStream.println("Set master function to");
+                    annoStream.println(anno.getComment());
+                    annoStream.println("//");
+                    annoCount++;
+                }
+                // Process the function.
+                String function = feat.getFunction();
+                if (function != null & ! function.isEmpty()) {
+                    funStream.println(fid + "\t" + function);
+                    funCount++;
+                }
+                // Process the protein families.
+                this.writeFamily(famStream, fid, feat.getFigfam());
+                this.writeFamily(famStream, fid, feat.getPgfam());
+                this.writeFamily(famStream, fid, feat.getPlfam());
+            }
+        }
+        log.info("{} features found in {}:  {} annotations, {} assigned functions.", fidCount, annoCount, funCount);
+        // Now write the feature directories.
+        File featureDir = new File(genomeDir, "Features");
+        FileUtils.forceMkdir(featureDir);
+        for (Map.Entry<String, List<Feature>> typeEntry : typeMap.entrySet()) {
+            String type = typeEntry.getKey();
+            List<Feature> feats = typeEntry.getValue();
+            log.info("Saving {} features of type {}.", feats.size(), type);
+            File typeDir = new File(featureDir, type);
+            FileUtils.forceMkdir(typeDir);
+            try (FastaOutputStream protStream = new FastaOutputStream(new File(typeDir, "fasta"));
+                    PrintWriter tblStream = new PrintWriter(new File(typeDir, "tbl"))) {
+                for (Feature feat : feats) {
+                    String fid = feat.getId();
+                    // Process the FASTA output first.
+                    if (feat.getType().contentEquals("CDS")) {
+                        // Here we are doing a protein FASTA.
+                        String prot = feat.getProteinTranslation();
+                        if (prot != null && ! prot.isEmpty()) {
+                            Sequence seq = new Sequence(fid, feat.getPegFunction(), prot);
+                            protStream.write(seq);
+                        }
+                    } else {
+                        // Here we want the DNA sequence.
+                        Sequence seq = new Sequence(fid, feat.getFunction(), genome.getDna(feat.getLocation()));
+                        protStream.write(seq);
+                    }
+                    // Now write the TBL record.
+                    Collection<String> aliasList = feat.getAliases();
+                    String aliases = "";
+                    if (aliasList != null && aliasList.size() > 1)
+                        aliases = StringUtils.join(aliasList, "\t");
+                    Location loc = feat.getLocation();
+                    tblStream.println(fid + "\t" + loc.toSeedString() + "\t" + aliases);
+                }
+            }
+        }
+        // Insure the genome is in the map.
+        this.genomeMap.put(genome.getId(), genomeDir);
+    }
+
+    /**
+     * Write a protein family record.
+     *
+     * @param famStream		protein family output writer
+     * @param fid			feature ID
+     * @param protfam		protein family ID
+     */
+    private void writeFamily(PrintWriter famStream, String fid, String protfam) throws IOException {
+        if (protfam != null)
+            famStream.println(fid + "\t" + protfam);
+    }
+
+    @Override
+    public void finish() {
+    }
+
+    /**
+     * @return the type of the specified feature ID
+     *
+     * @param fid	ID of the feature of interest
+     */
+    private static String getFidType(String fid) {
+        String retVal = "invalid";
+        Matcher m = FEATURE_TYPE.matcher(fid);
+        if (m.matches())
+            retVal = m.group(1);
+        return retVal;
+    }
+}

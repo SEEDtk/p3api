@@ -35,6 +35,11 @@ public enum GenomeTargetType {
         public IGenomeTarget create(File fastaFile, boolean clearFlag) throws IOException {
             return new ProteinFastaBuilder(fastaFile, clearFlag);
         }
+    }, CORE {
+        @Override
+        public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
+            return new CoreOutputDirectory(directory, clearFlag);
+        }
 
     };
 
