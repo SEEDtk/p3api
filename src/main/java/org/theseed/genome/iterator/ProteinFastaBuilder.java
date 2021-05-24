@@ -173,4 +173,9 @@ public class ProteinFastaBuilder implements IGenomeTarget {
         }
     }
 
+    @Override
+    public String toString() {
+        return "Protein Fasta File " + this.outFile;
+    }
+
 }

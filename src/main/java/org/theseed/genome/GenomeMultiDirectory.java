@@ -330,4 +330,9 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
     public void finish() {
     }
 
+    @Override
+    public String toString() {
+        return "GenomeM Master Directory " + this.masterDir.toString();
+    }
+
 }

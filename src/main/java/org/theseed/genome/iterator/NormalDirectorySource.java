@@ -100,5 +100,10 @@ public class NormalDirectorySource extends GenomeSource implements IGenomeTarget
     public void finish() {
     }
 
+    @Override
+    public String toString() {
+        return "GTO Directory " + this.source.getName();
+    }
+
 
 }

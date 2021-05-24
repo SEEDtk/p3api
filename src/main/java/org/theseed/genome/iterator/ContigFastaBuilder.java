@@ -79,9 +79,11 @@ public class ContigFastaBuilder implements IGenomeTarget {
 
     @Override
     public void finish() {
-        // TODO code for finish
-
     }
 
-    // TODO constructors and methods for ContigFastaBuilder
+    @Override
+    public String toString() {
+        return "Contig Fasta Directory " + this.outDir;
+    }
+
 }

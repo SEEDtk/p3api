@@ -207,4 +207,9 @@ public class CoreOutputDirectory implements IGenomeTarget {
             retVal = m.group(1);
         return retVal;
     }
+
+    @Override
+    public String toString() {
+        return "CoreSEED Output Directory " + this.orgDir.getBaseDir().toString();
+    }
 }
