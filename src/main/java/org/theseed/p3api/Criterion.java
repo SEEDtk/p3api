@@ -74,7 +74,7 @@ public class Criterion {
      * @return the criterion string for an inclusion request
      *
      * @param field		field name
-     * @param values	field values
+     * @param values	field values (as an array)
      */
     public static String IN(String field, String... values) {
         String prefix = "in(" + field + ",(";
@@ -86,11 +86,34 @@ public class Criterion {
      * @return the criterion string for an inclusion request
      *
      * @param field		field name
-     * @param values	field values
+     * @param values	field values (as a collection)
      */
     public static String IN(String field, Collection<String> values) {
         String prefix = "in(" + field + ",(";
         String retVal = values.stream().map(x -> fix(x)).collect(Collectors.joining(",", prefix, "))"));
         return retVal;
     }
+
+    /**
+     * @return the criterion string for a greater-or-equal comparison to an integer
+     *
+     * @param field		field name
+     * @param value		field value
+     */
+    public static String GE(String field, int value) {
+        String retVal = String.format("ge(%s,%d)", field, value);
+        return retVal;
+    }
+
+    /**
+     * @return the criterion string for a less-or-equal comparison to an integer
+     *
+     * @param field		field name
+     * @param value		field value
+     */
+    public static String LE(String field, int value) {
+        String retVal = String.format("le(%s,%d)", field, value);
+        return retVal;
+    }
+
 }

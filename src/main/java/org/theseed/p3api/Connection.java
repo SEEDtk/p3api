@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -366,11 +368,16 @@ public class Connection {
      * @param keys		a collection of the relevant key values
      * @param fields	a comma-delimited list of the fields desired
      *
-     * @return a collection of JsonObjects of the desired records
+     * @return a map from each key value to the desired record
      */
     public Map<String, JsonObject> getRecords(Table table, Collection<String> keys, String fields) {
         String keyName = table.getKey();
-        List<JsonObject> records = getRecords(table, keyName, keys, fields);
+        // Verify that we have the keyname.
+        Set<String> fieldSet = new TreeSet<String>();
+        fieldSet.add(keyName);
+        Arrays.stream(StringUtils.split(fields, ',')).forEach(x -> fieldSet.add(x));
+        String allFields = StringUtils.join(fieldSet, ',');
+        List<JsonObject> records = getRecords(table, keyName, keys, allFields);
         Map<String, JsonObject> retVal = new HashMap<String, JsonObject>(records.size());
         for (JsonObject record : records) {
             retVal.put(Connection.getString(record, keyName), record);

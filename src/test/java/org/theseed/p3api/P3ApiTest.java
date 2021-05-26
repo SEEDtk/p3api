@@ -203,6 +203,8 @@ public class P3ApiTest extends TestCase
         assertThat(Criterion.NE("genome_type", "(plasmid)"),equalTo("ne(genome_type,+plasmid+)"));
         assertThat(Criterion.EQ("taxonomicThing", "100::200::300"), equalTo("eq(taxonomicThing,100+200+300)"));
         assertThat(Criterion.IN("product", "look / at # me", "I'm so happy"), equalTo("in(product,(look+at+me,I+m+so+happy))"));
+        assertThat(Criterion.GE("length", 10), equalTo("ge(length,10)"));
+        assertThat(Criterion.LE("size", 100), equalTo("le(size,100)"));
     }
 
     /**
@@ -303,6 +305,21 @@ public class P3ApiTest extends TestCase
         Connection p3 = new Connection();
         P3Genome p3Genome = P3Genome.load(p3, "1262806.3", P3Genome.Details.STRUCTURE_ONLY);
         assertThat(p3Genome.getSsuRRna(), emptyString());
+    }
+
+    /**
+     * test LE and GE
+     */
+    public void testRanges() {
+        Connection p3 = new Connection();
+        List<JsonObject> records = p3.query(Table.GENOME, "genome_id,genome_length", Criterion.GE("genome_length",10000000));
+        for (JsonObject record : records)
+            assertThat(Connection.getInt(record, "genome_length"), greaterThanOrEqualTo(10000000));
+        assertThat(records.size(), greaterThan(100));
+        records = p3.query(Table.GENOME, "genome_id,genome_length", Criterion.LE("genome_length",100000));
+        for (JsonObject record : records)
+            assertThat(Connection.getInt(record, "genome_length"), lessThanOrEqualTo(100000));
+        assertThat(records.size(), greaterThan(100));
     }
 
     /**
