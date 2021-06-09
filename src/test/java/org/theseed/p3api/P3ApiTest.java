@@ -350,4 +350,13 @@ public class P3ApiTest extends TestCase
         assertTrue(gFile.exists());
     }
 
+    /**
+     * Special method for testing current login.
+     */
+    /* public void testLogin() {
+        Connection p3 = new Connection();
+        JsonObject genome = p3.getRecord(Table.GENOME, "821.4206", "genome_id,genome_name");
+        assertThat(genome, not(nullValue()));
+    }
+    // */
 }
