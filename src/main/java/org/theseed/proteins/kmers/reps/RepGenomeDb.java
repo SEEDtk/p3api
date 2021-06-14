@@ -293,13 +293,9 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      * @return an array of this database's representative genome objects
      */
     public RepGenome[] all() {
-        // Get all the representative-genome objects.
-        Collection<RepGenome> allReps = this.genomeMap.values();
-        // Create an array big enough to hold them.
-        RepGenome[] retVal = new RepGenome[allReps.size()];
-        // Fill the array.  Note that because we set the size properly, it will not
-        // re-allocate.
-        retVal = allReps.toArray(retVal);
+        // Get all the representative-genome objects in a sorted array.
+        RepGenome[] retVal = this.genomeMap.values().stream().sorted().toArray(RepGenome[]::new);
+        // Return the result.
         return retVal;
     }
 
