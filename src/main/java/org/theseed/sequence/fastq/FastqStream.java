@@ -42,12 +42,22 @@ public abstract class FastqStream implements Iterable<SeqRead>, AutoCloseable, I
             public FastqStream create(File source) {
                 return new QzaFastqStream(source);
             }
+
+            @Override
+            public File[] findAll(File master) {
+                return master.listFiles(QzaFastqStream.QZA_FILTER);
+            }
         },
         /** three-file paired-end directory built by p3-download-samples */
         P3DIR {
             @Override
             public FastqStream create(File source) {
                 return new DirFastqStream(source);
+            }
+
+            @Override
+            public File[] findAll(File master) {
+                return master.listFiles(File::isDirectory);
             }
         };
 
@@ -59,6 +69,15 @@ public abstract class FastqStream implements Iterable<SeqRead>, AutoCloseable, I
          * @return a FASTQ stream for the source
          */
         public abstract FastqStream create(File source);
+
+        /**
+         * List all the files containing samples of this type in the specified directory.
+         *
+         * @param master	input directory containing samples
+         *
+         * @return an array of the files or sub-directories found
+         */
+        public abstract File[] findAll(File master);
 
     }
 

@@ -147,6 +147,13 @@ public class SeqRead {
     }
 
     /**
+     * @return the length of the read
+     */
+    public int length() {
+        return this.lseq.length() + this.rseq.length();
+    }
+
+    /**
      * Create a partial read from the current input.
      *
      * @param reader	buffer reader stream for input
@@ -334,6 +341,16 @@ public class SeqRead {
             return false;
         }
         return true;
+    }
+
+    /**
+     * @return the maximum length of a read string.
+     */
+    public int maxlength() {
+        int retVal = this.lseq.length();
+        if (this.rseq.length() > retVal)
+            retVal = this.rseq.length();
+        return retVal;
     }
 
 }

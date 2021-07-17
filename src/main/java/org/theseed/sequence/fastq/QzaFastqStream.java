@@ -4,6 +4,7 @@
 package org.theseed.sequence.fastq;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
@@ -28,6 +29,8 @@ public class QzaFastqStream extends PairedFastqStream {
     private ZipFile qzaInput;
     /** sample ID extraction pattern */
     private final static Pattern SAMPLE_NAME = Pattern.compile("^([^._]+)");
+    /** file filter for QZA files */
+    public final static FileFilter QZA_FILTER = new FileFinder();
 
     public QzaFastqStream(File inFile) {
         super(inFile);
@@ -60,6 +63,18 @@ public class QzaFastqStream extends PairedFastqStream {
     protected void cleanup() throws IOException {
         super.cleanup();
         qzaInput.close();
+    }
+
+    /**
+     * This class filters files in a directory for QZA files.
+     */
+    private static class FileFinder implements FileFilter {
+
+        @Override
+        public boolean accept(File pathname) {
+            return pathname.getName().endsWith(".qza");
+        }
+
     }
 
 }
