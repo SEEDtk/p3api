@@ -695,7 +695,11 @@ public class Connection {
         } else {
             // Get the genetic code.
             Node gcNode = taxonDoc.getElementsByTagName("GCId").item(0);
-            int gc = Integer.valueOf(gcNode.getTextContent());
+            int gc = 11;
+            if (gcNode == null)
+                log.warn("Genetic code information missing for {}.", taxId);
+            else
+                gc = Integer.valueOf(gcNode.getTextContent());
             // Everything is under the "Taxon" node.  We need to save all the
             // children of LineageEx, plus the ScientificName and Rank
             // at the top.
