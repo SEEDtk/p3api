@@ -45,6 +45,11 @@ public enum GenomeTargetType {
         public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
             return new CoreOutputDirectory(directory, clearFlag);
         }
+    }, LIST {
+        @Override
+        public IGenomeTarget create(File listFile, boolean clearFlag) throws IOException {
+            return new ListFileBuilder(listFile, clearFlag);
+        }
 
     };
 

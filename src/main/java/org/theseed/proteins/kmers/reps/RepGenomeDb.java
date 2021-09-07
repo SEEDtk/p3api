@@ -111,6 +111,26 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         }
 
         /**
+         * Create a representation for an incoming sequence.
+         *
+         * @param rep		representative-genome object
+         * @param seq		kmers for the incoming sequence
+         */
+        protected Representation(RepGenome rep, ProteinKmers seq) {
+            this.representative = rep;
+            this.similarity = rep.similarity(seq);
+            this.distance = SequenceKmers.distance(this.similarity, rep, seq);
+        }
+
+        /**
+         * Create a default representation.
+         */
+        protected Representation() {
+            this.representative = null;
+            this.similarity = 0;
+            this.distance = 1.0;
+        }
+        /**
          * @return the similarity score
          */
         public int getSimilarity() {
@@ -125,25 +145,15 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         }
 
         /**
-         * If the specified score is higher than this object's current score,
-         * store it and the specified genome.
+         * Merge a representation into this one, keeping the closest.
          *
-         * @param representative	proposed new representative
-         * @param score				similarity score for it
-         * @param other				other protein's kmer object
+         * @param otherRep	proposed new representation
          */
-        private void Merge(RepGenome representative, int score, ProteinKmers other) {
-            if (score > this.similarity) {
-                this.representative = representative;
-                this.similarity = score;
-                if (score == SequenceKmers.INFINITY) {
-                    this.distance = 0.0;
-                } else if (score == 0) {
-                    this.distance = 1.0;
-                } else {
-                    double union = (representative.size() + other.size()) - score;
-                    this.distance = 1.0 - similarity / union;
-                }
+        private void merge(Representation other) {
+            if (other.similarity > this.similarity) {
+                this.representative = other.representative;
+                this.similarity = other.similarity;
+                this.distance = other.distance;
             }
         }
 
@@ -259,13 +269,9 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      * @param testSeq	protein kmer object containing the protein
      */
     public Representation findClosest(ProteinKmers testSeq) {
-        // Assume there is no representative.
-        Representation retVal = new Representation(null, 0, 1.0);
-        // Loop through the representatives, looking for a match.
-        for (RepGenome rep : this) {
-            int newScore = rep.similarity(testSeq);
-            retVal.Merge(rep, newScore, testSeq);
-        }
+        // Loop through the representatives, looking for a match.  We do this in parallel.
+        Representation retVal = this.genomeMap.values().parallelStream().map(x -> new Representation(x, testSeq))
+            .collect(Representation::new, (x,r) -> x.merge(r), (x,y) -> x.merge(y));
         return retVal;
     }
 
