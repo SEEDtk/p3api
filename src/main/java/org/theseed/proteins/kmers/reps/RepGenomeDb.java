@@ -147,10 +147,34 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         /**
          * Merge a representation into this one, keeping the closest.
          *
+         * This method needs to be deterministic, since the order of operations is random.
+         * We prefer higher similarity, then lower distance, then longer protein, and
+         * finally lexically earliest genome ID.
+         *
          * @param otherRep	proposed new representation
          */
         private void merge(Representation other) {
-            if (other.similarity > this.similarity) {
+            boolean merge = false;
+            if (other.similarity > this.similarity)
+                merge = true;
+            else if (other.similarity == this.similarity) {
+                if (other.distance < this.distance)
+                    merge = true;
+                else if (other.distance == this.distance) {
+                    if (this.representative == null)
+                        merge = true;
+                    else if (other.representative != null) {
+                        int myLen = this.representative.getProtein().length();
+                        int otherLen = other.representative.getProtein().length();
+                        if (otherLen > myLen)
+                            merge = true;
+                        else if (otherLen == myLen)
+                            merge = (this.representative.getGenomeId()
+                                    .compareTo(other.representative.getGenomeId()) < 0);
+                    }
+                }
+            }
+            if (merge) {
                 this.representative = other.representative;
                 this.similarity = other.similarity;
                 this.distance = other.distance;
@@ -246,12 +270,9 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      * @param sim		similarity score to use
      */
     public boolean checkSimilarity(ProteinKmers newSeq, int sim) {
-        Iterator<RepGenome> iter = this.iterator();
-        int simFound = 0;
-        while (iter.hasNext() && simFound < sim) {
-            simFound = iter.next().similarity(newSeq);
-        }
-        return (simFound >= sim);
+        boolean retVal = this.genomeMap.values().parallelStream()
+                .anyMatch(x -> x.similarity(newSeq) >= sim);
+        return retVal;
     }
 
     /**
