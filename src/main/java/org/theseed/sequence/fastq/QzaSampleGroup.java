@@ -4,6 +4,7 @@
 package org.theseed.sequence.fastq;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
@@ -27,6 +28,18 @@ import org.theseed.io.LineReader;
  *
  */
 public class QzaSampleGroup extends FastqSampleGroup  {
+
+    /**
+     * File filter for QZA files in the input directory
+     */
+    public static class filter implements FileFilter {
+
+        @Override
+        public boolean accept(File pathname) {
+            return (pathname.isFile() && StringUtils.endsWith(pathname.getName(), ".qza"));
+        }
+
+    }
 
     // FIELDS
     /** logging facility */

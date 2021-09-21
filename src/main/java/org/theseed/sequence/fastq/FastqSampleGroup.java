@@ -4,6 +4,7 @@
 package org.theseed.sequence.fastq;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Set;
@@ -31,6 +32,11 @@ public abstract class FastqSampleGroup implements AutoCloseable {
             public FastqSampleGroup create(File sampleDir) throws IOException {
                 return new QzaSampleGroup(sampleDir);
             }
+
+            @Override
+            public FileFilter getFilter() {
+                return new QzaSampleGroup.filter();
+            }
         };
 
         /**
@@ -39,6 +45,11 @@ public abstract class FastqSampleGroup implements AutoCloseable {
          * @throws IOException
          */
         public abstract FastqSampleGroup create(File sampleDir) throws IOException;
+
+        /**
+         * @return the file filter for the specified type
+         */
+        public abstract FileFilter getFilter();
 
     }
 
@@ -54,7 +65,6 @@ public abstract class FastqSampleGroup implements AutoCloseable {
      * This method is called before computeSamples, and allows for early initialization.
      */
     protected abstract void init();
-
 
     /**
      * @return the set of sample IDs for this sample group
