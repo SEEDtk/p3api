@@ -48,7 +48,7 @@ public class GffKeywords {
                 }
             }
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Error decoding GFF keyword string: " + e.getMessage());
+            throw new RuntimeException("Error decoding GFF keyword string: " + e.toString());
         }
         return retVal;
     }

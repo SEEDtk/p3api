@@ -82,7 +82,7 @@ public abstract class CliTask implements Comparable<CliTask> {
         try {
             retVal = ProcessUtils.runProgram(program, parms);
         } catch (Exception e) {
-            throw new RuntimeException("Error executing " + command + ": " + e.getMessage());
+            throw new RuntimeException("Error executing " + command + ": " + e.toString());
         }
         // Throw an error if it failed.
         if (retVal == null)

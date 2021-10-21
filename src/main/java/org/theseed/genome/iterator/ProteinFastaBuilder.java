@@ -165,7 +165,7 @@ public class ProteinFastaBuilder implements IGenomeTarget {
                     log.info("Deleting temporary directory {}.", this.tempDir);
                     FileUtils.forceDelete(this.tempDir);
                 } catch (IOException e) {
-                    log.error("Could not delete {}: {}", this.tempDir, e.getMessage());
+                    log.error("Could not delete {}: {}", this.tempDir, e.toString());
                 }
             }
         } catch (IOException e) {

@@ -90,7 +90,7 @@ public class IdClearinghouse {
                             throw new RuntimeException("Invalid xml response to request for genome ID from tax ID " + taxId + ".");
                         }
                     } catch (IOException e) {
-                        throw new RuntimeException("HTTP conversion error in genome ID request:  " + e.getMessage());
+                        throw new RuntimeException("HTTP conversion error in genome ID request:  " + e.toString());
                     }
                 } else if (tries < MAX_TRIES) {
                     log.debug("Retrying genome ID request after error code {}.", statusCode);
@@ -101,10 +101,10 @@ public class IdClearinghouse {
             } catch (IOException e) {
                 // This is usually a timeout error.
                 if (tries >= MAX_TRIES)
-                    throw new RuntimeException("HTTP error in genome ID request: " + e.getMessage());
+                    throw new RuntimeException("HTTP error in genome ID request: " + e.toString());
                 else {
                     tries++;
-                    log.debug("Retrying genome ID request after " + e.getMessage());
+                    log.debug("Retrying genome ID request after " + e.toString());
                 }
             }
         }

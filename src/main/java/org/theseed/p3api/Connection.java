@@ -494,7 +494,7 @@ public class Connection {
             try {
                 jsonString = EntityUtils.toString(resp.getEntity());
             } catch (IOException e) {
-                throw new RuntimeException("HTTP conversion error: " + e.getMessage());
+                throw new RuntimeException("HTTP conversion error: " + e.toString());
             }
             JsonArray data = Jsoner.deserialize(jsonString, (JsonArray) null);
             if (data == null) {
@@ -555,10 +555,10 @@ public class Connection {
                 // This is almost certainly a timeout error.  We either retry or percolate.
                 if (tries >= MAX_TRIES) {
                     // Time to give up.  Throw an error.
-                    throwHttpError(e.getMessage());
+                    throwHttpError(e.toString());
                 } else {
                     tries++;
-                    log.debug("Retrying after {}.", e.getMessage());
+                    log.debug("Retrying after {}.", e.toString());
                 }
             }
         }
@@ -680,13 +680,13 @@ public class Connection {
             } catch (IOException e) {
                 // This is usually a timeout error.
                 if (tries >= MAX_TRIES)
-                    throw new RuntimeException("HTTP error in genome ID request: " + e.getMessage());
+                    throw new RuntimeException("HTTP error in genome ID request: " + e.toString());
                 else {
                     tries++;
-                    log.debug("Retrying genome ID request after " + e.getMessage());
+                    log.debug("Retrying genome ID request after " + e.toString());
                 }
             } catch (Exception e) {
-                throw new RuntimeException("Error parsing XML for taxonomy query: " + e.getMessage());
+                throw new RuntimeException("Error parsing XML for taxonomy query: " + e.toString());
             }
         }
         // Now we have the taxonomy information.
