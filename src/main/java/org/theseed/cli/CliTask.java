@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.theseed.utils.ProcessUtils;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -35,8 +34,10 @@ public abstract class CliTask implements Comparable<CliTask> {
     private String taskId;
     /** name of this job */
     private String jobName;
-    /** suffix for CLI commands (depends on operating system) */
-    private final static String suffix = (SystemUtils.IS_OS_WINDOWS ? ".cmd" : "");
+    /** suffix for CLI commands */
+    private static String suffix = null;
+    /** priority list of CLI command suffixes */
+    private static final String[] SUFFIXES = new String[] { "", ".cmd" };
     /** directory containing CLI commands */
     private static File cliDir = null;
     /** pattern matcher for getting task ID */
@@ -58,7 +59,15 @@ public abstract class CliTask implements Comparable<CliTask> {
             String cliPath = System.getenv("CLI_PATH");
             if (cliPath == null)
                 throw new IllegalStateException("CLI_PATH is not properly configured on this machine.  Insure it points to your CLI bin directory.");
-            CliTask.cliDir = new File(cliPath);
+            cliDir = new File(cliPath);
+            // Do a directory scan to determine the suffix to use.
+            for (int i = 0; suffix == null && i < SUFFIXES.length; i++) {
+                File test = new File(cliDir, "p3-ls" + SUFFIXES[i]);
+                if (test.exists())
+                    suffix = SUFFIXES[i];
+            }
+            if (suffix == null)
+                throw new IllegalStateException("CLI_PATH does not point to a usable P3 CLI directory.");
         }
     }
 

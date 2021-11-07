@@ -52,7 +52,7 @@ public class StatusTask extends CliTask {
      */
     public Map<String, String> getTasks() {
         // Get the basic task list.
-        List<String> taskLines = this.run("appserv-enumerate-tasks", "--offset", "0", "--limit", Integer.toString(limit));
+        List<String> taskLines = this.run("appserv-enumerate-tasks", "--limit", Integer.toString(this.limit));
         // This will hold the set of running task IDs.
         Set<String> tasks = new TreeSet<String>();
         for (String taskLine : taskLines) {
