@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.genome.Contig;
-import org.theseed.p3api.Connection.Table;
+import org.theseed.p3api.P3Connection.Table;
 import org.theseed.sequence.MD5Hex;
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -33,11 +33,11 @@ public class P3MD5Hex extends MD5Hex {
     protected static Logger log = LoggerFactory.getLogger(P3MD5Hex.class);
 
     /** connection to PATRIC */
-    private Connection p3;
+    private P3Connection p3;
 
     public P3MD5Hex() throws NoSuchAlgorithmException {
         super();
-        this.p3 = new Connection();
+        this.p3 = new P3Connection();
     }
 
     /**
@@ -73,7 +73,7 @@ public class P3MD5Hex extends MD5Hex {
         log.debug("Processing {} contigs.", contigObjects.size());
         for (JsonObject contigObject : contigObjects) {
             Contig contig = new Contig(contigObject, 11);
-            String genomeId = Connection.getString(contigObject, "genome_id");
+            String genomeId = P3Connection.getString(contigObject, "genome_id");
             genomeMap.get(genomeId).add(contig);
         }
         // Process each genome that had contigs.

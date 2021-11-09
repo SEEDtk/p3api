@@ -1,6 +1,6 @@
 package org.theseed.genome;
 
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.IdClearinghouse;
 
 /**
@@ -35,7 +35,7 @@ public abstract class NewGenome extends Genome {
         String retVal = idConnection.computeGenomeId(taxId);
         this.setId(retVal);
         // Fill in the taxonomy.
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         boolean taxFound = p3.computeLineage(this, taxId);
         String name;
         if (! taxFound) {

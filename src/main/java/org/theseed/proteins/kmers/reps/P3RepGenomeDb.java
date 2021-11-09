@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.theseed.p3api.Connection;
-import org.theseed.p3api.Connection.Table;
+import org.theseed.p3api.P3Connection;
+import org.theseed.p3api.P3Connection.Table;
 import org.theseed.p3api.Criterion;
 import org.theseed.proteins.Role;
 import org.theseed.sequence.Sequence;
@@ -42,7 +42,7 @@ public class P3RepGenomeDb {
      *
      * @return a map from genome IDs to representatives
      */
-    public static Map<String, RepGenomeDb.Representation> getReps(Connection p3, Collection<String> genomes, RepGenomeDb repdb) {
+    public static Map<String, RepGenomeDb.Representation> getReps(P3Connection p3, Collection<String> genomes, RepGenomeDb repdb) {
         int nGenomes = genomes.size();
         Map<String, RepGenomeDb.Representation> retVal = new HashMap<>(nGenomes);
         // We need to get the seed protein sequences from the PATRIC genomes.  This is a two-step process.  First we find
@@ -56,19 +56,19 @@ public class P3RepGenomeDb {
         // For each genome, we memorize the longest sequence.
         Map<String, JsonObject> seqMap = new HashMap<>(nGenomes);
         for (JsonObject record : possibleSeeds) {
-            String product = Connection.getString(record, "product");
+            String product = P3Connection.getString(record, "product");
             if (seedRole.matches(product)) {
                 // Here we have a real seed protein.
-                String genomeId = Connection.getString(record, "genome_id");
+                String genomeId = P3Connection.getString(record, "genome_id");
                 JsonObject previous = seqMap.get(genomeId);
                 // If it's the first, save it.  If it is a duplicate, save it if it is longer.
-                if (previous == null || Connection.getInt(record, "aa_length") > Connection.getInt(previous, "aa_length"))
+                if (previous == null || P3Connection.getInt(record, "aa_length") > P3Connection.getInt(previous, "aa_length"))
                     seqMap.put(genomeId, record);
             }
         }
         log.info("{} genomes have at least one seed protein.", seqMap.size());
         // Now we need to get the actual sequences.
-        Set<String> protSet = seqMap.values().stream().map(x -> Connection.getString(x, "aa_sequence_md5")).collect(Collectors.toSet());
+        Set<String> protSet = seqMap.values().stream().map(x -> P3Connection.getString(x, "aa_sequence_md5")).collect(Collectors.toSet());
         Map<String, JsonObject> protMap = p3.getRecords(Table.SEQUENCE, protSet, "md5,sequence");
         log.info("{} seed protein sequences returned from PATRIC.", protMap.size());
         // Get a map of genome IDs to seed protein sequences.
@@ -76,13 +76,13 @@ public class P3RepGenomeDb {
         for (Map.Entry<String, JsonObject> seqEntry : seqMap.entrySet()) {
             JsonObject seqRecord = seqEntry.getValue();
             String genome = seqEntry.getKey();
-            String seqMd5 = Connection.getString(seqRecord, "aa_sequence_md5");
+            String seqMd5 = P3Connection.getString(seqRecord, "aa_sequence_md5");
             JsonObject prot = protMap.get(seqMd5);
             if (prot == null)
                 log.warn("No seed protein found for {}.", genome);
             else
-                seedMap.put(seqEntry.getKey(), new Sequence(seqEntry.getKey(), Connection.getString(seqRecord, "product"),
-                        Connection.getString(prot, "sequence")));
+                seedMap.put(seqEntry.getKey(), new Sequence(seqEntry.getKey(), P3Connection.getString(seqRecord, "product"),
+                        P3Connection.getString(prot, "sequence")));
         }
         log.info("{} seed sequences found.", seedMap.size());
         // Now find the representatives.

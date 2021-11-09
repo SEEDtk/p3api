@@ -31,7 +31,7 @@ import org.theseed.io.LineReader;
 import org.theseed.io.MarkerFile;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.locations.Location;
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
 
@@ -63,7 +63,7 @@ public class CoreGenome extends Genome {
     private File orgDir;
 
     /** connection to PATRIC */
-    private Connection p3;
+    private P3Connection p3;
 
     /**
      * Construct a coreSEED genome from a genome directory.
@@ -73,7 +73,7 @@ public class CoreGenome extends Genome {
      *
      * @throws IOException
      */
-    public CoreGenome(Connection p3, File inDir) throws IOException {
+    public CoreGenome(P3Connection p3, File inDir) throws IOException {
         super(inDir.getName());
         log.info("Loading SEED genome from {}.", inDir);
         this.setHome("CORE");

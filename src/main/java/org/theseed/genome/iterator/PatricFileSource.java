@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.genome.Genome;
 import org.theseed.io.TabbedLineReader;
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.P3Genome;
 import org.theseed.p3api.P3Genome.Details;
 import org.theseed.utils.ParseFailureException;
@@ -39,12 +39,12 @@ public class PatricFileSource extends GenomeSource {
     /** set of genome IDs */
     private SortedSet<String> genomeIDs;
     /** PATRIC connection */
-    private Connection p3;
+    private P3Connection p3;
 
     @Override
     public int init(File inFile) throws IOException {
         // Connect to PATRIC.
-        this.p3 = new Connection();
+        this.p3 = new P3Connection();
         // Load, then sort, the input file genome IDs.
         this.genomeIDs = new TreeSet<String>(TabbedLineReader.readSet(inFile, "1"));
         return this.genomeIDs.size();

@@ -73,7 +73,7 @@ public class GffTest extends TestCase {
 
     public void testLineage() {
         Genome newGenome = new Genome("559292.1", "yeast taxonomy test", "Eukaryota", 0);
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         boolean found = p3.computeLineage(newGenome, 559292);
         assertTrue(found);
         assertThat(newGenome.getGeneticCode(), equalTo(1));

@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.theseed.genome.Genome;
 import org.theseed.genome.core.CoreGenome;
 import org.theseed.genome.core.OrganismDirectories;
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.P3Genome.Details;
 import org.theseed.utils.ParseFailureException;
 
@@ -35,11 +35,11 @@ public class CoreInputDirectory extends GenomeSource {
     // base directory name
     private File rootDir;
     // connection to PATRIC and NCBI
-    private Connection p3;
+    private P3Connection p3;
 
     @Override
     protected int init(File inFile) throws IOException {
-        this.p3 = new Connection();
+        this.p3 = new P3Connection();
         this.rootDir = inFile;
         this.orgDir = new OrganismDirectories(new File(inFile, "Organisms"));
         return this.orgDir.size();

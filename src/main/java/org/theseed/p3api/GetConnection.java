@@ -11,7 +11,7 @@ import org.apache.http.client.fluent.Request;
  * @author Bruce Parrello
  *
  */
-public class GetConnection extends Connection {
+public class GetConnection extends P3Connection {
 
     /**
      * Initialize a connection.

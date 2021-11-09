@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.genome.TaxItem;
-import org.theseed.p3api.Connection.KeyBuffer;
-import org.theseed.p3api.Connection.Table;
+import org.theseed.p3api.P3Connection.KeyBuffer;
+import org.theseed.p3api.P3Connection.Table;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -79,7 +79,7 @@ public class P3Genome extends Genome {
      *
      * @throws IOException
      */
-    public static Genome load(Connection p3, String genome_id, Details detail, File cache) throws IOException {
+    public static Genome load(P3Connection p3, String genome_id, Details detail, File cache) throws IOException {
         // If there is no cache, we simply call through to the API method.
         Genome retVal = null;
         if (cache == null) {
@@ -109,7 +109,7 @@ public class P3Genome extends Genome {
      *
      * @return the genome object, or NULL if the genome does not exist
      */
-    public static P3Genome load(Connection p3, String genome_id, Details detail) {
+    public static P3Genome load(P3Connection p3, String genome_id, Details detail) {
         P3Genome retVal = null;
         long start = System.currentTimeMillis();
         // Start by getting the genome-level data.
@@ -138,7 +138,7 @@ public class P3Genome extends Genome {
             if (lineages.length > 0) {
                 JsonObject taxData = p3.getRecord(Table.TAXONOMY, Integer.toString(lineages[lineages.length - 1]), "genetic_code");
                 // Some of the genomes have invalid taxonomy data, so we have to check here.
-                if (taxData != null) code = Connection.getInt(taxData, "genetic_code");
+                if (taxData != null) code = P3Connection.getInt(taxData, "genetic_code");
             }
             retVal.setGeneticCode(code);
             // Process the contigs.  If the detail level is FULL or CONTIGS, we get the DNA, too.
@@ -161,22 +161,22 @@ public class P3Genome extends Genome {
                 String ssuRRna = "";
                 // Store the features.  Note we skip the ones with empty IDs.
                 for (JsonObject fid : fidList) {
-                    String id = Connection.getString(fid, "patric_id");
+                    String id = P3Connection.getString(fid, "patric_id");
                     if (id != null && id.length() > 0) {
-                        Feature feat = new Feature(Connection.getString(fid, "patric_id"), Connection.getString(fid, "product"),
-                                Connection.getString(fid, "sequence_id"), Connection.getString(fid, "strand"),
-                                Connection.getInt(fid, "start"), Connection.getInt(fid, "end"));
-                        feat.setPlfam(Connection.getString(fid, "plfam_id"));
-                        feat.setPgfam(Connection.getString(fid, "pgfam_id"));
-                        feat.setFigfam(Connection.getString(fid, "figfam_id"));
-                        feat.formAlias("gi|", Connection.getString(fid, "gi"));
-                        feat.formAlias("", Connection.getString(fid, "gene"));
-                        feat.formAlias("", Connection.getString(fid, "refseq_locus_tag"));
-                        String geneId = Connection.getString(fid, "gene_id");
+                        Feature feat = new Feature(P3Connection.getString(fid, "patric_id"), P3Connection.getString(fid, "product"),
+                                P3Connection.getString(fid, "sequence_id"), P3Connection.getString(fid, "strand"),
+                                P3Connection.getInt(fid, "start"), P3Connection.getInt(fid, "end"));
+                        feat.setPlfam(P3Connection.getString(fid, "plfam_id"));
+                        feat.setPgfam(P3Connection.getString(fid, "pgfam_id"));
+                        feat.setFigfam(P3Connection.getString(fid, "figfam_id"));
+                        feat.formAlias("gi|", P3Connection.getString(fid, "gi"));
+                        feat.formAlias("", P3Connection.getString(fid, "gene"));
+                        feat.formAlias("", P3Connection.getString(fid, "refseq_locus_tag"));
+                        String geneId = P3Connection.getString(fid, "gene_id");
                         if (geneId.length() > 0 && ! geneId.contentEquals("0"))
                             feat.formAlias("GeneID:", geneId);
                         // Add in the GO terms.
-                        String[] goTermList = Connection.getStringList(fid, "go");
+                        String[] goTermList = P3Connection.getStringList(fid, "go");
                         for (String goString : goTermList)
                             feat.addGoTerm(goString);
                         // Process the translation according to the feature type.
@@ -215,9 +215,9 @@ public class P3Genome extends Genome {
                     }
                 }
             }
-            if (Connection.log.isInfoEnabled()) {
+            if (P3Connection.log.isInfoEnabled()) {
                 long duration = System.currentTimeMillis() - start;
-                Connection.log.info("{} seconds to load {}.", String.format("%4.3f", duration / 1000.0), genome_id);
+                P3Connection.log.info("{} seconds to load {}.", String.format("%4.3f", duration / 1000.0), genome_id);
             }
         }
         return retVal;

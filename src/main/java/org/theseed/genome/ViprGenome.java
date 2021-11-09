@@ -20,7 +20,7 @@ import org.theseed.counters.CountMap;
 import org.theseed.gff.ViprKeywords;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.io.TabbedLineReader.Line;
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.IdClearinghouse;
 import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
@@ -78,7 +78,7 @@ public class ViprGenome extends Genome {
         /** genome ID clearinghouse */
         private IdClearinghouse idServer;
         /** PATRIC connection for taxonomies */
-        private Connection p3;
+        private P3Connection p3;
 
         /**
          * Load the virus genomes from a FASTA and GFF file.  The files can contain multiple viruses identified
@@ -137,7 +137,7 @@ public class ViprGenome extends Genome {
             // Initialize the taxonomy map.
             this.lineageMap = new HashMap<Integer, TaxItem[]>();
             // Get the server connections.
-            this.p3 = new Connection();
+            this.p3 = new P3Connection();
             this.idServer = new IdClearinghouse();
             // Now loop through the GFF3 file.
             log.info("Reading proteins from GFF file {}.", proteinGff);
@@ -261,7 +261,7 @@ public class ViprGenome extends Genome {
             TaxItem[] retVal;
             int gc;
             // Get the data for this grouping.
-            JsonObject taxonRecord = this.p3.getRecord(Connection.Table.TAXONOMY, Integer.toString(taxId), "lineage_ids,lineage_names,lineage_ranks,genetic_code");
+            JsonObject taxonRecord = this.p3.getRecord(P3Connection.Table.TAXONOMY, Integer.toString(taxId), "lineage_ids,lineage_names,lineage_ranks,genetic_code");
             if (taxonRecord == null) {
                 log.warn("No taxonomy information found for {}.", taxId);
                 // We have to punt here.  We use an empty lineage with just Virus and the leaf
@@ -270,14 +270,14 @@ public class ViprGenome extends Genome {
                 gc = 1;
             } else {
                 // Build the taxonomic lineage.
-                int[] ids = Connection.getIntegerList(taxonRecord, "lineage_ids");
-                String[] names = Connection.getStringList(taxonRecord, "lineage_names");
-                String[] ranks = Connection.getStringList(taxonRecord, "lineage_ranks");
+                int[] ids = P3Connection.getIntegerList(taxonRecord, "lineage_ids");
+                String[] names = P3Connection.getStringList(taxonRecord, "lineage_names");
+                String[] ranks = P3Connection.getStringList(taxonRecord, "lineage_ranks");
                 retVal = new TaxItem[ids.length];
                 for (int i = 0; i < retVal.length; i++)
                     retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
                 // Compute the genetic code.
-                gc = Connection.getInt(taxonRecord, "genetic_code");
+                gc = P3Connection.getInt(taxonRecord, "genetic_code");
             }
             this.xlateMap.put(taxId, new DnaTranslator(gc));
             return retVal;

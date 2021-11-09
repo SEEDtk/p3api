@@ -11,7 +11,7 @@ import java.util.Set;
 
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
-import org.theseed.p3api.Connection.Table;
+import org.theseed.p3api.P3Connection.Table;
 import org.theseed.subsystems.SubsystemProjector;
 import org.theseed.subsystems.SubsystemSpec;
 import org.theseed.subsystems.VariantSpec;
@@ -30,14 +30,14 @@ public class P3SubsystemProjector extends SubsystemProjector {
 
     // FIELDS
     /** connection to PATRIC */
-    private Connection p3;
+    private P3Connection p3;
 
     /**
      * Create a new PATRIC subsystem projector.
      *
      * @param p3	connection to PATRIC
      */
-    public P3SubsystemProjector(Connection p3) {
+    public P3SubsystemProjector(P3Connection p3) {
         this.p3 = p3;
         // Now we must query the database to get the full subsystem list.  Note we have to have a criterion, so we
         // picked one that is always true.
@@ -45,13 +45,13 @@ public class P3SubsystemProjector extends SubsystemProjector {
                 Criterion.NE("subsystem_id", "_"));
         // Loop through the list, filling in the subsystems.
         for (JsonObject record : subsystems) {
-            String subName = Connection.getString(record, "subsystem_name");
+            String subName = P3Connection.getString(record, "subsystem_name");
             log.debug("Creating {}.", subName);
             SubsystemSpec subsystem = new SubsystemSpec(subName);
-            subsystem.setClassifications(Connection.getString(record, "superclass"), Connection.getString(record, "class"),
-                    Connection.getString(record, "subclass"));
+            subsystem.setClassifications(P3Connection.getString(record, "superclass"), P3Connection.getString(record, "class"),
+                    P3Connection.getString(record, "subclass"));
             // Get the roles and insert them in order.
-            String[] roles = Connection.getStringList(record, "role_name");
+            String[] roles = P3Connection.getStringList(record, "role_name");
             for (String role : roles)
                 subsystem.addRole(role);
             // Store the subsystem itself.
@@ -75,14 +75,14 @@ public class P3SubsystemProjector extends SubsystemProjector {
         Map<String, VariantSpec> variantMap = new HashMap<String, VariantSpec>(items.size());
         Map<String, Set<String>> roleMap = this.computeRoleMap(genome);
         for (JsonObject item : items) {
-            String fid = Connection.getString(item, "patric_id");
+            String fid = P3Connection.getString(item, "patric_id");
             Feature feat = genome.getFeature(fid);
             if (feat == null) {
                 log.warn("Invalid feature ID {} in subsystem data for {}.", fid, genome);
             } else {
-                String roleDesc = Connection.getString(item, "role_name");
-                String subName = Connection.getString(item, "subsystem_name");
-                String varCode = Connection.getString(item, "active");
+                String roleDesc = P3Connection.getString(item, "role_name");
+                String subName = P3Connection.getString(item, "subsystem_name");
+                String varCode = P3Connection.getString(item, "active");
                 // Get the subsystem.
                 SubsystemSpec subsystem = this.getSubsystem(subName);
                 if (subsystem == null) {

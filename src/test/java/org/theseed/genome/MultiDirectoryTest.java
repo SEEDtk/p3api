@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.genome.iterator.GenomeSource;
 import org.theseed.io.TabbedLineReader;
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.P3Genome;
 import org.theseed.utils.ParseFailureException;
 
@@ -55,7 +55,7 @@ public class MultiDirectoryTest {
         Set<String> gList = TabbedLineReader.readSet(new File("data", "glist.txt"), "genome_id");
         assertThat(gList.size(), greaterThan(10));
         // Connect to PATRIC and add the genomes.
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         Map<String, Genome> saved = new HashMap<String, Genome>(gList.size());
         for (String genomeId : gList) {
             Genome genome = P3Genome.load(p3, genomeId, P3Genome.Details.STRUCTURE_ONLY);

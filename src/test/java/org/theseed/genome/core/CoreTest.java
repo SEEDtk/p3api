@@ -15,7 +15,7 @@ import org.theseed.genome.iterator.GenomeSource;
 import org.theseed.genome.iterator.GenomeTargetType;
 import org.theseed.genome.iterator.IGenomeTarget;
 import org.theseed.io.MarkerFile;
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.sequence.Sequence;
 import org.theseed.utils.ParseFailureException;
 
@@ -37,7 +37,7 @@ public class CoreTest extends TestCase {
      * @throws IOException
      */
     public void testLoad() throws IOException {
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         File master = new File("data", "core");
         OrganismDirectories orgDirs = new OrganismDirectories(master);
         for (String genomeId : orgDirs) {
@@ -52,7 +52,7 @@ public class CoreTest extends TestCase {
     }
 
     public void testTarget() throws IOException, ParseFailureException {
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         // Create a temporary organism directory.
         File tempTarget = new File("data", "tempCore");
         FileUtils.forceMkdir(tempTarget);

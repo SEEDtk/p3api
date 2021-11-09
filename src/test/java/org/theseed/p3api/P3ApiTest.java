@@ -21,7 +21,7 @@ import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.genome.GoTerm;
-import org.theseed.p3api.Connection.Table;
+import org.theseed.p3api.P3Connection.Table;
 import org.theseed.p3api.P3Genome.Details;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -75,49 +75,49 @@ public class P3ApiTest extends TestCase
      * test the basic connection
      */
     public void testConnection() {
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         JsonObject genome = p3.getRecord(Table.GENOME, "1798516.3", "genome_id,genome_name,genome_length,gc_content,taxon_lineage_names");
-        assertThat(Connection.getString(genome, "genome_id"), equalTo("1798516.3"));
-        assertThat(Connection.getString(genome, "genome_name"), equalTo("Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
-        assertThat(Connection.getInt(genome, "genome_length"), equalTo(426361));
-        assertThat(Connection.getDouble(genome, "gc_content"), closeTo(55.05, 0.005));
-        String[] taxonomy = Connection.getStringList(genome, "taxon_lineage_names");
+        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1798516.3"));
+        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
+        assertThat(P3Connection.getInt(genome, "genome_length"), equalTo(426361));
+        assertThat(P3Connection.getDouble(genome, "gc_content"), closeTo(55.05, 0.005));
+        String[] taxonomy = P3Connection.getStringList(genome, "taxon_lineage_names");
         assertThat(taxonomy, arrayContaining("cellular organisms", "Bacteria", "Bacteria incertae sedis", "Bacteria candidate phyla",
                 "Patescibacteria group", "Parcubacteria group", "Candidatus Kaiserbacteria",
                 "Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
         List<JsonObject> genomes = p3.query(Table.GENOME, "genome_id,genome_name,contigs", Criterion.IN("genome_id", "1803813.4", "1803814.4"));
         assertThat(genomes.size(), equalTo(2));
         genome = genomes.get(0);
-        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
-        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
-        assertThat(Connection.getInt(genome, "contigs"), equalTo(177));
+        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
+        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
+        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(177));
         genome = genomes.get(1);
-        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
-        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
-        assertThat(Connection.getInt(genome, "contigs"), equalTo(194));
+        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
+        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
+        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(194));
         Collection<String> idList = new ArrayList<String>();
         idList.add("1803813.4");
         idList.add("1803814.4");
         Map<String, JsonObject> genomeMap = p3.getRecords(Table.GENOME, idList, "genome_id,genome_name,contigs");
         genome = genomeMap.get("1803813.4");
-        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
-        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
-        assertThat(Connection.getInt(genome, "contigs"), equalTo(177));
+        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
+        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
+        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(177));
         genome = genomeMap.get("1803814.4");
-        assertThat(Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
-        assertThat(Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
-        assertThat(Connection.getInt(genome, "contigs"), equalTo(194));
+        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
+        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
+        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(194));
         List<JsonObject> features = p3.query(Table.FEATURE, "patric_id,product", Criterion.EQ("product",
                 "LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"),
                 Criterion.EQ("genome_id", "1798516.3"));
         assertThat(features.size(), equalTo(1));
         JsonObject feature = features.get(0);
-        assertThat(Connection.getString(feature, "patric_id"), equalTo("fig|1798516.3.peg.45"));
-        assertThat(Connection.getString(feature, "product"),
+        assertThat(P3Connection.getString(feature, "patric_id"), equalTo("fig|1798516.3.peg.45"));
+        assertThat(P3Connection.getString(feature, "product"),
                 equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
         JsonObject feature2 = p3.getRecord(Table.FEATURE, "fig|1798516.3.peg.45", "patric_id,product");
-        assertThat(Connection.getString(feature2, "patric_id"), equalTo("fig|1798516.3.peg.45"));
-        assertThat(Connection.getString(feature2, "product"),
+        assertThat(P3Connection.getString(feature2, "patric_id"), equalTo("fig|1798516.3.peg.45"));
+        assertThat(P3Connection.getString(feature2, "product"),
                 equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
         Collection<String> genomeList = new ArrayList<String>();
         genomeList.add("226186.12");
@@ -125,9 +125,9 @@ public class P3ApiTest extends TestCase
         List<JsonObject> contigs = p3.getRecords(Table.CONTIG, "genome_id", genomeList, "sequence_id,length");
         assertThat(contigs.size(), equalTo(5));
         for (JsonObject contig : contigs) {
-            String genomeId = Connection.getString(contig, "genome_id");
-            String seqId = Connection.getString(contig, "sequence_id");
-            int len = Connection.getInt(contig, "length");
+            String genomeId = P3Connection.getString(contig, "genome_id");
+            String seqId = P3Connection.getString(contig, "sequence_id");
+            int len = P3Connection.getInt(contig, "length");
             switch (genomeId) {
             case "226186.12" :
                 switch (seqId) {
@@ -164,8 +164,8 @@ public class P3ApiTest extends TestCase
                     Criterion.EQ("product", "Phenylalanyl-tRNA synthetase alpha chain"));
             assertThat(features.size(), equalTo(13));
             for (JsonObject feat : features) {
-                String fid = Connection.getString(feat, "patric_id");
-                String fam = Connection.getString(feat, "pgfam_id");
+                String fid = P3Connection.getString(feat, "patric_id");
+                String fam = P3Connection.getString(feat, "pgfam_id");
                 switch (fid) {
                 case "fig|84725.3.peg.3359" :
                 case "fig|86473.136.peg.768" :
@@ -214,7 +214,7 @@ public class P3ApiTest extends TestCase
      * @throws NumberFormatException
      */
     public void testP3Genome() throws NumberFormatException, IOException {
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         // Verify we get null for nonexistent genomes.  2157 is a kingdom taxon, so it will never be on a genome ID.
         P3Genome p3genome = P3Genome.load(p3, "2157.4", P3Genome.Details.FULL);
         assertNull(p3genome);
@@ -302,7 +302,7 @@ public class P3ApiTest extends TestCase
      * test special SSU RRNA situations
      */
     public void testSsuMissing() {
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         P3Genome p3Genome = P3Genome.load(p3, "1262806.3", P3Genome.Details.STRUCTURE_ONLY);
         assertThat(p3Genome.getSsuRRna(), emptyString());
     }
@@ -311,14 +311,14 @@ public class P3ApiTest extends TestCase
      * test LE and GE
      */
     public void testRanges() {
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         List<JsonObject> records = p3.query(Table.GENOME, "genome_id,genome_length", Criterion.GE("genome_length",10000000));
         for (JsonObject record : records)
-            assertThat(Connection.getInt(record, "genome_length"), greaterThanOrEqualTo(10000000));
+            assertThat(P3Connection.getInt(record, "genome_length"), greaterThanOrEqualTo(10000000));
         assertThat(records.size(), greaterThan(100));
         records = p3.query(Table.GENOME, "genome_id,genome_length", Criterion.LE("genome_length",100000));
         for (JsonObject record : records)
-            assertThat(Connection.getInt(record, "genome_length"), lessThanOrEqualTo(100000));
+            assertThat(P3Connection.getInt(record, "genome_length"), lessThanOrEqualTo(100000));
         assertThat(records.size(), greaterThan(100));
     }
 
@@ -334,7 +334,7 @@ public class P3ApiTest extends TestCase
             if (StringUtils.endsWith(file.getName(), ".gto"))
                     file.delete();
         // Read in a random genome.
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         Genome g1 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
         assertNotNull(g1);
         assertTrue(g1 instanceof P3Genome);

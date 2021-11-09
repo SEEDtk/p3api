@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.theseed.p3api.Connection;
+import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.P3Genome;
 import org.theseed.p3api.P3SubsystemProjector;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,7 +26,7 @@ public class SubsystemTest extends TestCase {
      * Test subsystem loading.
      */
     public void testSubsystemLoad() {
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         P3SubsystemProjector projector = new P3SubsystemProjector(p3);
         assertThat("A", equalTo("A"));
         P3Genome testGenome = P3Genome.load(p3, "1313.7001", P3Genome.Details.PROTEINS);

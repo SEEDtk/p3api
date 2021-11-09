@@ -27,7 +27,7 @@ public class TestP3Reps {
         File testFile = new File("data", "p3kmers.tbl");
         List<String> genomes = TabbedLineReader.readColumn(testFile, "genome_id");
         RepGenomeDb repdb = RepGenomeDb.load(new File("data", "rep200.db"));
-        Connection p3 = new Connection();
+        P3Connection p3 = new P3Connection();
         Map<String, RepGenomeDb.Representation> results = P3RepGenomeDb.getReps(p3, genomes, repdb);
         assertThat(results.size(), greaterThan(0));
         try (TabbedLineReader inStream = new TabbedLineReader(testFile)) {
