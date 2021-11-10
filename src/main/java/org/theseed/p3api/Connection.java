@@ -61,7 +61,7 @@ public abstract class Connection {
         super();
         // Default the trace stuff.
         this.setTable("<none>");
-        this.setChunk(0);
+        this.setChunkPosition(0);
         // Default the timeout.
         this.setTimeout(DEFAULT_TIMEOUT);
         // Read the API key.
@@ -86,7 +86,7 @@ public abstract class Connection {
      * @return the modified URL
      */
     public String fixNcbiUrl(String url) {
-        String retVal = url + ";api_key=" + this.getApiKey();
+        String retVal = url + "&api_key=" + this.getApiKey();
         return retVal;
     }
 
@@ -128,7 +128,7 @@ public abstract class Connection {
                 resp = request.execute();
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
-                            (System.currentTimeMillis() - start) / 1000.0, this.getTable(), this.getChunk(), tries));
+                            (System.currentTimeMillis() - start) / 1000.0, this.getTable(), this.getChunkPosition(), tries));
                 }
             // Check the response.
                 retVal = resp.returnResponse();
@@ -169,19 +169,9 @@ public abstract class Connection {
     }
 
     /**
-     * Add parameter strings to the parameter buffer.
-     *
-     * @param parameters	parameter strings to store
-     */
-    protected void addParameters(String... parameters) {
-        for (String parm : parameters) {
-            this.bufferAppend("&");
-            this.bufferAppend(parm);
-        }
-    }
-
-    /**
-     * Create a request builder for the specified data object.
+     * Create a request builder for the specified data object.  The buffer should
+     * contain the current parameters.  We allow, however, that the parameters
+     * can be modified before asking for a response, due to chunking.
      *
      * @param table	name of the target SOLR table
      *
@@ -192,6 +182,8 @@ public abstract class Connection {
         this.setTable(table);
         // Create the request.
         Request retVal = this.createRequest(table);
+        // Save the parms for the request.
+        this.saveBasicParms();
         // Set the timeout.
         retVal.connectTimeout(this.getTimeout());
         return retVal;
@@ -206,12 +198,20 @@ public abstract class Connection {
     protected abstract Request createRequest(String tableName);
 
     /**
-     * Append a string to the parameter buffer.
-     *
-     * @param string	string to append
+     * Erase the current parameter buffer.
      */
-    protected void bufferAppend(String string) {
-        this.buffer.append(string);
+    protected void clearBuffer() {
+        this.buffer.setLength(0);
+    }
+
+    /**
+     * Append strings to the parameter buffer.
+     *
+     * @param string	strings to append
+     */
+    protected void bufferAppend(String... string) {
+        for (String string0 : string)
+            this.buffer.append(string0);
     }
 
     /**
@@ -224,33 +224,53 @@ public abstract class Connection {
     }
 
     /**
-     * @return the parameter buffer
+     * @return the parameter buffer length
      */
-    protected StringBuilder getBuffer() {
-        return buffer;
+    protected int getBufferLength() {
+        return this.buffer.length();
     }
 
     /**
      * Set the basic parameters to be reused for each query chunk
+     * from the parameter buffer.
      *
      * @param basicParms the basic parameter string
      */
-    protected void setBasicParms(String basicParms) {
-        this.basicParms = basicParms;
+    protected void saveBasicParms() {
+        this.basicParms = this.buffer.toString();
     }
 
     /**
      * @return the position of the next chunk of data
      */
-    protected int getChunk() {
+    protected int getChunkPosition() {
         return chunk;
     }
 
     /**
+     * @return TRUE if the chunk position is at or past the specified point
+     *
+     * @param pos	position to check against
+     */
+    protected boolean atChunkPosition(int pos) {
+        return this.chunk >= pos;
+    }
+
+
+    /**
      * Specify the position of the next data chunk.
      */
-    protected void setChunk(int chunk) {
+    protected void setChunkPosition(int chunk) {
         this.chunk = chunk;
+    }
+
+    /**
+     * Increment the chunk position.
+     *
+     * @param size	amount to add
+     */
+    public void moveChunkPosition(int size) {
+        this.chunk += size;
     }
 
     /**
@@ -298,12 +318,6 @@ public abstract class Connection {
                 Thread.sleep(this.ncbiSpeed - diff);
                 log.debug("NCBI throttle (diff = {}).", diff);
             } catch (InterruptedException e1) { }
-    }
-
-    /**
-     * Denote that we've just made an NCBI query.
-     */
-    protected void setLastNcbiQuery() {
         this.lastNcbiQuery = System.currentTimeMillis();
     }
 

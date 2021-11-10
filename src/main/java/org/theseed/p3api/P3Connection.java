@@ -272,11 +272,22 @@ public class P3Connection extends Connection {
      * @return a JsonArray of the desired results
      */
     public List<JsonObject> query(Table table, String fields, String... criteria) {
-        Request request = this.requestBuilder(table.getName());
-        this.bufferAppend("select(" + fields + ")");
+        this.bufferAppend("select(", fields, ")");
         this.addParameters(criteria);
+        Request request = this.requestBuilder(table.getName());
         List<JsonObject> retVal = this.getResponse(request);
         return retVal;
+    }
+
+    /**
+     * Add parameter strings to the parameter buffer.
+     *
+     * @param parameters	parameter strings to store
+     */
+    protected void addParameters(String... parameters) {
+        for (String parm : parameters) {
+            this.bufferAppend("&", parm);
+        }
     }
 
     /**
@@ -346,18 +357,18 @@ public class P3Connection extends Connection {
         // Only proceed if the user wants at least one record.
         if (keys.size() > 0) {
             // Build the key list in the main string buffer.
-            this.getBuffer().setLength(0);
+            this.clearBuffer();
             // Loop through the parameters, sending requests.
             for (String key : keys) {
-                if (this.getBuffer().length() + key.length() >= MAX_LEN) {
+                if (this.getBufferLength() + key.length() >= MAX_LEN) {
                     this.processBatch(table, retVal, realFields);
                 }
-                if (this.getBuffer().length() == 0) {
+                if (this.getBufferLength() == 0) {
                     // Here we are starting a new buffer.  Put in the criteria and then
                     // start the IN clause.
                     this.bufferAppend(StringUtils.join(criteria, ','));
                     if (criteria.length > 0) this.bufferAppend(",");
-                    this.bufferAppend("in(" + keyName + ",(");
+                    this.bufferAppend("in(", keyName, ",(");
                 } else
                     this.bufferAppend(",");
                 this.bufferAppend(Criterion.fix(key));
@@ -375,12 +386,12 @@ public class P3Connection extends Connection {
      * @param fields	comma-delimited list of desired fields
      */
     private void processBatch(Table table, List<JsonObject> records, String fields) {
-        // Build the HTTP request.
-        Request request = this.requestBuilder(table.getName());
         // Close off the in-list.
         this.bufferAppend("))");
         // Add the select list to the parameters being built.
-        this.bufferAppend("&select(" + fields + ")");
+        this.bufferAppend("&select(", fields, ")");
+        // Build the HTTP request.
+        Request request = this.requestBuilder(table.getName());
         // Get the desired records.
         List<JsonObject> recordList = this.getResponse(request);
         // Put them in the output list.
@@ -396,16 +407,13 @@ public class P3Connection extends Connection {
      */
     private List<JsonObject> getResponse(Request request) {
         List<JsonObject> retVal = new ArrayList<JsonObject>();
-        // Move the parameters into the request.  Note we clear the buffer for next time.
-        this.setBasicParms(this.getBuffer().toString());
-        this.getBuffer().setLength(0);
         // Set up to loop through the chunks of response.
-        this.setChunk(0);
+        this.setChunkPosition(0);
         boolean done = false;
         while (! done) {
-            request.bodyString(String.format("%s&limit(%d,%d)", this.getBasicParms(), this.chunkSize, this.getChunk()),
+            request.bodyString(String.format("%s&limit(%d,%d)", this.getBasicParms(), this.chunkSize, this.getChunkPosition()),
                     ContentType.APPLICATION_FORM_URLENCODED);
-            this.getBuffer().setLength(0);
+            this.clearBuffer();
             long start = System.currentTimeMillis();
             HttpResponse resp = this.submitRequest(request);
             // We have a good response. Check the result range.
@@ -418,9 +426,9 @@ public class P3Connection extends Connection {
                 String value = range.getValue();
                 Matcher rMatcher = RANGE_INFO.matcher(value);
                 if (rMatcher.matches()) {
-                    this.setChunk(Integer.valueOf(rMatcher.group(1)));
+                    this.setChunkPosition(Integer.valueOf(rMatcher.group(1)));
                     int total = Integer.valueOf(rMatcher.group(2));
-                    done = (this.getChunk() >= total);
+                    done = (this.getChunkPosition() >= total);
                 } else {
                     log.debug("Range string did not match: \"{}\".", value);
                     done = true;
@@ -492,9 +500,8 @@ public class P3Connection extends Connection {
             this.paceNcbiQuery();
             // Now make the request.
             try {
-                tries++;
                 Response resp = ncbiRequest.execute();
-                this.setLastNcbiQuery();
+                tries++;
                 // Check the response.
                 HttpResponse rawResponse = resp.returnResponse();
                 int statusCode = rawResponse.getStatusLine().getStatusCode();
