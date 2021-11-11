@@ -12,14 +12,9 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 
 /**
  * @author Bruce Parrello
@@ -28,10 +23,8 @@ import org.xml.sax.SAXException;
 public class XmlUtilsTest {
 
     @Test
-    public void testXmlFile() throws ParserConfigurationException, SAXException, IOException, XmlException {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = dbf.newDocumentBuilder();
-        Document doc = builder.parse(new File("data", "experiments.xml"));
+    public void testXmlFile() throws IOException, XmlException {
+        Document doc = XmlUtils.readXmlFile(new File("data", "experiments.xml"));
         Element root = doc.getDocumentElement();
         List<Element> children = XmlUtils.childrenOf(root);
         assertThat(children.size(), equalTo(22));

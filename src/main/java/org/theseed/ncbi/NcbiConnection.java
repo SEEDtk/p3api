@@ -70,13 +70,9 @@ public class NcbiConnection extends Connection {
         private String description;
 
         private Field(Element fieldElement) {
-            try {
-                this.name = XmlUtils.getXmlString(fieldElement, "Name");
-                this.fullName = XmlUtils.getXmlString(fieldElement, "FullName");
-                this.description = XmlUtils.getXmlString(fieldElement, "Description");
-            } catch (XmlException e) {
-                throw new RuntimeException("Missing required data in field descriptor: " + e.getMessage());
-            }
+            this.name = XmlUtils.getXmlString(fieldElement, "Name");
+            this.fullName = XmlUtils.getXmlString(fieldElement, "FullName");
+            this.description = XmlUtils.getXmlString(fieldElement, "Description");
         }
 
         /**

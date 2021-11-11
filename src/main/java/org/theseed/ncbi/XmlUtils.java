@@ -3,12 +3,21 @@
  */
 package org.theseed.ncbi;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * This is a class that contains some simple XML utilities useful for NCBI documents.
@@ -17,6 +26,11 @@ import org.w3c.dom.NodeList;
  *
  */
 public class XmlUtils {
+
+    // FIELDS
+    /** xml document builder */
+    private static final DocumentBuilderFactory DOC_FACTORY =
+            DocumentBuilderFactory.newInstance();
 
     /**
      * @return the integer value of the text content of the first named sub-element
@@ -39,16 +53,20 @@ public class XmlUtils {
     }
 
     /**
-     * @return the text content of the first named sub-element
+     * Get the text content of the first named sub-element.  If none is found, we return an
+     * empty string.
      *
      * @param element	source XML element
      * @param tagName	name of the desired sub-element
      *
-     * @throws TagNotFoundException
+     * @return the text content of the first named sub-element
      */
-    public static String getXmlString(Element element, String tagName) throws TagNotFoundException {
-        Element tagNode = getFirstByTagName(element, tagName);
-        return tagNode.getTextContent();
+    public static String getXmlString(Element element, String tagName) {
+        String retVal = "";
+        Element tagNode = findFirstByTagName(element, tagName);
+        if (tagNode != null)
+            retVal = StringUtils.stripToEmpty(tagNode.getTextContent());
+        return retVal;
     }
 
     /**
@@ -112,6 +130,26 @@ public class XmlUtils {
             Node node = inList.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE)
                 retVal.add((Element) node);
+        }
+        return retVal;
+    }
+
+    /**
+     * Read an xml document from a file.
+     *
+     * @param file	source file from which to read document
+     *
+     * @return the XML document read
+     *
+     * @throws IOException
+     */
+    public static Document readXmlFile(File file) throws IOException {
+        Document retVal;
+        try {
+            DocumentBuilder builder = DOC_FACTORY.newDocumentBuilder();
+            retVal = builder.parse(file);
+        } catch (ParserConfigurationException | SAXException e) {
+            throw new IOException("Error building XML document: " + e.toString());
         }
         return retVal;
     }
