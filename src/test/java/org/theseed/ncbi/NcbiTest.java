@@ -9,10 +9,12 @@ import static org.theseed.test.Matchers.*;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Set;
 
 import org.junit.Test;
 import org.w3c.dom.Element;
@@ -86,6 +88,34 @@ public class NcbiTest {
             assertThat(expId, projFound, isTrue());
             assertThat(expId, pmFound, isTrue());
         }
+    }
+
+    @Test
+    public void testFieldList() throws XmlException {
+        NcbiConnection ncbi = new NcbiConnection();
+        List<NcbiConnection.Field> fields = ncbi.getFieldList(NcbiTable.SRA);
+        assertThat(fields.size(), equalTo(22));
+        Set<String> fieldSet = new HashSet<String>(Arrays.asList("ALL", "UID", "FILT", "ACCN", "TITL", "PROP", "WORD",
+                "ORGN", "AUTH", "PDAT", "MDAT", "GPRJ", "BSPL", "PLAT", "STRA", "SRC", "SEL", "LAY", "RLEN", "ACS",
+                "ALN", "MBS"));
+        for (NcbiConnection.Field field : fields) {
+            String fieldName = field.getName();
+            assertThat(fieldSet, hasItem(fieldName));
+            if (fieldName.contentEquals("ORGN")) {
+                assertThat(field.getFullName(), equalTo("Organism"));
+                assertThat(field.getDescription(), equalTo("Scientific and common names of organism, and all higher levels of taxonomy"));
+                assertThat(field.toLine(), equalTo("ORGN\tOrganism\tScientific and common names of organism, and all higher levels of taxonomy"));
+            }
+        }
+    }
+
+    @Test
+    public void testDates() {
+        // Create a local date from today and verify it can be recovered from a string.
+        LocalDate today = LocalDate.now();
+        String dateString = today.toString();
+        LocalDate fromString = LocalDate.parse(dateString);
+        assertThat(fromString, equalTo(today));
     }
 
 }

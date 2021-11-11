@@ -6,12 +6,16 @@ package org.theseed.ncbi;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
@@ -53,7 +57,57 @@ public class NcbiConnection extends Connection {
     private static final String SEARCH_URL = "https://www.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
     /** ENTREZ URL for data fetch */
     private static final String FETCH_URL = "https://www.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi";
+    /** ENTREZ URL for field list fetch */
+    private static final String INFO_URL = "https://www.ncbi.nlm.nih.gov/entrez/eutils/einfo.fcgi";
 
+    /**
+     * This class describes a field.  It is returned by the getFieldNames method.
+     */
+    public static class Field {
+
+        private String name;
+        private String fullName;
+        private String description;
+
+        private Field(Element fieldElement) {
+            try {
+                this.name = XmlUtils.getXmlString(fieldElement, "Name");
+                this.fullName = XmlUtils.getXmlString(fieldElement, "FullName");
+                this.description = XmlUtils.getXmlString(fieldElement, "Description");
+            } catch (XmlException e) {
+                throw new RuntimeException("Missing required data in field descriptor: " + e.getMessage());
+            }
+        }
+
+        /**
+         * @return the field's short name
+         */
+        public String getName() {
+            return this.name;
+        }
+
+        /**
+         * @return the field's full name
+         */
+        public String getFullName() {
+            return this.fullName;
+        }
+
+        /**
+         * @return the field description
+         */
+        public String getDescription() {
+            return this.description;
+        }
+
+        /**
+         * @return all the data in this descriptor
+         */
+        public String toLine() {
+            return this.name + "\t" + this.fullName + "\t" + this.description;
+        }
+
+    }
     /**
      * Construct a new NCBI connection.
      */
@@ -66,6 +120,54 @@ public class NcbiConnection extends Connection {
         } catch (ParserConfigurationException e) {
             throw new RuntimeException("Cannot create XML builder: " + e.getMessage());
         }
+    }
+
+    /**
+     * This method queries the list of fields for a database table.  Each field has a long name and a short name.
+     * Only indexed fields are returned.  Records from the database always contain everything, and much of it is
+     * not indexed.
+     *
+     * @param table		the table whose fields are desired
+     *
+     * @return a list of field descriptors
+     *
+     * @throws XmlException
+     */
+    public List<Field> getFieldList(NcbiTable table) throws XmlException {
+        this.url = INFO_URL;
+        // In this case, the search parameters are simple, just the table name.
+        String tableName = table.db();
+        this.clearBuffer();
+        this.bufferAppend("db=", tableName);
+        Request request = this.requestBuilder(tableName);
+        // There is also no chunking for this request.
+        this.setChunkPosition(0);
+        Element result = this.getResponse(request, 100);
+        // Get the field list from the result.
+        List<Element> fieldList = XmlUtils.descendantsOf(result, "Field");
+        List<Field> retVal = fieldList.stream().map(x -> new Field(x)).collect(Collectors.toList());
+        return retVal;
+    }
+
+    /**
+     * This method returns the valid field names for the specified table.  Both regular and full
+     * names are allowed, and spaces are replaced with "+" in the full names.
+     *
+     * @param table		table of interest
+     *
+     * @return a set of the valid field names for the specified table
+     *
+     * @throws XmlException
+     *
+     */
+    public Set<String> getFieldNames(NcbiTable table) throws XmlException {
+        List<Field> master = this.getFieldList(table);
+        Set<String> retVal = new HashSet<String>(master.size() * 3 / 2);
+        for (Field field : master) {
+            retVal.add(field.getName());
+            retVal.add(StringUtils.replaceChars(field.getFullName(), ' ', '+'));
+        }
+        return retVal;
     }
 
     /**
@@ -117,6 +219,8 @@ public class NcbiConnection extends Connection {
         }
         return retVal;
     }
+
+
 
     /**
      * Get an XML document for a chunk request.

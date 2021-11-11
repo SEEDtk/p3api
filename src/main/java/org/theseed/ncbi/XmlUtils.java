@@ -3,7 +3,11 @@
  */
 package org.theseed.ncbi;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 /**
@@ -75,5 +79,42 @@ public class XmlUtils {
             retVal = (Element) tagNode.item(0);
         return retVal;
     }
+
+    /**
+     * @return all the child elements of a node
+     *
+     * @param parent	parent node of the desired children
+     */
+    public static List<Element> childrenOf(Element parent) {
+        NodeList children = parent.getChildNodes();
+        return setup(children);
+    }
+
+    /**
+     * @return all the descendant elements of a node with a give type
+     *
+     * @param parent	parent node to start from
+     * @param type		tag name of the desired descendants
+     */
+    public static List<Element> descendantsOf(Element parent, String type) {
+        NodeList descendants = parent.getElementsByTagName(type);
+        return setup(descendants);
+    }
+
+    /**
+     * Create an element list from a node list.
+     *
+     * @param inList	node list containing one or more elements
+     */
+    private static List<Element> setup(NodeList inList) {
+        List<Element> retVal = new ArrayList<Element>(inList.getLength());
+        for (int i = 0; i < inList.getLength(); i++) {
+            Node node = inList.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE)
+                retVal.add((Element) node);
+        }
+        return retVal;
+    }
+
 
 }

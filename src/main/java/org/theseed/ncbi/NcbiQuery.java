@@ -7,10 +7,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
+import org.theseed.utils.ParseFailureException;
 import org.w3c.dom.Element;
 
 /**
@@ -43,6 +47,9 @@ public class NcbiQuery {
     public static final String ENTREZ_DATE = "edat";
     /** constant for modification date type */
     public static final String MOD_DATE = "mdat";
+    /** set of valid date types */
+    private static final Set<String> VALID_DATE_TYPES = new TreeSet<String>(Arrays.asList(MOD_DATE,
+            ENTREZ_DATE, CREATE_DATE, COMPLETE_DATE, PUB_DATE));
 
     /**
      * Create a blank, empty query.
@@ -168,6 +175,18 @@ public class NcbiQuery {
     public List<Element> run(NcbiConnection ncbi) throws XmlException {
         List<Element> retVal = ncbi.query(this);
         return retVal;
+    }
+
+    /**
+     * Insure that the specified date type is valid.
+     *
+     * @param dateType		date type to check
+     *
+     * @throws ParseFailureException
+     */
+    public static void validateDateType(String dateType) throws ParseFailureException {
+        if (! VALID_DATE_TYPES.contains(dateType))
+            throw new ParseFailureException("Invalid date type \"" + dateType + "\".");
     }
 
 }
