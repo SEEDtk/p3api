@@ -30,7 +30,7 @@ public abstract class Connection {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(P3Connection.class);
+    protected static Logger log = LoggerFactory.getLogger(Connection.class);
     /** parameter buffer */
     private StringBuilder buffer;
     /** table used in current request (for trace messages) */
@@ -130,7 +130,7 @@ public abstract class Connection {
                     log.debug(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
                             (System.currentTimeMillis() - start) / 1000.0, this.getTable(), this.getChunkPosition(), tries));
                 }
-            // Check the response.
+                // Check the response.
                 retVal = resp.returnResponse();
                 int code = retVal.getStatusLine().getStatusCode();
                 if (code < 400) {

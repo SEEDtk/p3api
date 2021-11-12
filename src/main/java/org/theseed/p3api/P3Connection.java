@@ -25,6 +25,8 @@ import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.genome.Genome;
 import org.theseed.genome.TaxItem;
 import org.w3c.dom.Document;
@@ -47,6 +49,10 @@ import com.github.cliftonlabs.json_simple.Jsoner;
  *
  */
 public class P3Connection extends Connection {
+
+    // FIELDS
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(Connection.class);
 
     /**
      * description of the major SOLR tables

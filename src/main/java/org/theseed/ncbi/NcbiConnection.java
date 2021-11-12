@@ -20,6 +20,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.p3api.Connection;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -43,6 +45,8 @@ import org.xml.sax.SAXException;
 public class NcbiConnection extends Connection {
 
     // FIELDS
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(NcbiConnection.class);
     /** current webenv where our ID history is stored */
     private String webenv;
     /** URL to use for current request */
@@ -52,7 +56,7 @@ public class NcbiConnection extends Connection {
     /** XML document builder */
     private DocumentBuilder docFactory;
     /** default chunk size */
-    private static int DEFAULT_CHUNK_SIZE = 100;
+    private static int DEFAULT_CHUNK_SIZE = 200;
     /** ENTREZ URL for ID search */
     private static final String SEARCH_URL = "https://www.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
     /** ENTREZ URL for data fetch */
@@ -138,7 +142,7 @@ public class NcbiConnection extends Connection {
         Request request = this.requestBuilder(tableName);
         // There is also no chunking for this request.
         this.setChunkPosition(0);
-        Element result = this.getResponse(request, 100);
+        Element result = this.getResponse(request, 400);
         // Get the field list from the result.
         List<Element> fieldList = XmlUtils.descendantsOf(result, "Field");
         List<Field> retVal = fieldList.stream().map(x -> new Field(x)).collect(Collectors.toList());
@@ -196,6 +200,7 @@ public class NcbiConnection extends Connection {
         String queryKey = XmlUtils.getXmlString(result, "QueryKey");
         this.webenv = XmlUtils.getXmlString(result, "WebEnv");
         List<Element> retVal = new ArrayList<Element>(count);
+        log.info("Expecting {} records from {}.", count, tableName);
         // Now we use a fetch request to get the individual records.  These come back in chunks.
         this.url = FETCH_URL;
         this.clearBuffer();
@@ -249,9 +254,9 @@ public class NcbiConnection extends Connection {
         } catch (UnsupportedOperationException | IOException | SAXException e) {
             throw new XmlException("Error accessing XML response: " + e.getMessage());
         }
-        if (log.isDebugEnabled()) {
+        if (log.isInfoEnabled()) {
             String duration = String.format("%2.3f", (System.currentTimeMillis() - start) / 1000.0);
-            log.debug("XML document returned after {} seconds.", duration);
+            log.info("XML document returned after {} seconds.", duration);
         }
         return retVal;
     }
