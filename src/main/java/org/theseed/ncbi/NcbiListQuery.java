@@ -89,4 +89,11 @@ public class NcbiListQuery extends NcbiQuery {
         return retVal;
     }
 
+    /**
+     * @return the number of values in this query
+     */
+    public int size() {
+        return this.values.size();
+    }
+
 }
