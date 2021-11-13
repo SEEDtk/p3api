@@ -5,10 +5,10 @@ import java.io.IOException;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.ProteinKmers;
 import org.theseed.sequence.Sequence;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.theseed.test.Matchers.*;
 
 

@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.proteins.kmers.reps.P3RepGenomeDb;
 import org.theseed.proteins.kmers.reps.RepGenomeDb;

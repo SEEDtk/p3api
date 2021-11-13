@@ -10,7 +10,7 @@ import static org.theseed.test.Matchers.*;
 import java.io.File;
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.theseed.genome.Genome;
 import org.theseed.utils.ParseFailureException;
 

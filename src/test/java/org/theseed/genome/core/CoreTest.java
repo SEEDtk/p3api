@@ -19,23 +19,25 @@ import org.theseed.p3api.P3Connection;
 import org.theseed.sequence.Sequence;
 import org.theseed.utils.ParseFailureException;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.theseed.test.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Bruce Parrello
  *
  */
-public class CoreTest extends TestCase {
+public class CoreTest {
 
     /**
      * test basic core genome load
      *
      * @throws IOException
      */
+    @Test
     public void testLoad() throws IOException {
         P3Connection p3 = new P3Connection();
         File master = new File("data", "core");
@@ -51,6 +53,7 @@ public class CoreTest extends TestCase {
         }
     }
 
+    @Test
     public void testTarget() throws IOException, ParseFailureException {
         P3Connection p3 = new P3Connection();
         // Create a temporary organism directory.

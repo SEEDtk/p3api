@@ -16,7 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -28,19 +28,19 @@ public class NcbiTest {
 
     @Test
     public void testQuery() {
-        NcbiQuery query = new NcbiQuery(NcbiTable.SRA).EQ("Organism", "Escherichia coli").EQ("Strategy", "rna-seq");
+        NcbiFilterQuery query = new NcbiFilterQuery(NcbiTable.SRA).EQ("Organism", "Escherichia coli").EQ("Strategy", "rna-seq");
         String result = query.toString();
         assertThat(result, equalTo("db=sra&term=\"Escherichia+coli\"[Organism]+AND+\"rna-seq\"[Strategy]"));
-        query = new NcbiQuery(NcbiTable.BIOPROJECT);
+        query = new NcbiFilterQuery(NcbiTable.BIOPROJECT);
         result = query.toString();
         assertThat(result, equalTo("db=bioproject"));
-        query = new NcbiQuery(NcbiTable.SRA).EQ("Strategy", "rna-seq");
+        query = new NcbiFilterQuery(NcbiTable.SRA).EQ("Strategy", "rna-seq");
         result = query.toString();
         assertThat(result, equalTo("db=sra&term=\"rna-seq\"[Strategy]"));
         Calendar now = GregorianCalendar.getInstance();
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
         String nowFormat = formatter.format(now.getTime());
-        query.since(NcbiQuery.PUB_DATE, LocalDate.of(2014, 10, 20));
+        query.since(NcbiFilterQuery.PUB_DATE, LocalDate.of(2014, 10, 20));
         result = query.toString();
         assertThat(query.getTable().db(), equalTo("sra"));
         assertThat(result, equalTo("db=sra&term=\"rna-seq\"[Strategy]&datetype=pdat&mindate=2014/10/20&maxdate=" + nowFormat));
@@ -52,7 +52,7 @@ public class NcbiTest {
         // Insure the chunk size is small enough to require chunking.
         ncbi.setChunkSize(10);
         // Get a known project.
-        List<Element> experiments = new NcbiQuery(NcbiTable.SRA).EQ("BioProject", "PRJNA238884").run(ncbi);
+        List<Element> experiments = new NcbiFilterQuery(NcbiTable.SRA).EQ("BioProject", "PRJNA238884").run(ncbi);
         assertThat(experiments.size(), equalTo(22));
         // Verify that everything points to the correct project and journal.
         for (Element experiment : experiments) {
@@ -116,6 +116,30 @@ public class NcbiTest {
         String dateString = today.toString();
         LocalDate fromString = LocalDate.parse(dateString);
         assertThat(fromString, equalTo(today));
+    }
+
+    @Test
+    public void testListQuery() throws XmlException {
+        NcbiConnection ncbi = new NcbiConnection();
+        // This will be our list of run IDs.
+        Set<String> runs = Set.of("DRR100423", "DRR100424", "DRR100425", "DRR100426",
+                "DRR100427", "DRR100428", "DRR100429", "DRR100430", "DRR100431");
+        // Build the query.
+        NcbiListQuery query = new NcbiListQuery(NcbiTable.SRA, "ACCN");
+        assertThat(query.isEmpty(), isTrue());
+        int count = 0;
+        for (String run : runs) {
+            int test = query.addId(run);
+            count++;
+            assertThat(test, equalTo(count));
+        }
+        List<Element> experiments = query.run(ncbi);
+        assertThat(experiments.size(), equalTo(runs.size()));
+        for (Element experiment : experiments) {
+            assertThat(experiment.getNodeName(), equalTo("EXPERIMENT_PACKAGE"));
+            Element runChild = XmlUtils.getFirstByTagName(experiment, "RUN");
+            assertThat(runChild.getAttribute("accession"), in(runs));
+        }
     }
 
 }

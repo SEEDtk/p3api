@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.theseed.sequence.GenomeDescriptor;
 import org.theseed.sequence.GenomeDescriptorSet;
 import org.theseed.utils.ParseFailureException;

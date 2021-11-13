@@ -14,15 +14,15 @@ import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonObject;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Bruce Parrello
  *
  */
-public class TestPerlConverter extends TestCase {
+public class TestPerlConverter  {
 
-
+    @Test
     public void testConverter() throws IOException {
         List<String> strings = new ArrayList<String>(50);
         try (LineReader stringStream = new LineReader(new File("data", "q.tbl"))) {

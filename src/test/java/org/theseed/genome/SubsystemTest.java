@@ -3,7 +3,7 @@
  */
 package org.theseed.genome;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 import static org.hamcrest.Matchers.*;
 
 import java.util.Collection;
@@ -20,11 +20,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
  * @author Bruce Parrello
  *
  */
-public class SubsystemTest extends TestCase {
+public class SubsystemTest {
 
     /**
      * Test subsystem loading.
      */
+    @Test
     public void testSubsystemLoad() {
         P3Connection p3 = new P3Connection();
         P3SubsystemProjector projector = new P3SubsystemProjector(p3);

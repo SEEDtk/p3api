@@ -1,12 +1,12 @@
 package org.theseed.p3api;
 
-import junit.framework.Test;
 
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,46 +29,29 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 /**
  * Unit test for simple App.
  */
-public class P3ApiTest extends TestCase
+public class P3ApiTest
 {
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public P3ApiTest( String testName )
-    {
-        super( testName );
-    }
-
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( P3ApiTest.class );
-    }
-
     /**
      * test detail levels
      */
+    @Test
     public void testDetails() {
         P3Genome.Details level = P3Genome.Details.FULL;
-        assertTrue(level.includesContigs());
-        assertTrue(level.includesFeatures());
-        assertTrue(level.includesProteins());
+        assertThat(level.includesContigs(), isTrue());
+        assertThat(level.includesFeatures(), isTrue());
+        assertThat(level.includesProteins(), isTrue());
         level = P3Genome.Details.CONTIGS;
-        assertTrue(level.includesContigs());
-        assertFalse(level.includesFeatures());
-        assertFalse(level.includesProteins());
+        assertThat(level.includesContigs(), isTrue());
+        assertThat(level.includesFeatures(), isFalse());
+        assertThat(level.includesProteins(), isFalse());
         level = P3Genome.Details.PROTEINS;
-        assertFalse(level.includesContigs());
-        assertTrue(level.includesFeatures());
-        assertTrue(level.includesProteins());
+        assertThat(level.includesContigs(), isFalse());
+        assertThat(level.includesFeatures(), isTrue());
+        assertThat(level.includesProteins(), isTrue());
         level = P3Genome.Details.STRUCTURE_ONLY;
-        assertFalse(level.includesContigs());
-        assertTrue(level.includesFeatures());
-        assertFalse(level.includesProteins());
+        assertThat(level.includesContigs(), isFalse());
+        assertThat(level.includesFeatures(), isTrue());
+        assertThat(level.includesProteins(), isFalse());
     }
 
     /**
@@ -217,7 +200,7 @@ public class P3ApiTest extends TestCase
         P3Connection p3 = new P3Connection();
         // Verify we get null for nonexistent genomes.  2157 is a kingdom taxon, so it will never be on a genome ID.
         P3Genome p3genome = P3Genome.load(p3, "2157.4", P3Genome.Details.FULL);
-        assertNull(p3genome);
+        assertThat(p3genome, nullValue());
         // Get the genome from disk and download a copy from PATRIC.
         Genome gto = new Genome(new File("data", "test.gto"));
         p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.STRUCTURE_ONLY);
@@ -229,11 +212,11 @@ public class P3ApiTest extends TestCase
         assertThat(p3genome.getTaxonomyId(), equalTo(gto.getTaxonomyId()));
         assertThat(p3genome.getFeatureCount(), equalTo(gto.getFeatureCount()));
         assertThat(p3genome.getContigCount(), equalTo(gto.getContigCount()));
-        assertFalse(p3genome.hasContigs());
+        assertThat(p3genome.hasContigs(), isFalse());
         Collection<Feature> p3fids = p3genome.getFeatures();
         for (Feature p3fid : p3fids) {
             Feature fid = gto.getFeature(p3fid.getId());
-            assertNotNull("Extra feature " + p3fid, fid);
+            assertThat("Extra feature " + p3fid, fid, not(nullValue()));
             assertThat("Function error in " + p3fid, p3fid.getFunction(), equalTo(fid.getFunction()));
             assertThat("Location error in " + p3fid, p3fid.getLocation(), equalTo(fid.getLocation()));
             assertThat("Local family error in " + p3fid, p3fid.getPlfam(), equalTo(fid.getPlfam()));
@@ -279,17 +262,17 @@ public class P3ApiTest extends TestCase
             Feature p3fid = p3genome.getFeature(fid.getId());
             assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
         }
-        assertFalse(p3genome.hasContigs());
+        assertThat(p3genome.hasContigs(), isFalse());
         // Now, FULL level.
         p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.FULL);
         for (Contig contig : contigs) {
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
-        assertTrue(p3genome.hasContigs());
+        assertThat(p3genome.hasContigs(), isTrue());
         // Finally, CONTIGS level.
         p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.CONTIGS);
-        assertTrue(p3genome.hasContigs());
+        assertThat(p3genome.hasContigs(), isTrue());
         Collection<Feature> fids = p3genome.getFeatures();
         assertThat(fids.size(), equalTo(0));
         for (Contig contig : contigs) {
@@ -336,18 +319,18 @@ public class P3ApiTest extends TestCase
         // Read in a random genome.
         P3Connection p3 = new P3Connection();
         Genome g1 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
-        assertNotNull(g1);
-        assertTrue(g1 instanceof P3Genome);
+        assertThat(g1, not(nullValue()));
+        assertThat(g1 instanceof P3Genome, isTrue());
         assertThat(g1.getId(), equalTo("324602.8"));
         Genome g2 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
-        assertFalse(g2 instanceof P3Genome);
+        assertThat(g2 instanceof P3Genome, isFalse());
         for (Feature feat : g1.getPegs()) {
             Feature feat2 = g2.getFeature(feat.getId());
             assertThat(feat2.getProteinTranslation(), equalTo(feat.getProteinTranslation()));
             assertThat(feat2.getFunction(), equalTo(feat.getFunction()));
         }
         File gFile = new File(gCache, "324602.8.gto");
-        assertTrue(gFile.exists());
+        assertThat(gFile.exists(), isTrue());
     }
 
     /**

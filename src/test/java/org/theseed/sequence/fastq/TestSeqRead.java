@@ -5,7 +5,7 @@ package org.theseed.sequence.fastq;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.theseed.test.Matchers.*;
 
 import java.io.BufferedReader;
@@ -13,7 +13,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.theseed.sequence.DnaKmers;
 import org.theseed.sequence.SequenceKmers;
 

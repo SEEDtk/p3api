@@ -6,12 +6,15 @@ package org.theseed.p3api;
 import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
-import java.util.logging.Level;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
+import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +50,8 @@ public abstract class Connection {
     private long lastNcbiQuery = System.currentTimeMillis();
     /** NCBI API key */
     private String apiKey;
+    /** executor for cookie policy */
+    private Executor executor;
     /** maximum retries */
     protected static final int MAX_TRIES = 5;
     /** maximum length of a key list (in characters) */
@@ -74,8 +79,12 @@ public abstract class Connection {
         }
         // Create the parameter buffer.
         this.buffer = new StringBuilder(MAX_LEN);
-        // Turn off the stupid cookie message.
-        java.util.logging.Logger.getLogger("org.apache.http.client.protocol.ResponseProcessCookies").setLevel(Level.OFF);
+        // Set up a client configuration to prevent the NCBI cookie message.
+        HttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setCookieSpec(CookieSpecs.STANDARD).build())
+                .build();
+        this.executor = Executor.newInstance(httpClient);
     }
 
     /**
@@ -125,7 +134,7 @@ public abstract class Connection {
             long start = System.currentTimeMillis();
             Response resp = null;
             try {
-                resp = request.execute();
+                resp = this.executor.execute(request);
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
                             (System.currentTimeMillis() - start) / 1000.0, this.getTable(), this.getChunkPosition(), tries));

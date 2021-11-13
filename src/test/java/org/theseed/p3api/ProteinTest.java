@@ -3,9 +3,7 @@
  */
 package org.theseed.p3api;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -20,26 +18,9 @@ import java.util.Map;
  * @author Bruce Parrello
  *
  */
-public class ProteinTest extends TestCase {
+public class ProteinTest {
 
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public ProteinTest( String testName )
-    {
-        super( testName );
-    }
-
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( ProteinTest.class );
-    }
-
+    @Test
     public void testGenomeMD5() throws NoSuchAlgorithmException, IOException {
         P3MD5Hex mdComputer = new P3MD5Hex();
         assertThat(mdComputer.genomeMD5("752.3"), equalTo("132d96707e2c31d66c1c161f609c68d4"));
@@ -52,6 +33,6 @@ public class ProteinTest extends TestCase {
         assertThat(md5Map.size(), equalTo(2));
         assertThat(md5Map.get("853.161"), equalTo("791feea638e7f600003e7cb1aafd6e67"));
         assertThat(md5Map.get("752.3"), equalTo("132d96707e2c31d66c1c161f609c68d4"));
-        assertNull(md5Map.get("2.1"));
+        assertThat(md5Map.get("2.1"), nullValue());
     }
 }

@@ -3,12 +3,12 @@
  */
 package org.theseed.genome;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,29 +32,12 @@ import org.theseed.sequence.Sequence;
  * @author Bruce Parrello
  *
  */
-public class ViprTest extends TestCase {
-
-    /**
-     * Create the test case
-     *
-     * @param testName name of the test case
-     */
-    public ViprTest( String testName )
-    {
-        super( testName );
-    }
-
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( ViprTest.class );
-    }
+public class ViprTest {
 
     /**
      * Test genome IDs.
      */
+    @Test
     public void testGenomeId() {
         IdClearinghouse idConnect = new IdClearinghouse();
         String newId1 = idConnect.computeGenomeId(83333);
@@ -69,6 +52,7 @@ public class ViprTest extends TestCase {
     /**
      * Test GFF keyword parsing.
      */
+    @Test
     public void testKeywords() {
         String input1 = "ID =JX993988;Name=Bat coronavirus Cp%2FYunnan2011, complete genome.Organism_name= SARS-related coronavirus Cp/Yunnan2011;Strain=Cp%2FYunnan2011ID=JX993988;Name=SARS-related coronavirus Cp/Yunnan2011;Dbxref=taxon:1283333);Dbxref=GenBank:JX993988";
         Map<String,String> keywords = ViprKeywords.gffParse(input1);
@@ -93,6 +77,7 @@ public class ViprTest extends TestCase {
      * test virus load
      * @throws IOException
      */
+    @Test
     public void testVirusLoad() throws IOException {
         File viprGff = new File("data", "CVgroup.gff");
         File viprFasta = new File("data", "CVgroup.fasta");
@@ -119,8 +104,8 @@ public class ViprTest extends TestCase {
                     if (feat.getType().contentEquals("mat_peptide")) {
                         assertThat(feat + " is not translated correctly", prot, equalTo(feat.getProteinTranslation()));
                     } else {
-                        assertTrue(feat + " is missing stop codon", prot.endsWith("*"));
-                        assertTrue(feat + " is translated incorrectly", prot.startsWith(feat.getProteinTranslation()));
+                        assertThat(feat + " is missing stop codon", prot.endsWith("*"), isTrue());
+                        assertThat(feat + " is translated incorrectly", prot.startsWith(feat.getProteinTranslation()), isTrue());
                         assertThat(feat + " has extra letters", prot.length(), equalTo(feat.getProteinLength() + 1));
                     }
                     goodFeat++;
@@ -135,7 +120,6 @@ public class ViprTest extends TestCase {
             assertThat(lineage[0], equalTo(10239));
             assertThat(lineage[lineage.length - 1], equalTo(vGenome.getTaxonomyId()));
         }
-        assertTrue(true);
     }
 
 }
