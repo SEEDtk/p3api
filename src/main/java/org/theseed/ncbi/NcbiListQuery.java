@@ -2,6 +2,7 @@
  *
  */
 package org.theseed.ncbi;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,9 +81,10 @@ public class NcbiListQuery extends NcbiQuery {
      * @return a list of XML elements for the records returned
      *
      * @throws XmlException
+     * @throws IOException
      */
     @Override
-    public List<Element> run(NcbiConnection ncbi) throws XmlException {
+    public List<Element> run(NcbiConnection ncbi) throws XmlException, IOException {
         List<Element> retVal = super.run(ncbi);
         // Clear the ID list so the query can be reused.
         this.values.clear();

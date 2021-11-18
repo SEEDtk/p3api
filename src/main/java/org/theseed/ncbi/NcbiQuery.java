@@ -3,6 +3,7 @@
  */
 package org.theseed.ncbi;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +21,8 @@ public abstract class NcbiQuery {
     // FIELDS
     /** name of database */
     private NcbiTable db;
+    /** maximum number of records to return */
+    private int limit;
 
     /**
      * Create an NCBI query object.
@@ -28,6 +31,7 @@ public abstract class NcbiQuery {
      */
     public NcbiQuery(NcbiTable table) {
         this.db = table;
+        this.limit = Integer.MAX_VALUE;
     }
 
     /**
@@ -38,8 +42,9 @@ public abstract class NcbiQuery {
      * @return a list of the elements found by the query
      *
      * @throws XmlException
+     * @throws IOException
      */
-    public List<Element> run(NcbiConnection ncbi) throws XmlException {
+    public List<Element> run(NcbiConnection ncbi) throws XmlException, IOException {
         List<Element> retVal = ncbi.query(this);
         return retVal;
     }
@@ -110,6 +115,22 @@ public abstract class NcbiQuery {
         buffer.append("\"[");
         buffer.append(fieldName);
         buffer.append(']');
+    }
+
+    /**
+     * @return the record limit
+     */
+    public int getLimit() {
+        return this.limit;
+    }
+
+    /**
+     * Specify a new record limit.
+     *
+     * @param limit 	the limit to set
+     */
+    public void setLimit(int limit) {
+        this.limit = limit;
     }
 
 

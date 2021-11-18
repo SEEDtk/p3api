@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.theseed.test.Matchers.*;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -47,7 +48,7 @@ public class NcbiTest {
     }
 
     @Test
-    public void testConnection() throws XmlException {
+    public void testConnection() throws XmlException, IOException {
         NcbiConnection ncbi = new NcbiConnection();
         // Insure the chunk size is small enough to require chunking.
         ncbi.setChunkSize(10);
@@ -88,10 +89,23 @@ public class NcbiTest {
             assertThat(expId, projFound, isTrue());
             assertThat(expId, pmFound, isTrue());
         }
+        List<Element> experiments20 = new NcbiFilterQuery(NcbiTable.SRA).EQ("BioProject", "PRJNA238884")
+                .limit(20).run(ncbi);
+        assertThat(experiments20.size(), equalTo(20));
+        for (int i = 0; i < 20; i++) {
+            Element expElement = XmlUtils.getFirstByTagName(experiments.get(i), "EXPERIMENT");
+            String expId = expElement.getAttribute("accession");
+            Element expElement20 = XmlUtils.getFirstByTagName(experiments20.get(i), "EXPERIMENT");
+            String expId20 = expElement20.getAttribute("accession");
+            assertThat(expId, equalTo(expId20));
+
+        }
+
+
     }
 
     @Test
-    public void testFieldList() throws XmlException {
+    public void testFieldList() throws XmlException, IOException {
         NcbiConnection ncbi = new NcbiConnection();
         List<NcbiConnection.Field> fields = ncbi.getFieldList(NcbiTable.SRA);
         assertThat(fields.size(), equalTo(22));
@@ -119,7 +133,7 @@ public class NcbiTest {
     }
 
     @Test
-    public void testListQuery() throws XmlException {
+    public void testListQuery() throws XmlException, IOException {
         NcbiConnection ncbi = new NcbiConnection();
         // This will be our list of run IDs.
         Set<String> runs = Set.of("DRR100423", "DRR100424", "DRR100425", "DRR100426",

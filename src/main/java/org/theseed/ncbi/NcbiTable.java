@@ -93,8 +93,24 @@ public enum NcbiTable {
             return "retmode=xml";
         }
 
-    };
+    }, GEO {
 
+        @Override
+        public String db() {
+            return "gds";
+        }
+
+        @Override
+        public String tagName() {
+            return "GEO_DATASET";
+        }
+
+        @Override
+        public String returnType() {
+            return "retmode=xml";
+        }
+
+    };
     /**
      * @return the name of the table
      */

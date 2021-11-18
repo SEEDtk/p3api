@@ -5,7 +5,10 @@ package org.theseed.ncbi;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -13,10 +16,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
@@ -28,6 +34,8 @@ import org.xml.sax.SAXException;
 public class XmlUtils {
 
     // FIELDS
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(XmlUtils.class);
     /** xml document builder */
     private static final DocumentBuilderFactory DOC_FACTORY =
             DocumentBuilderFactory.newInstance();
@@ -152,6 +160,61 @@ public class XmlUtils {
             throw new IOException("Error building XML document: " + e.toString());
         }
         return retVal;
+    }
+
+    /**
+     * Convert an XML string into a DOM Element.
+     *
+     * @param xmlString		input XML string
+     *
+     * @return the document element for the XML document described by the string
+     *
+     * @throws XmlException
+     */
+    public static Element parseXmlString(String xmlString) throws XmlException {
+        Element retVal;
+        try {
+            InputSource xmlSource = new InputSource(new StringReader(xmlString));
+            DocumentBuilder builder = DOC_FACTORY.newDocumentBuilder();
+            Document doc = builder.parse(xmlSource);
+            retVal = doc.getDocumentElement();
+            Element error = XmlUtils.findFirstByTagName(retVal, "ERROR");
+            if (error != null)
+                throw new XmlException("NCBI ERROR: " + error.getTextContent());
+        } catch (UnsupportedOperationException | IOException | SAXException
+                | ParserConfigurationException e) {
+            throw new XmlException("Error accessing XML response: " + e.getMessage());
+        }
+        return retVal;
+    }
+
+    /**
+     * Remove empty text modes from the specified element and all its descendants.
+     */
+    public static void cleanElement(Element element) {
+        // This is essentially our processing stack.
+        Deque<Element> deferred = new ArrayDeque<Element>();
+        deferred.push(element);
+        // Loop through the stack.
+        while (! deferred.isEmpty()) {
+            Element parent = deferred.removeLast();
+            NodeList children = parent.getChildNodes();
+            // Separate out the text and element children.
+            List<Node> textElements = new ArrayList<Node>(children.getLength());
+            for (int i = 0; i < children.getLength(); i++) {
+                Node child = children.item(i);
+                switch (child.getNodeType()) {
+                case Node.TEXT_NODE :
+                    textElements.add(child);
+                    break;
+                case Node.ELEMENT_NODE :
+                    deferred.add((Element) child);
+                    break;
+                }
+            }
+            // Delete the text children.
+            textElements.stream().forEach(x -> parent.removeChild(x));
+        }
     }
 
 

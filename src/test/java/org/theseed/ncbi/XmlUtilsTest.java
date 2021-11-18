@@ -15,6 +15,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 /**
  * @author Bruce Parrello
@@ -65,7 +66,31 @@ public class XmlUtilsTest {
                 assertThat(iter.hasNext(), isFalse());
             }
         }
+    }
 
+    @Test
+    public void testCleaner() throws XmlException {
+        String xmlString = "<root>  <parent1>  <child1>   </child1>\n"
+                + "<child2>   </child2>  </parent1>  <parent2>This is real text</parent2> </root>";
+        Element root = XmlUtils.parseXmlString(xmlString);
+        NodeList rootChildren = root.getChildNodes();
+        assertThat(rootChildren.getLength(), equalTo(5));
+        Element parent1 = (Element) rootChildren.item(1);
+        assertThat(parent1.getTagName(), equalTo("parent1"));
+        List<Element> parentChildren = XmlUtils.childrenOf(parent1);
+        assertThat(parentChildren.size(), equalTo(2));
+        assertThat(parentChildren.get(0).getTagName(), equalTo("child1"));
+        assertThat(parentChildren.get(1).getTagName(), equalTo("child2"));
+        Element parent2 = (Element) rootChildren.item(3);
+        assertThat(parent2.getTagName(), equalTo("parent2"));
+        assertThat(parent2.getTextContent(), equalTo("This is real text"));
+        XmlUtils.cleanElement(root);
+        rootChildren = root.getChildNodes();
+        assertThat(rootChildren.getLength(), equalTo(2));
+        Element parent1Test = (Element) rootChildren.item(0);
+        assertThat(parent1Test, sameInstance(parent1));
+        Element parent2Test = (Element) rootChildren.item(1);
+        assertThat(parent2Test, sameInstance(parent2));
     }
 
 }

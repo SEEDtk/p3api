@@ -134,13 +134,14 @@ public abstract class Connection {
             long start = System.currentTimeMillis();
             Response resp = null;
             try {
+                // Submit the request.
                 resp = this.executor.execute(request);
+                // Check the response.
+                retVal = resp.returnResponse();
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
                             (System.currentTimeMillis() - start) / 1000.0, this.getTable(), this.getChunkPosition(), tries));
                 }
-                // Check the response.
-                retVal = resp.returnResponse();
                 int code = retVal.getStatusLine().getStatusCode();
                 if (code < 400) {
                     // Here we succeeded.  Stop the loop.

@@ -70,6 +70,18 @@ public class NcbiFilterQuery extends NcbiQuery {
     }
 
     /**
+     * Specify a record return limit.
+     *
+     * @param limit		maximum number of records to return
+     *
+     * @return this object, for chaining
+     */
+    public NcbiFilterQuery limit(int limit) {
+        this.setLimit(limit);
+        return this;
+    }
+
+    /**
      * Specify a minimum date for records returned.
      *
      * @param type	date type

@@ -4,16 +4,11 @@
 package org.theseed.ncbi;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
@@ -23,11 +18,8 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.p3api.Connection;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 /**
  * This is a connection object for NCBI Entrez database requests.  These come back in XML form, and each request
@@ -53,8 +45,8 @@ public class NcbiConnection extends Connection {
     private String url;
     /** recommended chunk size */
     private int chunkSize;
-    /** XML document builder */
-    private DocumentBuilder docFactory;
+    /** saved exception from XML conversion */
+    private XmlException xmlError;
     /** default chunk size */
     private static int DEFAULT_CHUNK_SIZE = 200;
     /** ENTREZ URL for ID search */
@@ -115,11 +107,6 @@ public class NcbiConnection extends Connection {
         super();
         this.webenv = null;
         this.chunkSize = DEFAULT_CHUNK_SIZE;
-        try {
-            this.docFactory = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        } catch (ParserConfigurationException e) {
-            throw new RuntimeException("Cannot create XML builder: " + e.getMessage());
-        }
     }
 
     /**
@@ -132,8 +119,9 @@ public class NcbiConnection extends Connection {
      * @return a list of field descriptors
      *
      * @throws XmlException
+     * @throws IOException
      */
-    public List<Field> getFieldList(NcbiTable table) throws XmlException {
+    public List<Field> getFieldList(NcbiTable table) throws XmlException, IOException {
         this.url = INFO_URL;
         // In this case, the search parameters are simple, just the table name.
         String tableName = table.db();
@@ -142,7 +130,8 @@ public class NcbiConnection extends Connection {
         Request request = this.requestBuilder(tableName);
         // There is also no chunking for this request.
         this.setChunkPosition(0);
-        Element result = this.getResponse(request, 400);
+        String resultString = this.getResponse(request, 400);
+        Element result = XmlUtils.parseXmlString(resultString);
         // Get the field list from the result.
         List<Element> fieldList = XmlUtils.descendantsOf(result, "Field");
         List<Field> retVal = fieldList.stream().map(x -> new Field(x)).collect(Collectors.toList());
@@ -158,9 +147,10 @@ public class NcbiConnection extends Connection {
      * @return a set of the valid field names for the specified table
      *
      * @throws XmlException
+     * @throws IOException
      *
      */
-    public Set<String> getFieldNames(NcbiTable table) throws XmlException {
+    public Set<String> getFieldNames(NcbiTable table) throws XmlException, IOException {
         List<Field> master = this.getFieldList(table);
         Set<String> retVal = new HashSet<String>(master.size() * 3 / 2);
         for (Field field : master) {
@@ -178,10 +168,13 @@ public class NcbiConnection extends Connection {
      * @return the XML elements for the query results
      *
      * @throws XmlException
+     * @throws IOException
      */
-    public List<Element> query(NcbiQuery query) throws XmlException {
+    public List<Element> query(NcbiQuery query) throws XmlException, IOException {
         // First, we make the search request.
         this.url = SEARCH_URL;
+        // Get the query limit.
+        int limit = query.getLimit();
         // Now, we need to fill the buffer with the search parameters.
         this.clearBuffer();
         this.bufferAppend(query.toString(), "&useHistory=y");
@@ -195,8 +188,13 @@ public class NcbiConnection extends Connection {
         // We do not need to do any chunking for the search.  The results are all stored in the
         // search-history web environment.  We will need to chunk the fetch output, however.
         this.setChunkPosition(0);
-        Element result = this.getResponse(request, 0);
+        String resultString = this.getResponse(request, 0);
+        Element result = XmlUtils.parseXmlString(resultString);
         int count = XmlUtils.getXmlInt(result, "Count");
+        if (count > limit) {
+            log.info("Truncating query from {} to {} records.", count, limit);
+            count = limit;
+        }
         String queryKey = XmlUtils.getXmlString(result, "QueryKey");
         this.webenv = XmlUtils.getXmlString(result, "WebEnv");
         List<Element> retVal = new ArrayList<Element>(count);
@@ -207,21 +205,52 @@ public class NcbiConnection extends Connection {
         this.bufferAppend("db=", tableName, "&webenv=", this.webenv, "&query_key=", queryKey, "&", table.returnType());
         this.setChunkPosition(0);
         request = this.requestBuilder(tableName);
+        // Our results will go in here.
+        List<String> resultQueue = new ArrayList<String>(count / this.chunkSize + 1);
         // Loop until we've gotten them all.
         while (! this.atChunkPosition(count)) {
-            // Get the next chunk.
-            result = this.getResponse(request, this.chunkSize);
-            // Copy all its nodes into the result.
-            NodeList nodes = result.getElementsByTagName(table.tagName());
-            for (int i = 0; i < nodes.getLength(); i++)
-                retVal.add((Element) nodes.item(i));
+            // Get the next chunk.  Note we do a little dancing to avoid asking for more
+            // than we need.
+            int n = this.chunkSize;
+            if (this.getChunkPosition() + n > count)
+                n = count - retVal.size();
+            resultString = this.getResponse(request, n);
+            resultQueue.add(resultString);
             // Advance the position.
             this.moveChunkPosition(this.chunkSize);
+        }
+        // Now we convert the XML strings into elements in parallel.
+        this.xmlError = null;
+        List<Element> xmlQueue = resultQueue.parallelStream().map(x -> this.parseXmlString(x))
+                .collect(Collectors.toList());
+        if (xmlError != null)
+            throw xmlError;
+        for (Element element : xmlQueue) {
+            // Copy all its nodes into the result.
+            NodeList nodes = element.getElementsByTagName(table.tagName());
+            for (int i = 0; i < nodes.getLength(); i++)
+                retVal.add((Element) nodes.item(i));
         }
         return retVal;
     }
 
-
+    /**
+     * Parse an XML string into an element.  This is a special non-throwing method that saves
+     * the exception for later.
+     *
+     * @param xmlString		incoming XML string
+     *
+     * @return the document element, or NULL if an error occurred
+     */
+    private Element parseXmlString(String xmlString) {
+        Element retVal = null;
+        try {
+            retVal = XmlUtils.parseXmlString(xmlString);
+        } catch (Exception e) {
+            this.xmlError = new XmlException("Error parsing response: " + e.toString());
+        }
+        return retVal;
+    }
 
     /**
      * Get an XML document for a chunk request.
@@ -229,36 +258,18 @@ public class NcbiConnection extends Connection {
      * @param request	built request to send
      * @param size		number of records to return
      *
-     * @return the XML document from the server
+     * @return the XML document from the server as a string
      *
      * @throws XmlException
      */
-    private Element getResponse(Request request, int size) throws XmlException {
+    private String getResponse(Request request, int size) throws IOException {
         // Add the parameters to the request.
         request.bodyString(String.format("%s&retstart=%d&retmax=%d", this.getBasicParms(),
                 this.getChunkPosition(), size), ContentType.APPLICATION_FORM_URLENCODED);
-        long start = System.currentTimeMillis();
         this.paceNcbiQuery();
         HttpResponse resp = this.submitRequest(request);
-        // "submitRequest" will not return unless we got a good response.  Get the response text
-        // and convert it to XML.
-        Element retVal;
-        try {
-            String xmlString = EntityUtils.toString(resp.getEntity());
-            InputSource xmlSource = new InputSource(new StringReader(xmlString));
-            Document doc = this.docFactory.parse(xmlSource);
-            retVal = doc.getDocumentElement();
-            Element error = XmlUtils.findFirstByTagName(retVal, "ERROR");
-            if (error != null)
-                throw new XmlException("NCBI ERROR: " + error.getTextContent());
-        } catch (UnsupportedOperationException | IOException | SAXException e) {
-            throw new XmlException("Error accessing XML response: " + e.getMessage());
-        }
-        if (log.isInfoEnabled()) {
-            String duration = String.format("%2.3f", (System.currentTimeMillis() - start) / 1000.0);
-            log.info("XML document returned after {} seconds.", duration);
-        }
-        return retVal;
+        // "submitRequest" will not return unless we got a good response.  Return the response text.
+        return EntityUtils.toString(resp.getEntity());
     }
 
     @Override
