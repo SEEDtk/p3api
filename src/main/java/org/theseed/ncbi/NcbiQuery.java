@@ -8,6 +8,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Element;
 
 /**
@@ -95,7 +97,8 @@ public abstract class NcbiQuery {
     protected abstract int getBufferSize();
 
     /**
-     * Store a filter item in a query string buffer.
+     * Store a filter item in a query string buffer.  Note that because of a weird anomaly
+     * in NCBI, when the field value is a number, we can't quote the string.
      *
      * @param buffer		output query string buffer
      * @param fieldName		name of the field for the filter
@@ -104,15 +107,17 @@ public abstract class NcbiQuery {
     protected void storeFilter(StringBuilder buffer, String fieldName, String fieldValue) {
         // URLencode the value.
         String encodedValue;
-        try {
-            encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString());
+        if (StringUtils.isNumeric(fieldValue))
+            encodedValue = fieldValue;
+        else try {
+            encodedValue = "\"" + URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString())
+                    + "\"";
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("UTF-8 encoding is not supported.");
         }
         // Form the parameter string.
-        buffer.append('"');
         buffer.append(encodedValue);
-        buffer.append("\"[");
+        buffer.append("[");
         buffer.append(fieldName);
         buffer.append(']');
     }
