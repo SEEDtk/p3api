@@ -55,7 +55,10 @@ public class NormalDirectorySource extends GenomeSource implements IGenomeTarget
 
     @Override
     protected Genome getGenome(String genomeId, Details level) {
-        return this.source.getGenome(genomeId);
+        Genome retVal = null;
+        if (this.source.contains(genomeId))
+            retVal = this.source.getGenome(genomeId);
+        return retVal;
     }
 
     @Override
