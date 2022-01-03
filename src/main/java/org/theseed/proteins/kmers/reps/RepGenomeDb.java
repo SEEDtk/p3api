@@ -8,11 +8,16 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import org.apache.commons.lang3.StringUtils;
+import org.theseed.genome.Genome;
+import org.theseed.genome.Feature;
+import org.theseed.proteins.Role;
+import org.theseed.proteins.RoleMap;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.FastaOutputStream;
 import org.theseed.sequence.ProteinKmers;
@@ -51,31 +56,35 @@ public class RepGenomeDb implements Iterable<RepGenome> {
     private HashMap<String, RepGenome> genomeMap;
     /** kmer size used to create this database */
     private int kmerSize;
-    /** name of the key protein */
+    /** display name of the key protein */
     private String protName;
+    /** all aliases of the key protein */
+    private List<String> protAliases;
     /** similarity threshold for representation */
     private int threshold;
+    /** mini role map for finding seed proteins (created as needed) */
+    private RoleMap seedMap;
     /** dummy representative-genome object for outliers */
     private final RepGenome dummy = new RepGenome(null, "", "");
 
     /**
-     * Construct a blank, empty representative-genome database.
-     */
-    public RepGenomeDb(int threshold) {
-        this.genomeMap = new HashMap<String, RepGenome>();
-        this.kmerSize = ProteinKmers.kmerSize();
-        this.protName = DEFAULT_PROTEIN;
-        this.threshold = threshold;
-    }
-
-    /**
      * Construct an empty representative genome database for a specified key protein.
+     *
+     * @param threshold		kmer threshold to use
+     * @param protNames		array of names for the key protein (if empty, the default will be used)
      */
-    public RepGenomeDb(int threshold, String protName) {
+    public RepGenomeDb(int threshold, String... protNames) {
         this.genomeMap = new HashMap<String, RepGenome>();
         this.kmerSize = ProteinKmers.kmerSize();
-        this.protName = protName;
+        if (protNames.length == 0) {
+            this.protName = DEFAULT_PROTEIN;
+            this.protAliases = List.of(DEFAULT_PROTEIN);
+        } else {
+            this.protName = protNames[0];
+            this.protAliases = List.of(protNames);
+        }
         this.threshold = threshold;
+        this.seedMap = null;
     }
 
     /**
@@ -233,6 +242,13 @@ public class RepGenomeDb implements Iterable<RepGenome> {
     }
 
     /**
+     * @return the full list of protein aliases
+     */
+    public List<String> getProtAliases() {
+        return this.protAliases;
+    }
+
+    /**
      * @return the similarity threshold
      */
     public int getThreshold() {
@@ -280,7 +296,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      *
      * @param newGenome	new genome to add
      */
-    /* package */ void addRep(RepGenome newGenome) {
+    protected void addRep(RepGenome newGenome) {
         this.genomeMap.put(newGenome.getGenomeId(), newGenome);
     }
 
@@ -360,7 +376,8 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         FastaOutputStream writer = new FastaOutputStream(saveFile);
         // Start with the basic parameters.
         String repDbLabel = String.format("Rep%d,K=%d", this.threshold, this.kmerSize);
-        Sequence repSequence = new Sequence(repDbLabel, this.protName, "");
+        String repDbComment = StringUtils.join(this.protAliases, " @ ");
+        Sequence repSequence = new Sequence(repDbLabel, repDbComment, "");
         writer.write(repSequence);
         // Now write the proteins.
         for (RepGenome rep : this) {
@@ -382,7 +399,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         FastaInputStream reader = new FastaInputStream(loadFile);
         // Read the basic parameters.
         Sequence header = reader.next();
-        String protName = header.getComment();
+        String[] protNames = StringUtils.splitByWholeSeparator(header.getComment(), " @ ");
         Matcher m = HEADER_PATTERN.matcher(header.getLabel());
         if (! m.matches()) {
             // Here we have an invalid header.  This is not a real load file.
@@ -393,7 +410,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
             int kmerSize = Integer.valueOf(m.group(2));
             // Create the new database.  Note we have to update the global kmer size.
             ProteinKmers.setKmerSize(kmerSize);
-            retVal = new RepGenomeDb(threshold, protName);
+            retVal = new RepGenomeDb(threshold, protNames);
         }
         // Now read in the representative genomes.
         retVal.putGenomes(reader);
@@ -405,6 +422,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
 
     /**
      * Put all the genomes identified by the incoming sequences into this database.
+     *
      * @param sequences
      */
     private void putGenomes(Iterable<Sequence> sequences) {
@@ -441,6 +459,53 @@ public class RepGenomeDb implements Iterable<RepGenome> {
     public boolean checkSimilarity(Sequence inSeq, int sim) {
         ProteinKmers kmerThing = new ProteinKmers(inSeq.getSequence());
         return checkSimilarity(kmerThing, sim);
+    }
+
+    /**
+     * This method returns the longest instance of the seed protein in the specified genome.
+     *
+     *  @param genome	the genome whose seed protein is desired
+     *
+     *  @return a RepGenome object for the genome, or NULL if there is no seed protein
+     */
+    public RepGenome getSeedProtein(Genome genome) {
+        if (this.seedMap == null)
+            this.seedMap = this.createSeedMap();
+        // Now loop through the genome, searching for the best seed protein.
+        String bestProt = "";
+        String bestFid = "";
+        for (Feature peg : genome.getPegs()) {
+            if (! peg.getUsefulRoles(this.seedMap).isEmpty()) {
+                // Here the peg contains the seed role.
+                String prot = peg.getProteinTranslation();
+                if (prot.length() > bestProt.length()) {
+                    bestProt = prot;
+                    bestFid = peg.getId();
+                }
+            }
+        }
+        // Now create the representative-genome object.
+        RepGenome retVal = null;
+        if (! bestProt.isEmpty())
+            retVal = new RepGenome(bestFid, genome.getName(), bestProt);
+        return retVal;
+    }
+
+    /**
+     * @return a new role map created to find the seed protein
+     */
+    private RoleMap createSeedMap() {
+        RoleMap retVal = new RoleMap();
+        // Start with the default role name.
+        Role seedRole = retVal.findOrInsert(this.protName);
+        // If there is more than one alias, add the others.
+        final int n = this.protAliases.size();
+        if (n > 1) {
+            String roleId = seedRole.getId();
+            for (int i = 1; i < n; i++)
+                retVal.addRole(roleId, this.protAliases.get(i));
+        }
+        return retVal;
     }
 
 }

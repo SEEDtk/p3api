@@ -2,6 +2,9 @@ package org.theseed.proteins.kmers.reps;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.theseed.genome.Feature;
+import org.theseed.genome.Genome;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.ProteinKmers;
 import org.theseed.sequence.Sequence;
@@ -207,5 +210,51 @@ public class KmerRepTest
 
     }
 
+    /*
+     * Test off-brand seed protein support.
+     */
+    @Test
+    public void testRocPSupport() throws IOException {
+        RepGenomeDb testDb = new RepGenomeDb(8, "DNA-directed RNA polymerase beta' subunit",
+                "DNA-directed RNA polymerase subunit A");
+        Genome g1 = new Genome(new File("data", "1036778.3.gto"));
+        RepGenome g1Rep = testDb.getSeedProtein(g1);
+        assertThat(g1Rep.getFid(), equalTo("fig|1036778.3.peg.5"));
+        Feature feat = g1.getFeature("fig|1036778.3.peg.5");
+        assertThat(g1Rep.getProtein(), equalTo(feat.getProteinTranslation()));
+        assertThat(g1Rep.getName(), equalTo(g1.getName()));
+        testDb.addRep(g1Rep);
+        g1 = new Genome(new File("data", "103621.4.gto"));
+        g1Rep = testDb.getSeedProtein(g1);
+        assertThat(g1Rep.getFid(), equalTo("fig|103621.4.peg.1951"));
+        feat = g1.getFeature("fig|103621.4.peg.1951");
+        assertThat(g1Rep.getProtein(), equalTo(feat.getProteinTranslation()));
+        assertThat(g1Rep.getName(), equalTo(g1.getName()));
+        testDb.addRep(g1Rep);
+        g1 = new Genome(new File("data", "1036677.3.gto"));
+        g1Rep = testDb.getSeedProtein(g1);
+        assertThat(g1Rep, nullValue());
+        g1 = new Genome(new File("data", "fake.gto"));
+        g1Rep = testDb.getSeedProtein(g1);
+        assertThat(g1Rep.getFid(), equalTo("fig|1002870.3.peg.1581"));
+        feat = g1.getFeature("fig|1002870.3.peg.1581");
+        String prot1 = feat.getProteinTranslation();
+        assertThat(g1Rep.getProtein(), equalTo(feat.getProteinTranslation()));
+        assertThat(g1Rep.getName(), equalTo(g1.getName()));
+        testDb.addRep(g1Rep);
+        File saveFile = new File("data", "repdb.ser");
+        testDb.save(saveFile);
+        testDb = RepGenomeDb.load(saveFile);
+        assertThat(testDb.getProtName(), equalTo("DNA-directed RNA polymerase beta' subunit"));
+        assertThat(testDb.getProtAliases(), contains("DNA-directed RNA polymerase beta' subunit",
+                "DNA-directed RNA polymerase subunit A"));
+        g1Rep = testDb.get("1002870.3");
+        assertThat(g1Rep.getFid(), equalTo("fig|1002870.3.peg.1581"));
+        assertThat(g1Rep.getProtein(), equalTo(prot1));
+        assertThat(testDb.size(), equalTo(3));
+        g1 = new Genome(new File("data/gto_test", "1206109.5.gto"));
+        g1Rep = testDb.getSeedProtein(g1);
+        assertThat(g1Rep.getFid(), equalTo("fig|1206109.5.peg.68"));
+    }
 
 }
