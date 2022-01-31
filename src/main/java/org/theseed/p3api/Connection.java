@@ -95,7 +95,9 @@ public abstract class Connection {
      * @return the modified URL
      */
     public String fixNcbiUrl(String url) {
-        String retVal = url + "&api_key=" + this.getApiKey();
+        String retVal = url;
+        if (this.apiKey != null)
+            retVal += "&api_key=" + this.getApiKey();
         return retVal;
     }
 

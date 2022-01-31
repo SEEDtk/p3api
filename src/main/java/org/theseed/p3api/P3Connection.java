@@ -519,6 +519,8 @@ public class P3Connection extends Connection {
                 } else if (tries < MAX_TRIES) {
                     log.debug("Retrying taxonomy request after error code {}.", statusCode);
                 } else {
+                    log.info("HTTP error during request for taxonomy {} in {}.", taxId, genome);
+                    log.info("Error URL is {}.", url);
                     throw new RuntimeException("Taxonomy request failed with error " + statusCode + " " +
                             rawResponse.getStatusLine().getReasonPhrase());
                 }
