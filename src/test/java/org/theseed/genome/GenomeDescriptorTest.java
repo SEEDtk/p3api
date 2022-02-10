@@ -5,7 +5,6 @@ package org.theseed.genome;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -83,12 +82,12 @@ public class GenomeDescriptorTest {
             assertThat(result.getProximity(), greaterThan(0.0));
             resultList.add(result);
         }
-        assertThat(GenomeDescriptorSet.Rating.test(resultList, new int[] { 0, 1, 2, 3} ), isTrue());
+        assertThat(GenomeDescriptorSet.Rating.test(resultList, new int[] { 0, 1, 2, 3} ), equalTo(true));
         resultList.add(new GenomeDescriptorSet.Rating());
-        assertThat(GenomeDescriptorSet.Rating.test(resultList, new int[] { 4, 0, 1, 2, 3 }), isFalse());
-        assertThat(GenomeDescriptorSet.Rating.test(resultList, new int[] { 1, 0, 4, 2, 3 }), isFalse());
-        assertThat(resultList.get(0).isSameGenome(resultList.get(4)), isFalse());
-        assertThat(resultList.get(1).isSameGenome(resultList.get(2)), isTrue());
+        assertThat(GenomeDescriptorSet.Rating.test(resultList, new int[] { 4, 0, 1, 2, 3 }), equalTo(false));
+        assertThat(GenomeDescriptorSet.Rating.test(resultList, new int[] { 1, 0, 4, 2, 3 }), equalTo(false));
+        assertThat(resultList.get(0).isSameGenome(resultList.get(4)), equalTo(false));
+        assertThat(resultList.get(1).isSameGenome(resultList.get(2)), equalTo(true));
     }
 
     @Test

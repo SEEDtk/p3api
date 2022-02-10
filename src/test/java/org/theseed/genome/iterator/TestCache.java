@@ -5,7 +5,6 @@ package org.theseed.genome.iterator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,14 +29,14 @@ public class TestCache {
         Genome test2 = cache.get("1079.16");
         assertThat(test2.getId(), equalTo("1079.16"));
         Genome test = cache.get("1002870.3");
-        assertThat(test == test1, isTrue());
+        assertThat(test == test1, equalTo(true));
         test = cache.get("1206109.5");
         assertThat(test.getId(), equalTo("1206109.5"));
         test = cache.get("1121447.3");
         assertThat(test.getId(), equalTo("1121447.3"));
         test = cache.get("1079.16");
         assertThat(test.getId(), equalTo("1079.16"));
-        assertThat(test == test2, isFalse());
+        assertThat(test == test2, equalTo(false));
         cache.logStats("Test");
     }
 

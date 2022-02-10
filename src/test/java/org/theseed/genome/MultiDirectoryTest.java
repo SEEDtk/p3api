@@ -5,7 +5,6 @@ package org.theseed.genome;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,8 +72,8 @@ public class MultiDirectoryTest {
         checkSaved(saved, genome1);
         genome1 = multiDir.get("83333.1");
         assertThat(genome1, nullValue());
-        assertThat(multiDir.contains("904345.3"), isTrue());
-        assertThat(multiDir.contains("83333.1"), isFalse());
+        assertThat(multiDir.contains("904345.3"), equalTo(true));
+        assertThat(multiDir.contains("83333.1"), equalTo(false));
         // Reload the multi-directory.  This time we will delete during iteration.
         multiDir = new GenomeMultiDirectory(newDir);
         assertThat(multiDir.size(), equalTo(gList.size()));
@@ -87,7 +86,7 @@ public class MultiDirectoryTest {
             lastGID = gid;
             if (gid.contentEquals("904345.3")) {
                 gIter.remove();
-                assertThat(multiDir.contains("904345.3"), isFalse());
+                assertThat(multiDir.contains("904345.3"), equalTo(false));
                 assertThat(multiDir.size(), equalTo(gList.size() - 1));
             } else
                 checkSaved(saved, genome);
@@ -96,9 +95,9 @@ public class MultiDirectoryTest {
         File[] lastFiles = lastDir.listFiles();
         assertThat(multiDir.getLastDirSize(), equalTo(lastFiles.length));
         lastGID = StringUtils.substring(lastFiles[0].getName(), 0, -GenomeMultiDirectory.EXTENSION.length());
-        assertThat(multiDir.contains(lastGID), isTrue());
+        assertThat(multiDir.contains(lastGID), equalTo(true));
         multiDir.remove(lastGID);
-        assertThat(multiDir.contains(lastGID), isFalse());
+        assertThat(multiDir.contains(lastGID), equalTo(false));
         assertThat(multiDir.getLastDirSize(), equalTo(lastFiles.length - 1));
         assertThat(multiDir.getLastDir(), equalTo(lastDir));
         assertThat(multiDir.size(), equalTo(gList.size() - 2));
@@ -149,7 +148,7 @@ public class MultiDirectoryTest {
             source.setSkipSet(badGenomes);
             assertThat(label, source.size(), equalTo(saved.size() - 2));
             for (Genome genome : source) {
-                assertThat(genome.toString(), badGenomes.contains(genome.getId()), isFalse());
+                assertThat(genome.toString(), badGenomes.contains(genome.getId()), equalTo(false));
                 checkSaved(saved, genome);
             }
         }

@@ -5,7 +5,6 @@ package org.theseed.ncbi;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -86,8 +85,8 @@ public class NcbiTest {
                     break;
                 }
             }
-            assertThat(expId, projFound, isTrue());
-            assertThat(expId, pmFound, isTrue());
+            assertThat(expId, projFound, equalTo(true));
+            assertThat(expId, pmFound, equalTo(true));
         }
         List<Element> experiments20 = new NcbiFilterQuery(NcbiTable.SRA).EQ("BioProject", "PRJNA238884")
                 .limit(20).run(ncbi);
@@ -140,7 +139,7 @@ public class NcbiTest {
                 "DRR100427", "DRR100428", "DRR100429", "DRR100430", "DRR100431");
         // Build the query.
         NcbiListQuery query = new NcbiListQuery(NcbiTable.SRA, "ACCN");
-        assertThat(query.isEmpty(), isTrue());
+        assertThat(query.isEmpty(), equalTo(true));
         int count = 0;
         for (String run : runs) {
             int test = query.addId(run);

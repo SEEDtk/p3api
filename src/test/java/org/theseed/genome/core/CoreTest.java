@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.theseed.test.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -73,9 +72,9 @@ public class CoreTest {
             Genome test2core = new CoreGenome(p3, orgDir.getDir("1121911.3"));
             CompareGenomes.test(test1gto, test1core, false);
             CompareGenomes.test(test2gto, test2core, false);
-            assertThat(coreTarget.contains(test1gto.getId()), isTrue());
-            assertThat(coreTarget.contains(test2gto.getId()), isTrue());
-            assertThat(coreTarget.contains("83333.1"), isFalse());
+            assertThat(coreTarget.contains(test1gto.getId()), equalTo(true));
+            assertThat(coreTarget.contains(test2gto.getId()), equalTo(true));
+            assertThat(coreTarget.contains("83333.1"), equalTo(false));
             // Do it again using a genome source.
             GenomeSource coreSource = GenomeSource.Type.CORE.create(tempTarget);
             assertThat(coreSource.size(), equalTo(2));

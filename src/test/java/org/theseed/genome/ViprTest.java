@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -104,8 +103,8 @@ public class ViprTest {
                     if (feat.getType().contentEquals("mat_peptide")) {
                         assertThat(feat + " is not translated correctly", prot, equalTo(feat.getProteinTranslation()));
                     } else {
-                        assertThat(feat + " is missing stop codon", prot.endsWith("*"), isTrue());
-                        assertThat(feat + " is translated incorrectly", prot.startsWith(feat.getProteinTranslation()), isTrue());
+                        assertThat(feat + " is missing stop codon", prot.endsWith("*"), equalTo(true));
+                        assertThat(feat + " is translated incorrectly", prot.startsWith(feat.getProteinTranslation()), equalTo(true));
                         assertThat(feat + " has extra letters", prot.length(), equalTo(feat.getProteinLength() + 1));
                     }
                     goodFeat++;

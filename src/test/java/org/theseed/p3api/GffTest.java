@@ -14,7 +14,6 @@ import org.theseed.gff.GffReader;
 
 import org.junit.jupiter.api.Test;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
@@ -31,7 +30,7 @@ public class GffTest {
     @Test
     public void testGffReader() throws IOException {
         try (GffReader reader = new GffReader(new File("data", "short.gff"))) {
-            assertThat(reader.hasNext(), isTrue());
+            assertThat(reader.hasNext(), equalTo(true));
             GffReader.Line line = reader.next();
             assertThat(line, not(nullValue()));
             assertThat(line.getId(), equalTo("NC_001133.9"));
@@ -46,28 +45,28 @@ public class GffTest {
             assertThat(line.getAttribute("taxon"), equalTo("559292"));
             assertThat(line.getAttributeOrEmpty("taxon"), equalTo("559292"));
             assertThat(line.getAttributeOrEmpty("Note"), equalTo(""));
-            assertThat(reader.hasNext(), isTrue());
+            assertThat(reader.hasNext(), equalTo(true));
             line = reader.next();
             assertThat(line.getType(), equalTo("telomere"));
             assertThat(line.getStrand(), equalTo('-'));
             assertThat(line.getAttribute("Note"),
                     equalTo("TEL01L; Telomeric region on the left arm of Chromosome I; composed of an X element core sequence, X element combinatorial repeats, and a short terminal stretch of telomeric repeats"));
-            assertThat(reader.hasNext(), isTrue());
+            assertThat(reader.hasNext(), equalTo(true));
             line = reader.next();
             assertThat(line.getLeft(), equalTo(707));
             assertThat(line.getAttribute("SGD"), equalTo("S000121252"));
             assertThat(line.getId(), equalTo("NC_001133.9"));
-            assertThat(reader.hasNext(), isTrue());
+            assertThat(reader.hasNext(), equalTo(true));
             line = reader.next();
             assertThat(line.getAttribute("locus_tag"), equalTo("YAL068C"));
             assertThat(line.getType(), equalTo("gene"));
-            assertThat(reader.hasNext(), isTrue());
+            assertThat(reader.hasNext(), equalTo(true));
             line = reader.next();
             assertThat(line.getType(), equalTo("mRNA"));
-            assertThat(reader.hasNext(), isTrue());
+            assertThat(reader.hasNext(), equalTo(true));
             line = reader.next();
             assertThat(line.getType(), equalTo("peg"));
-            assertThat(reader.hasNext(), isFalse());
+            assertThat(reader.hasNext(), equalTo(false));
             assertThat(reader.next(), nullValue());
         }
 
@@ -78,7 +77,7 @@ public class GffTest {
         Genome newGenome = new Genome("559292.1", "yeast taxonomy test", "Eukaryota", 0);
         P3Connection p3 = new P3Connection();
         boolean found = p3.computeLineage(newGenome, 559292);
-        assertThat(found, isTrue());
+        assertThat(found, equalTo(true));
         assertThat(newGenome.getGeneticCode(), equalTo(1));
         int[] lineage = newGenome.getLineage();
         assertThat(ArrayUtils.toObject(lineage),

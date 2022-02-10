@@ -5,7 +5,6 @@ package org.theseed.ncbi;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,11 +45,11 @@ public class XmlUtilsTest {
                 List<Element> sampleAChildren = XmlUtils.childrenOf(sampleAParent);
                 assertThat(sampleAChildren.size(), equalTo(5));
                 Iterator<Element> iter = sampleAChildren.iterator();
-                assertThat(iter.hasNext(), isTrue());
+                assertThat(iter.hasNext(), equalTo(true));
                 Element sampleA = iter.next();
                 assertThat(XmlUtils.getXmlString(sampleA, "TAG"), equalTo("source_name"));
                 assertThat(XmlUtils.getXmlString(sampleA, "VALUE"), equalTo("Escherichia coli MG1655 cells"));
-                assertThat(iter.hasNext(), isTrue());
+                assertThat(iter.hasNext(), equalTo(true));
                 sampleA = iter.next();
                 assertThat(XmlUtils.getXmlString(sampleA, "TAG"), equalTo("strain"));
                 assertThat(XmlUtils.getXmlString(sampleA, "VALUE"), equalTo("K-12"));
@@ -63,7 +62,7 @@ public class XmlUtilsTest {
                 sampleA = iter.next();
                 assertThat(XmlUtils.getXmlString(sampleA, "TAG"), equalTo("substrain"));
                 assertThat(XmlUtils.getXmlString(sampleA, "VALUE"), equalTo("MG1655"));
-                assertThat(iter.hasNext(), isFalse());
+                assertThat(iter.hasNext(), equalTo(false));
             }
         }
     }

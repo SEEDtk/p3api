@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.theseed.test.Matchers.*;
 
 
 /**
@@ -35,7 +34,7 @@ public class KmerRepTest
         RepGenome testGenome = new RepGenome(testSeq);
         testdb.checkGenome(testGenome);
         RepGenomeDb.Representation result = testdb.findClosest(testSeq);
-        assertThat(result.getSimilarity() > 200, isTrue());
+        assertThat(result.getSimilarity() > 200, equalTo(true));
         double distance = testGenome.distance(testGenome);
         assertThat(distance, equalTo(0.0));
         inStream.close();
@@ -60,7 +59,7 @@ public class KmerRepTest
         assertThat(rep1.getName(), equalTo("Escherichia coli EC4402"));
         assertThat(rep1.getProtein(), equalTo(prot1));
         RepGenome rep2 = new RepGenome("fig|1005530.4.peg.2208", "Escherichia coli EC4402 B", prot1);
-        assertThat(rep1.equals(rep2), isFalse());
+        assertThat(rep1.equals(rep2), equalTo(false));
         assertThat(rep2.getGenomeId(), equalTo("1005530.4"));
         RepGenome rep3;
         try {
@@ -76,14 +75,14 @@ public class KmerRepTest
         // Test genome ordering.
         RepGenome rep4 = new RepGenome("fig|1129793.30.peg.2957", "Test genome 1", "");
         RepGenome rep5 = new RepGenome("fig|129793.30.peg.2957", "Test genome 2", "");
-        assertThat(rep1.compareTo(rep2) < 0, isTrue());
-        assertThat(rep1.compareTo(rep3) < 0, isTrue());
-        assertThat(rep3.compareTo(rep4) < 0, isTrue());
-        assertThat(rep4.compareTo(rep5) < 0, isTrue());
-        assertThat(rep2.compareTo(rep1) > 0, isTrue());
-        assertThat(rep3.compareTo(rep1) > 0, isTrue());
-        assertThat(rep4.compareTo(rep3) > 0, isTrue());
-        assertThat(rep5.compareTo(rep4) > 0, isTrue());
+        assertThat(rep1.compareTo(rep2) < 0, equalTo(true));
+        assertThat(rep1.compareTo(rep3) < 0, equalTo(true));
+        assertThat(rep3.compareTo(rep4) < 0, equalTo(true));
+        assertThat(rep4.compareTo(rep5) < 0, equalTo(true));
+        assertThat(rep2.compareTo(rep1) > 0, equalTo(true));
+        assertThat(rep3.compareTo(rep1) > 0, equalTo(true));
+        assertThat(rep4.compareTo(rep3) > 0, equalTo(true));
+        assertThat(rep5.compareTo(rep4) > 0, equalTo(true));
         rep3 = new RepGenome("fig|1005530.3.peg.2957", "Glaciecola polaris LMG 21857", "MSHLAELVASAKAAISQASDVAALDNVRVEYLGKKGHLTLQMTTLRELPPEERPAAGAVI");
         assertThat(rep1.compareTo(rep3), equalTo(0));
     }
@@ -106,7 +105,7 @@ public class KmerRepTest
         assertThat(rep1.getId(), equalTo("fig|1005530.3.peg.2208"));
         assertThat(rep2.getId(), equalTo("a sequence"));
         assertThat(rep1.getProtein(), equalTo(prot1));
-        assertThat(seq1.equals(seq2), isFalse());
+        assertThat(seq1.equals(seq2), equalTo(false));
         Sequence seq3 = new Sequence("fig|1005530.3.peg.2208", "Glaciecola polaris LMG 21857", "MSHLAELVASAKAAISQASDVAALDNVRVEYLGKKGHLTLQMTTLRELPPEERPAAGAVI");
         RepSequence rep3 = new RepSequence(seq3);
         int sim = rep3.similarity(rep1);
@@ -153,7 +152,7 @@ public class KmerRepTest
                 "RLTMLRYGVTDLRSFFENDLRFLKQFK");
         RepGenomeDb.Representation result = repDb.findClosest(testSeq);
         assertThat(result.getGenomeId(), equalTo("1005530.3"));
-        assertThat(result.getSimilarity() >= 200, isTrue());
+        assertThat(result.getSimilarity() >= 200, equalTo(true));
         // Verify that the distance works.
         ProteinKmers myRep = result.getRepresentative();
         assertThat(result.getDistance(), equalTo(myRep.distance(testSeq)));
@@ -161,7 +160,7 @@ public class KmerRepTest
         fastaStream = new FastaInputStream(fastaFile);
         for (Sequence inSeq : fastaStream) {
             boolean found = repDb.checkSimilarity(inSeq, 50);
-            assertThat(found, isTrue());
+            assertThat(found, equalTo(true));
         }
         fastaStream.close();
         // Now get all the represented genomes and verify that they are far apart.
@@ -175,7 +174,7 @@ public class KmerRepTest
                 // Verify the similarity thresholds here.
                 int compareij = repGenome.similarity(allReps[j]);
                 assertThat("Genomes " + repGenome + " and " + allReps[j] + " are too close.  Score = " + compareij,
-                        compareij < repDb.getThreshold(), isTrue());
+                        compareij < repDb.getThreshold(), equalTo(true));
                 // Verify the distance behavior here.
                 double distij = repGenome.distance(allReps[j]);
                 double distji = allReps[j].distance(repGenome);
@@ -183,7 +182,7 @@ public class KmerRepTest
                 for (int k = j + 1; k < n; k++) {
                     double distjk = allReps[j].distance(allReps[k]);
                     double distik = repGenome.distance(allReps[k]);
-                    assertThat(distij + distjk >= distik, isTrue());
+                    assertThat(distij + distjk >= distik, equalTo(true));
                     int compareik = repGenome.similarity(allReps[k]);
                     if (compareik > compareij && distik > distij) {
                         fail("Greater similarity at greater distance.");

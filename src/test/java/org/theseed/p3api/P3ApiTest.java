@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.theseed.test.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,21 +36,21 @@ public class P3ApiTest
     @Test
     public void testDetails() {
         P3Genome.Details level = P3Genome.Details.FULL;
-        assertThat(level.includesContigs(), isTrue());
-        assertThat(level.includesFeatures(), isTrue());
-        assertThat(level.includesProteins(), isTrue());
+        assertThat(level.includesContigs(), equalTo(true));
+        assertThat(level.includesFeatures(), equalTo(true));
+        assertThat(level.includesProteins(), equalTo(true));
         level = P3Genome.Details.CONTIGS;
-        assertThat(level.includesContigs(), isTrue());
-        assertThat(level.includesFeatures(), isFalse());
-        assertThat(level.includesProteins(), isFalse());
+        assertThat(level.includesContigs(), equalTo(true));
+        assertThat(level.includesFeatures(), equalTo(false));
+        assertThat(level.includesProteins(), equalTo(false));
         level = P3Genome.Details.PROTEINS;
-        assertThat(level.includesContigs(), isFalse());
-        assertThat(level.includesFeatures(), isTrue());
-        assertThat(level.includesProteins(), isTrue());
+        assertThat(level.includesContigs(), equalTo(false));
+        assertThat(level.includesFeatures(), equalTo(true));
+        assertThat(level.includesProteins(), equalTo(true));
         level = P3Genome.Details.STRUCTURE_ONLY;
-        assertThat(level.includesContigs(), isFalse());
-        assertThat(level.includesFeatures(), isTrue());
-        assertThat(level.includesProteins(), isFalse());
+        assertThat(level.includesContigs(), equalTo(false));
+        assertThat(level.includesFeatures(), equalTo(true));
+        assertThat(level.includesProteins(), equalTo(false));
     }
 
     /**
@@ -212,7 +211,7 @@ public class P3ApiTest
         assertThat(p3genome.getTaxonomyId(), equalTo(gto.getTaxonomyId()));
         assertThat(p3genome.getFeatureCount(), equalTo(gto.getFeatureCount()));
         assertThat(p3genome.getContigCount(), equalTo(gto.getContigCount()));
-        assertThat(p3genome.hasContigs(), isFalse());
+        assertThat(p3genome.hasContigs(), equalTo(false));
         Collection<Feature> p3fids = p3genome.getFeatures();
         for (Feature p3fid : p3fids) {
             Feature fid = gto.getFeature(p3fid.getId());
@@ -262,17 +261,17 @@ public class P3ApiTest
             Feature p3fid = p3genome.getFeature(fid.getId());
             assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
         }
-        assertThat(p3genome.hasContigs(), isFalse());
+        assertThat(p3genome.hasContigs(), equalTo(false));
         // Now, FULL level.
         p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.FULL);
         for (Contig contig : contigs) {
             Contig p3contig = p3genome.getContig(contig.getId());
             assertThat(p3contig.getSequence(), equalTo(contig.getSequence()));
         }
-        assertThat(p3genome.hasContigs(), isTrue());
+        assertThat(p3genome.hasContigs(), equalTo(true));
         // Finally, CONTIGS level.
         p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.CONTIGS);
-        assertThat(p3genome.hasContigs(), isTrue());
+        assertThat(p3genome.hasContigs(), equalTo(true));
         Collection<Feature> fids = p3genome.getFeatures();
         assertThat(fids.size(), equalTo(0));
         for (Contig contig : contigs) {
@@ -320,17 +319,17 @@ public class P3ApiTest
         P3Connection p3 = new P3Connection();
         Genome g1 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
         assertThat(g1, not(nullValue()));
-        assertThat(g1 instanceof P3Genome, isTrue());
+        assertThat(g1 instanceof P3Genome, equalTo(true));
         assertThat(g1.getId(), equalTo("324602.8"));
         Genome g2 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
-        assertThat(g2 instanceof P3Genome, isFalse());
+        assertThat(g2 instanceof P3Genome, equalTo(false));
         for (Feature feat : g1.getPegs()) {
             Feature feat2 = g2.getFeature(feat.getId());
             assertThat(feat2.getProteinTranslation(), equalTo(feat.getProteinTranslation()));
             assertThat(feat2.getFunction(), equalTo(feat.getFunction()));
         }
         File gFile = new File(gCache, "324602.8.gto");
-        assertThat(gFile.exists(), isTrue());
+        assertThat(gFile.exists(), equalTo(true));
     }
 
     /**
