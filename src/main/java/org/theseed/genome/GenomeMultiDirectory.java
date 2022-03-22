@@ -286,6 +286,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
      * @param gFile		name of the file containin the genome
      */
     private Genome readGenome(File gFile) throws IOException {
+        log.debug("Reading genome from file {}.", gFile);
         Genome retVal;
         // Note we need to read from a gzip-compressed file.
         try (FileInputStream inStream = new FileInputStream(gFile);
