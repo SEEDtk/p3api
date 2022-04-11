@@ -125,7 +125,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
          * @param rep		representative-genome object
          * @param seq		kmers for the incoming sequence
          */
-        protected Representation(RepGenome rep, ProteinKmers seq) {
+        public Representation(RepGenome rep, ProteinKmers seq) {
             this.representative = rep;
             this.similarity = rep.similarity(seq);
             this.distance = SequenceKmers.distance(this.similarity, rep, seq);
@@ -134,7 +134,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         /**
          * Create a default representation.
          */
-        protected Representation() {
+        public Representation() {
             this.representative = null;
             this.similarity = 0;
             this.distance = 1.0;
