@@ -66,7 +66,8 @@ public class P3Connection extends Connection {
         SEQUENCE("feature_sequence", "md5"),
         SUBSYSTEM_ITEM("subsystem", "id"),
         FAMILY("protein_family_ref", "family_id"),
-        SUBSYSTEM("subsystem_ref", "subsystem_id")
+        SUBSYSTEM("subsystem_ref", "subsystem_id"),
+        SP_GENE("sp_gene", "id")
         ;
 
         // INTERNAL FIELDS
