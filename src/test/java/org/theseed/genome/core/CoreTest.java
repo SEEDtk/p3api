@@ -6,11 +6,16 @@ package org.theseed.genome.core;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
-import org.theseed.genome.CompareGenomes;
+import org.apache.commons.lang3.ArrayUtils;
+import org.theseed.genome.Annotation;
+import org.theseed.genome.Contig;
+import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
+import org.theseed.genome.GoTerm;
 import org.theseed.genome.iterator.GenomeSource;
 import org.theseed.genome.iterator.GenomeTargetType;
 import org.theseed.genome.iterator.IGenomeTarget;
@@ -70,8 +75,8 @@ public class CoreTest {
             assertThat(orgDir.size(), equalTo(2));
             Genome test1core = new CoreGenome(p3, orgDir.getDir("1123388.3"));
             Genome test2core = new CoreGenome(p3, orgDir.getDir("1121911.3"));
-            CompareGenomes.test(test1gto, test1core, false);
-            CompareGenomes.test(test2gto, test2core, false);
+            test(test1gto, test1core, false);
+            test(test2gto, test2core, false);
             assertThat(coreTarget.contains(test1gto.getId()), equalTo(true));
             assertThat(coreTarget.contains(test2gto.getId()), equalTo(true));
             assertThat(coreTarget.contains("83333.1"), equalTo(false));
@@ -81,10 +86,10 @@ public class CoreTest {
             for (Genome genome : coreSource) {
                 switch (genome.getId()) {
                 case "1123388.3" :
-                    CompareGenomes.test(test1gto, genome, false);
+                    test(test1gto, genome, false);
                     break;
                 case "1121911.3" :
-                    CompareGenomes.test(test2gto, genome, false);
+                    test(test2gto, genome, false);
                     break;
                 default:
                     fail("Invalid genome ID.");
@@ -167,6 +172,55 @@ public class CoreTest {
         assertThat(CoreUtilities.genomeOf("patric|123.45.peg.10"), equalTo(null));
     }
 
+    /**
+     * Verify two genomes are identical.
+     *
+     * @param gto	first genome
+     * @param gto2	second genome
+     * @param full	if TRUE, non-core attributes will be tested
+     */
+    public static void test(Genome gto, Genome gto2, boolean full) {
+        assertThat(gto2.getId(), equalTo(gto.getId()));
+        assertThat(gto2.getName(), equalTo(gto.getName()));
+        assertThat(gto2.getDomain(), equalTo(gto.getDomain()));
+        assertThat(ArrayUtils.toObject(gto2.getLineage()), arrayContaining(ArrayUtils.toObject(gto.getLineage())));
+        assertThat(gto2.getGeneticCode(), equalTo(gto.getGeneticCode()));
+        assertThat(gto2.getTaxonomyId(), equalTo(gto.getTaxonomyId()));
+        assertThat(gto2.getFeatureCount(), equalTo(gto.getFeatureCount()));
+        assertThat(gto2.getContigCount(), equalTo(gto.getContigCount()));
+        Collection<Feature> fids = gto.getFeatures();
+        for (Feature fid : fids) {
+            Feature diskFid = gto2.getFeature(fid.getId());
+            assertThat(diskFid.getFunction(), equalTo(fid.getFunction()));
+            assertThat(diskFid.getLocation(), equalTo(fid.getLocation()));
+            assertThat(diskFid.getPlfam(), equalTo(fid.getPlfam()));
+            assertThat(diskFid.getType(), equalTo(fid.getType()));
+            assertThat(diskFid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
+            if (full) {
+                Collection<GoTerm> fidGoTerms = fid.getGoTerms();
+                assertThat(diskFid.getGoTerms().size(), equalTo(fidGoTerms.size()));
+                for (GoTerm diskGoTerm : diskFid.getGoTerms()) {
+                    assertThat(fidGoTerms, hasItem(diskGoTerm));
+                }
+            }
+            Collection<Annotation> fidAnnotations = fid.getAnnotations();
+            assertThat(diskFid.getAnnotations().size(), equalTo(fidAnnotations.size()));
+            for (Annotation diskAnnotation : diskFid.getAnnotations()) {
+                assertThat(fidAnnotations, hasItem(diskAnnotation));
+            }
+            Collection<String> fidAliases = fid.getAliases();
+            assertThat(diskFid.getAliases().size(), equalTo(fidAliases.size()));
+            for (String diskAlias : diskFid.getAliases()) {
+                assertThat(fidAliases, hasItem(diskAlias));
+            }
+        }
+        Collection<Contig> contigs = gto.getContigs();
+        for (Contig contig : contigs) {
+            Contig diskContig = gto2.getContig(contig.getId());
+            assertThat(diskContig.length(), equalTo(contig.length()));
+            assertThat(diskContig.getSequence(), equalTo(contig.getSequence()));
+        }
+    }
 
 
 }
