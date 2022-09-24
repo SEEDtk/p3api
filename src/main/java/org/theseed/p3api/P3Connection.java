@@ -618,7 +618,7 @@ public class P3Connection extends Connection {
      * @param genomes	collection to contain the genome list.
      */
     public void addAllProkaryotes(Collection<JsonObject> genomes) {
-        genomes.addAll(this.getRecords(Table.GENOME, "kingdom", DOMAINS, "genome_id,genome_name", Criterion.EQ("public", "1"),
-                Criterion.NE("genome_status", "Plasmid")));
+        genomes.addAll(this.getRecords(Table.GENOME, "superkingdom", DOMAINS, "genome_id,genome_name", Criterion.EQ("public", "1"),
+                Criterion.IN("genome_status", "Complete", "WGS")));
     }
 }

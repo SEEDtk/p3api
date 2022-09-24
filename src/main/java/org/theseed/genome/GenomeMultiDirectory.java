@@ -169,7 +169,9 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
 
     /**
      * Add a genome to the directories.  Note we write it in compressed format.
-     * If the genome already exists, it will be overwritten.
+     * If the genome already exists, it will be overwritten.  In that case,
+     * the map will not be updated, allowing any iterations to proceed
+     * unmolested.
      *
      * @param gto	genome to add
      */
@@ -184,7 +186,8 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
         // Check for an existing version.
         String genomeId = genome.getId();
         File gFile = this.gtoMap.get(genomeId);
-        if (gFile == null)
+        boolean newGenome = (gFile == null);
+        if (newGenome)
             gFile = new File(this.newDir, genomeId + EXTENSION);
         // Note we write using GZIP compression.
         try (FileOutputStream outStream = new FileOutputStream(gFile);
@@ -192,7 +195,8 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
                 PrintWriter writer = new PrintWriter(zipStream)) {
             writer.println(genome.toJsonString());
         }
-        this.gtoMap.put(genomeId, gFile);
+        if (newGenome)
+            this.gtoMap.put(genomeId, gFile);
         this.newDirSize++;
         log.info("{} stored in {} with length {}.", genome, gFile, gFile.length());
     }

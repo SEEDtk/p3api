@@ -202,8 +202,12 @@ public class P3Genome extends Genome {
                                 String na_md5 = fid.getString(NA_MD5);
                                 if (na_md5 != null && ! na_md5.isEmpty()) {
                                     JsonObject dnaSeq = p3.getRecord(Table.SEQUENCE, fid.getString(NA_MD5), "sequence");
-                                    if (dnaSeq != null)
-                                        ssuRRna = dnaSeq.getStringOrDefault(NA_SEQUENCE);
+                                    if (dnaSeq != null) {
+                                        // If this SSU is well-formed, we save it.
+                                        String checkSeq = dnaSeq.getStringOrDefault(NA_SEQUENCE);
+                                        if (Genome.isValidSsuRRna(checkSeq))
+                                            ssuRRna = checkSeq;
+                                    }
                                 }
                             }
                             break;
