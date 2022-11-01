@@ -193,7 +193,7 @@ public class KmerRepTest
             }
         }
         // Save this database.
-        File saveFile = new File("src/test", "repdb.ser");
+        File saveFile = new File("data", "repdb.ser");
         repDb.save(saveFile);
         // Load it back in.
         ProteinKmers.setKmerSize(6);
@@ -206,7 +206,16 @@ public class KmerRepTest
         for (RepGenome oldGenome : allReps) {
             assertThat(newDb.get(oldGenome.getGenomeId()), equalTo(oldGenome));
         }
-
+        // Now iterate through and test a deletion.
+        var iter = newDb.iterator();
+        while (iter.hasNext()) {
+            var rep = iter.next();
+            if (rep.getGenomeId().contentEquals("1313.11235"))
+                iter.remove();
+        }
+        assertThat(newDb.size(), equalTo(repDb.size() - 1));
+        var testRep = newDb.get("1313.11235");
+        assertThat(testRep, nullValue());
     }
 
     /*

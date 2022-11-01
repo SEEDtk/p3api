@@ -56,6 +56,7 @@ public class P3ApiTest
     /**
      * test the basic connection
      */
+    @Test
     public void testConnection() {
         P3Connection p3 = new P3Connection();
         JsonObject genome = p3.getRecord(Table.GENOME, "1798516.3", "genome_id,genome_name,genome_length,gc_content,taxon_lineage_names");
@@ -180,6 +181,7 @@ public class P3ApiTest
     /**
      * Test criteria
      */
+    @Test
     public void testCriteria() {
         assertThat(Criterion.EQ("genome_id", "100.2"), equalTo("eq(genome_id,100.2)"));
         assertThat(Criterion.NE("genome_type", "(plasmid)"),equalTo("ne(genome_type,+plasmid+)"));
@@ -195,6 +197,7 @@ public class P3ApiTest
      * @throws IOException
      * @throws NumberFormatException
      */
+    @Test
     public void testP3Genome() throws NumberFormatException, IOException {
         P3Connection p3 = new P3Connection();
         // Verify we get null for nonexistent genomes.  2157 is a kingdom taxon, so it will never be on a genome ID.
@@ -283,6 +286,7 @@ public class P3ApiTest
     /***
      * test special SSU RRNA situations
      */
+    @Test
     public void testSsuMissing() {
         P3Connection p3 = new P3Connection();
         P3Genome p3Genome = P3Genome.load(p3, "1262806.3", P3Genome.Details.STRUCTURE_ONLY);
@@ -292,13 +296,15 @@ public class P3ApiTest
     /**
      * test LE and GE
      */
+    @Test
     public void testRanges() {
         P3Connection p3 = new P3Connection();
         List<JsonObject> records = p3.query(Table.GENOME, "genome_id,genome_length", Criterion.GE("genome_length",10000000));
         for (JsonObject record : records)
             assertThat(P3Connection.getInt(record, "genome_length"), greaterThanOrEqualTo(10000000));
         assertThat(records.size(), greaterThan(100));
-        records = p3.query(Table.GENOME, "genome_id,genome_length", Criterion.LE("genome_length",100000));
+        records = p3.query(Table.GENOME, "genome_id,genome_length", 
+        		Criterion.EQ("superkingdom", "Bacteria"), Criterion.LE("genome_length",100000));
         for (JsonObject record : records)
             assertThat(P3Connection.getInt(record, "genome_length"), lessThanOrEqualTo(100000));
         assertThat(records.size(), greaterThan(100));
@@ -309,6 +315,7 @@ public class P3ApiTest
      *
      * @throws IOException
      */
+    @Test
     public void testCache() throws IOException {
         File gCache = new File("data/cache");
         // Clean the cache.

@@ -5,10 +5,10 @@ package org.theseed.proteins.kmers.reps;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -88,12 +88,44 @@ public class RepGenomeDb implements Iterable<RepGenome> {
     }
 
     /**
+     * This is an iterator for RepGenomes that supports deletion in-stream.
+     */
+    public class Iter implements Iterator<RepGenome> {
+
+        /** underlying iterator through the hash */
+        private Iterator<Map.Entry<String, RepGenome>> iter;
+
+        /**
+         * Construct the iterator.
+         */
+        protected Iter() {
+            this.iter = RepGenomeDb.this.genomeMap.entrySet().iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return this.iter.hasNext();
+        }
+
+        @Override
+        public RepGenome next() {
+            var entry = this.iter.next();
+            return entry.getValue();
+        }
+
+        @Override
+        public void remove() {
+            this.iter.remove();
+        }
+
+    }
+
+    /**
      * Return an iterator for traversing the representative genomes.
      */
     @Override
     public Iterator<RepGenome> iterator() {
-        Collection<RepGenome> allReps = this.genomeMap.values();
-        return allReps.iterator();
+        return this.new Iter();
     }
 
     /**
@@ -506,6 +538,18 @@ public class RepGenomeDb implements Iterable<RepGenome> {
                 retVal.addRole(roleId, this.protAliases.get(i));
         }
         return retVal;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RepDb%d(k=%d)", this.threshold, this.kmerSize);
+    }
+
+    /**
+     * @return the list file name for this repgen set
+     */
+    public String getListFileName() {
+        return String.format("rep%d.list.tbl", this.threshold);
     }
 
 }

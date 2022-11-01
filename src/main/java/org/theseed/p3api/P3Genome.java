@@ -212,11 +212,11 @@ public class P3Genome extends Genome {
                             }
                             break;
                         }
-                        // Store the SSU rRNA.
-                        retVal.setSsuRRna(ssuRRna);
                         // Store the feature.
                         retVal.addFeature(feat);
                     }
+                    // Store the SSU rRNA.
+                    retVal.setSsuRRna(ssuRRna);
                 }
             }
             if (P3Connection.log.isInfoEnabled()) {
