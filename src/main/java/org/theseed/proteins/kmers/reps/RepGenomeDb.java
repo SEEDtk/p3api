@@ -507,7 +507,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         String bestProt = "";
         String bestFid = "";
         for (Feature peg : genome.getPegs()) {
-            if (! peg.getUsefulRoles(this.seedMap).isEmpty()) {
+            if (peg.isInteresting(this.seedMap)) {
                 // Here the peg contains the seed role.
                 String prot = peg.getProteinTranslation();
                 if (prot.length() > bestProt.length()) {
