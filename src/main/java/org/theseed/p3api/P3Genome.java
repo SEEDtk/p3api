@@ -52,6 +52,27 @@ public class P3Genome extends Genome {
             return (this == PROTEINS || this == FULL);
         }
 
+        /**
+         * @return the detail level to download all data needed by this and the specified other level
+         *
+         * @param other		other detail level to compare
+         */
+        public Details merge(Details other) {
+            Details retVal;
+            if (this == other) {
+                // A level subsumes itself.
+                retVal = this;
+            } else if (other == CONTIGS || this == CONTIGS) {
+                // CONTIGS is the only non-FULL one that downloads contigs, so it is incompatible with all others.
+                retVal = FULL;
+            } else if (this.compareTo(other) > 0) {
+                // Except for contigs, they are in increasing order by structures downloaded.  Choose the largest.
+                retVal = this;
+            } else
+                retVal = other;
+            return retVal;
+        }
+
     }
 
     /** JsonKeys for extracting sequences */

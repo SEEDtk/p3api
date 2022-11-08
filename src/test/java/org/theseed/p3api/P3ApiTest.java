@@ -22,6 +22,7 @@ import org.theseed.genome.Genome;
 import org.theseed.genome.GoTerm;
 import org.theseed.p3api.P3Connection.Table;
 import org.theseed.p3api.P3Genome.Details;
+import org.theseed.sequence.RnaKmers;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -51,6 +52,22 @@ public class P3ApiTest
         assertThat(level.includesContigs(), equalTo(false));
         assertThat(level.includesFeatures(), equalTo(true));
         assertThat(level.includesProteins(), equalTo(false));
+        // Test the merging.
+        for (P3Genome.Details l1 : P3Genome.Details.values()) {
+            for (P3Genome.Details l2 : P3Genome.Details.values()) {
+                P3Genome.Details mm = l1.merge(l2);
+                String label = String.format("l1 = %s, l2 = %s, mm = %s", l1.toString(), l2.toString(), mm.toString());
+                assertThat(label, mm.includesContigs() || ! l1.includesContigs(), equalTo(true));
+                assertThat(label, mm.includesContigs() || ! l2.includesContigs(), equalTo(true));
+                assertThat(label, mm.includesFeatures() || ! l1.includesFeatures(), equalTo(true));
+                assertThat(label, mm.includesFeatures() || ! l2.includesFeatures(), equalTo(true));
+                assertThat(label, mm.includesProteins() || ! l1.includesProteins(), equalTo(true));
+                assertThat(label, mm.includesProteins() || ! l2.includesProteins(), equalTo(true));
+            }
+        }
+        assertThat(P3Genome.Details.CONTIGS.merge(P3Genome.Details.CONTIGS), equalTo(P3Genome.Details.CONTIGS));
+        assertThat(P3Genome.Details.STRUCTURE_ONLY.merge(P3Genome.Details.CONTIGS), equalTo(P3Genome.Details.FULL));
+        assertThat(P3Genome.Details.STRUCTURE_ONLY.merge(P3Genome.Details.PROTEINS), equalTo(P3Genome.Details.PROTEINS));
     }
 
     /**
@@ -246,7 +263,9 @@ public class P3ApiTest
         // Special check for SSU rRNA.
         String ssu = p3genome.getSsuRRna();
         assertThat(ssu, not(emptyString()));
-        assertThat(ssu, equalTo(gto.getSsuRRna()));
+        RnaKmers k1 = new RnaKmers(gto.getSsuRRna());
+        RnaKmers k2 = new RnaKmers(ssu);
+        assertThat(k1.distance(k2), lessThan(0.3));
         // Special check for the pheS protein.
         Feature p3seedFid = p3genome.getFeature("fig|243277.26.peg.1166");
         Feature seedFid = p3genome.getFeature("fig|243277.26.peg.1166");
@@ -255,7 +274,7 @@ public class P3ApiTest
         File tempFile = new File("data", "p3gto.ser");
         p3genome.save(tempFile);
         Genome gto2 = new Genome(tempFile);
-        assertThat(gto2.getSsuRRna(), equalTo(gto.getSsuRRna()));
+        assertThat(gto2.getSsuRRna(), equalTo(p3genome.getSsuRRna()));
         assertThat(gto2.getName(), equalTo(gto.getName()));
         // Now boost the level to PROTEINS.
         p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.PROTEINS);
@@ -303,8 +322,8 @@ public class P3ApiTest
         for (JsonObject record : records)
             assertThat(P3Connection.getInt(record, "genome_length"), greaterThanOrEqualTo(10000000));
         assertThat(records.size(), greaterThan(100));
-        records = p3.query(Table.GENOME, "genome_id,genome_length", 
-        		Criterion.EQ("superkingdom", "Bacteria"), Criterion.LE("genome_length",100000));
+        records = p3.query(Table.GENOME, "genome_id,genome_length",
+                Criterion.EQ("superkingdom", "Bacteria"), Criterion.LE("genome_length",100000));
         for (JsonObject record : records)
             assertThat(P3Connection.getInt(record, "genome_length"), lessThanOrEqualTo(100000));
         assertThat(records.size(), greaterThan(100));
