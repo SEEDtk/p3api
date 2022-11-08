@@ -266,11 +266,35 @@ public class SeqRead {
      */
     public class Kmers extends SequenceKmers {
 
+        /** kmer size */
+        private final int K;
+
+        /**
+         * Construct the kmers using the default kmer size.
+         */
         public Kmers() {
+            this.K = DnaKmers.kmerSize();
+            setup();
+        }
+
+        /**
+         * Construct the kmers using a specified kmer size.
+         *
+         * @param kSize		kmer size to use
+         */
+        public Kmers(int kSize) {
+            this.K = kSize;
+            setup();
+        }
+
+        /**
+         * Initialize the kmer hash.
+         */
+        private void setup() {
             // Form the sequence out of the two pieces.
             this.sequence = SeqRead.this.lseq + "<>" + SeqRead.this.rseq;
             // Create the hash set.
-            this.kmerSet = new HashSet<String>(this.sequence.length() * 2);
+            this.kmerSet = new HashSet<String>(this.sequence.length() * 8 / 3);
             // Fill in the kmers.
             this.processSequence(SeqRead.this.lseq);
             this.processSequence(SeqRead.this.rseq);
@@ -290,6 +314,11 @@ public class SeqRead {
                 this.kmerSet.add(original.substring(i, i + K));
                 this.kmerSet.add(rDna.substring(i, i + K));
             }
+        }
+
+        @Override
+        public int getK() {
+            return this.K;
         }
 
     }
