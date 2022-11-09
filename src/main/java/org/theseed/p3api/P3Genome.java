@@ -135,7 +135,7 @@ public class P3Genome extends Genome {
         long start = System.currentTimeMillis();
         // Start by getting the genome-level data.
         JsonObject genomeData = p3.getRecord(Table.GENOME, genome_id,
-                "genome_id,genome_name,taxon_id,taxon_lineage_ids,kingdom");
+                "genome_id,genome_name,taxon_id,taxon_lineage_ids,superkingdom");
         if (genomeData == null)
             log.info("Genome {} not found in PATRIC.", genome_id);
         else {
