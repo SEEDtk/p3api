@@ -251,13 +251,4 @@ public abstract class GenomeSource implements Iterable<Genome> {
 
     }
 
-    /**
-     * @param genomeId
-     * @return
-     */
-    public boolean contains(String genomeId) {
-        // TODO code for contains
-        return false;
-    }
-
 }
