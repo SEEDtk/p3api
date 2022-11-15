@@ -82,9 +82,6 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
             FileUtils.cleanDirectory(master);
         } else
             throw new IOException("Cannot create a master genome directory in existing directory " +  master + ".");
-        // Create the first sub-directory.
-        File zeroDir = new File(master, "0");
-        FileUtils.forceMkdir(zeroDir);
         return new GenomeMultiDirectory(master);
     }
 
@@ -98,6 +95,13 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
         this.masterDir = master;
         this.newDirNum = -1;
         this.newDir = null;
+        // Insure the first subdirectory exists.
+        File zeroDir = new File(master, "0");
+        if (! zeroDir.isDirectory()) try {
+            FileUtils.forceMkdir(zeroDir);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         // Get the subdirectory list.
         File[] subDirs = this.masterDir.listFiles(File::isDirectory);
         // Create the file map.
