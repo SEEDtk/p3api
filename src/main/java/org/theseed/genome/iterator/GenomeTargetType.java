@@ -50,6 +50,11 @@ public enum GenomeTargetType {
         public IGenomeTarget create(File listFile, boolean clearFlag) throws IOException {
             return new ListFileBuilder(listFile, clearFlag);
         }
+    }, PEGFASTA {
+        @Override
+        public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
+            return new PegFastaBuilder(directory, clearFlag);
+        }
 
     };
 
