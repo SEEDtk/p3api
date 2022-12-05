@@ -28,7 +28,27 @@ public class DirEntry {
      * Enum for type of file
      */
     public static enum Type {
-        FOLDER, JOB_RESULT, CONTIGS, READS, HTML, TEXT, NEWICK, OTHER;
+        FOLDER("folder"), JOB_RESULT("job_result"), CONTIGS("contigs"), READS("reads"),
+        HTML("html"), TEXT("text"), NEWICK("nwk"), OTHER("other");
+
+        /** display name for file type */
+        private String iName;
+
+        /**
+         * Create a file type.
+         *
+         * @param internal	internal string form of type
+         */
+        private Type(String internal) {
+            this.iName = internal;
+        }
+
+        /**
+         * @return the internal string name for this type
+         */
+        public String getInternalName() {
+            return this.iName;
+        }
     }
 
     /**

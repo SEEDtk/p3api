@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.utils.ProcessUtils;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -26,6 +28,8 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 public abstract class CliTask implements Comparable<CliTask> {
 
     // FIELDS
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(CliTask.class);
     /** work folder for temporary files */
     private File workDir;
     /** workspace name */
@@ -52,7 +56,7 @@ public abstract class CliTask implements Comparable<CliTask> {
      */
     public CliTask(String jobName, File workDir, String workspace) {
         this.workDir = workDir;
-        this.workspace = workspace;
+        this.setWorkspace(workspace);
         this.jobName = jobName;
         // First time through, we set up the command path.
         if (cliDir == null) {
@@ -60,6 +64,7 @@ public abstract class CliTask implements Comparable<CliTask> {
             if (cliPath == null)
                 throw new IllegalStateException("CLI_PATH is not properly configured on this machine.  Insure it points to your CLI bin directory.");
             cliDir = new File(cliPath);
+            log.info("CLI path is {},", cliDir);
             // Do a directory scan to determine the suffix to use.
             for (int i = 0; suffix == null && i < SUFFIXES.length; i++) {
                 File test = new File(cliDir, "p3-ls" + SUFFIXES[i]);
@@ -120,7 +125,7 @@ public abstract class CliTask implements Comparable<CliTask> {
             throw new UncheckedIOException(e);
         }
         // Set the the parameters for the run call.
-        String[] parms = new String[] { service, jsonFile.toString(), this.workspace };
+        String[] parms = new String[] { service, jsonFile.toString(), this.getWorkspace() };
         // Run the command.
         List<String> output = this.run("appserv-start-app", parms);
         if (output.size() < 1)
@@ -156,6 +161,20 @@ public abstract class CliTask implements Comparable<CliTask> {
      */
     public File getWorkDir() {
         return this.workDir;
+    }
+
+    /**
+     * @return the workspace
+     */
+    public String getWorkspace() {
+        return workspace;
+    }
+
+    /**
+     * @param workspace the workspace to set
+     */
+    public void setWorkspace(String workspace) {
+        this.workspace = workspace;
     }
 
 }

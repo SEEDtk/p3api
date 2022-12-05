@@ -23,7 +23,6 @@ public class CopyTask extends CliTask {
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(CopyTask.class);
 
-
     /**
      * Construct a copy task.
      *
@@ -67,9 +66,27 @@ public class CopyTask extends CliTask {
      * @param sourceFile		full name of the source file
      * @param targetFile		full name of the target file
      */
-    public void copyLocalFile(String sourceFile, String targetFile) {
-        List<String> result = this.run("p3-cp", sourceFile, "ws:" + targetFile);
-        validateCopy(sourceFile, result);
+    public void copyLocalFile(File sourceFile, String targetFile) {
+        String sourceName = sourceFile.getAbsolutePath();
+        List<String> result = this.run("p3-cp", sourceName, "ws:" + targetFile);
+        validateCopy(sourceName, result);
+    }
+
+    /**
+     * Copy a local file of a specified type to a workspace location.
+     *
+     * @param sourceFile	source file to copy
+     * @param targetFile	full name of the target workspace file
+     * @param type			type to assign to file
+     */
+    public void copyLocalFile(File sourceFile, String targetFile, DirEntry.Type type) {
+        String sourceName = sourceFile.getAbsolutePath();
+        String typeString = type.getInternalName();
+        String extension = StringUtils.substringAfterLast(sourceName, ".");
+        if (extension.isEmpty())
+            throw new IllegalArgumentException("Cannot use copyLocalFile method on a file without a suffix.");
+        List<String> result = this.run("p3-cp", "-f", "-m", extension + "=" + typeString, sourceName, "ws:" + targetFile);
+        validateCopy(sourceName, result);
     }
 
     /**
