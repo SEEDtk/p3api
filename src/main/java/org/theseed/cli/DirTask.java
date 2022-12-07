@@ -7,6 +7,8 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * This is a task object for listing a PATRIC workspace directory.
  *
@@ -37,6 +39,24 @@ public class DirTask extends CliTask {
         List<String> dirStrings = this.run("p3-ls", "-alT", folder);
         // Parse the output.
         List<DirEntry> retVal = dirStrings.stream().map(x -> DirEntry.create(x)).collect(Collectors.toList());
+        return retVal;
+    }
+
+    /**
+     * Verify that a workspace folder exists.
+     *
+     * @param	folder to verify
+     *
+     * @return TRUE if it exists, else FALSE
+     */
+    public boolean check(String folder) {
+        String parent = StringUtils.substringBeforeLast(folder, "/");
+        String child = StringUtils.substring(folder, parent.length() + 1);
+        boolean retVal = false;
+        if (! child.isEmpty()) {
+            var children = this.list(parent);
+            retVal = children.stream().anyMatch(x -> x.getType() == DirEntry.Type.FOLDER && x.getName().contentEquals(child));
+        }
         return retVal;
     }
 

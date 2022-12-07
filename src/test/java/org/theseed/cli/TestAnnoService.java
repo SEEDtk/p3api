@@ -37,7 +37,7 @@ class TestAnnoService {
             File faDir = new File("data", "p3Test");
             File faFile = new File(faDir, "test.contigs.fasta");
             String expDir = "/" + name + "/home/Experiments";
-            DirTask checkDir = new DirTask(faFile, expDir);
+            DirTask checkDir = new DirTask(faDir, expDir);
             var entries = checkDir.list(expDir);
             boolean found = entries.stream().anyMatch(x -> x.getName().contentEquals("UnitTest") && x.getType() == DirEntry.Type.FOLDER);
             if (! found)

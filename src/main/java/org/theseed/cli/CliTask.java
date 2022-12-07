@@ -64,7 +64,7 @@ public abstract class CliTask implements Comparable<CliTask> {
             if (cliPath == null)
                 throw new IllegalStateException("CLI_PATH is not properly configured on this machine.  Insure it points to your CLI bin directory.");
             cliDir = new File(cliPath);
-            log.info("CLI path is {},", cliDir);
+            log.info("CLI path is {}.", cliDir);
             // Do a directory scan to determine the suffix to use.
             for (int i = 0; suffix == null && i < SUFFIXES.length; i++) {
                 File test = new File(cliDir, "p3-ls" + SUFFIXES[i]);
