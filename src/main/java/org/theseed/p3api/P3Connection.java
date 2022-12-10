@@ -621,4 +621,22 @@ public class P3Connection extends Connection {
         genomes.addAll(this.getRecords(Table.GENOME, "superkingdom", DOMAINS, "genome_id,genome_name", Criterion.EQ("public", "1"),
                 Criterion.IN("genome_status", "Complete", "WGS")));
     }
+
+    /**
+     * Clean a string for use in a SOLR query.
+     *
+     * @param string		string to clear
+     *
+     * @return a version of the string with special characters removed
+     */
+    public static String clean(String string) {
+        // Remove quotes and change parens to spaces.
+        String retVal = StringUtils.replaceChars(string, "()'\"", "  ");
+        // Trim spaces on the edge.
+        retVal = StringUtils.trimToEmpty(retVal);
+        // Collapse spaces in the middle.
+        retVal = retVal.replaceAll("\\s+", " ");
+        return retVal;
+    }
+
 }
