@@ -63,7 +63,7 @@ class TestAnnoService {
                 assertThat("Task ID = " + taskId, ok);
                 File gtoFile = task.getResultFile();
                 Genome genome = new Genome(gtoFile);
-                assertThat(genome.getContigCount(), equalTo(157));
+                assertThat(genome.getContigCount(), equalTo(158));
                 assertThat(genome.getTaxonomyId(), equalTo(1122614));
                 Feature seed = genome.getByFunction("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)");
                 assertThat(seed.getProteinTranslation(),

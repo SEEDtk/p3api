@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class TaxTest {
 
     @Test
-    void test() {
+    void testTaxonomyLoader() {
         P3Connection p3 = new P3Connection();
         P3TaxData taxData = new P3TaxData(p3);
         assertThat(taxData.checkSpecies("1423"), equalTo(11));

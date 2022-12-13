@@ -233,23 +233,55 @@ public class P3Connection extends Connection {
     }
 
     /**
-     * Initialize a connection.
-     *
+     * Initialize a connection for the currently-logged-in user and the default URL.
      */
-    public P3Connection(String token) {
+    public P3Connection() {
         super();
-        this.setup(token);
+        String token = getLoginToken();
+        String apiUrl = getApiUrl();
+        this.setup(token, apiUrl);
     }
 
     /**
-     * Initialize a connection with a given authorization token.
+     * Initialize a connection with a specific API URL.
+     *
+     * @param apiUrl	URL to use to access the data API
+     *
+     */
+    public P3Connection(String apiUrl) {
+        super();
+        String token = getLoginToken();
+        this.setup(token, apiUrl);
+    }
+
+    /**
+     * Get the default URL for the PATRIC data service.
+     */
+    public static String getApiUrl() {
+        // Try to get the URL from the environment.
+        String retVal = System.getenv("P3API_URL");
+        // No luck, use the default.
+        if (StringUtils.isBlank(retVal))
+            retVal = DATA_API_URL;
+        return retVal;
+    }
+
+    /**
+     * @return the default login token for this system
+     */
+    protected static String getLoginToken() {
+        File tokenFile = new File(System.getProperty("user.home"), ".patric_token");
+        String retVal = readToken(tokenFile);
+        return retVal;
+    }
+
+    /**
+     * Initialize a connection with a given authorization token and URL.
      *
      * @param token		an authorization token, or NULL if the connection is to be unauthorized.
      */
-    protected void setup(String token) {
-        // Try to get the URL from the environment.
-        this.url = System.getenv("P3API_URL");
-        if (this.url == null) this.url = DATA_API_URL;
+    protected void setup(String token, String url) {
+        this.url = url;
         // Insure that it ends in a slash.
         if (! StringUtils.endsWith(this.url, "/")) this.url += "/";
         // Set the default chunk size and build the parm buffer.
@@ -257,16 +289,6 @@ public class P3Connection extends Connection {
         // If the user is not logged in, this will be null and we won't be able to access
         // private genomes.
         this.authToken = token;
-    }
-
-    /**
-     * Initialize a connection for the currently-logged-in user.
-     */
-    public P3Connection() {
-        super();
-        File tokenFile = new File(System.getProperty("user.home"), ".patric_token");
-        String token = readToken(tokenFile);
-        this.setup(token);
     }
 
     /**
