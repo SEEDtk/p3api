@@ -98,10 +98,17 @@ public class AnnoService extends CliService {
      */
     public File getResultFile() throws IOException {
         // Determine the desired output file.
-        File retVal = new File(this.getWorkDir(), this.outName + ".gto");
+        File retVal = this.gtoFileName();
         // Copy it from the workspace.
         this.copier.copyRemoteFile(this.getWorkspace() + "/." + this.outName + "/" + this.outName + ".genome", retVal);
         return retVal;
+    }
+
+    /**
+     * @return the output file name for this annotation request
+     */
+    public File gtoFileName() {
+        return new File(this.getWorkDir(), this.outName + ".gto");
     }
 
 }
