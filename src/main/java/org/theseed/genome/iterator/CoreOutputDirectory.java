@@ -11,6 +11,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -211,5 +213,20 @@ public class CoreOutputDirectory implements IGenomeTarget {
     @Override
     public String toString() {
         return "CoreSEED Output Directory " + this.orgDir.getBaseDir().toString();
+    }
+
+    @Override
+    public void remove(String genomeId) throws IOException {
+        this.orgDir.remove(genomeId);
+    }
+
+    @Override
+    public boolean canDelete() {
+        return true;
+    }
+
+    @Override
+    public Set<String> getGenomeIDs() {
+        return new TreeSet<String>(this.orgDir.getIDs());
     }
 }

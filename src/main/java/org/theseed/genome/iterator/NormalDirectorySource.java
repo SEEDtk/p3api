@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -106,6 +107,21 @@ public class NormalDirectorySource extends GenomeSource implements IGenomeTarget
     @Override
     public String toString() {
         return "GTO Directory " + this.source.getName();
+    }
+
+    @Override
+    public void remove(String genomeId) throws IOException {
+        this.source.remove(genomeId);
+    }
+
+    @Override
+    public boolean canDelete() {
+        return true;
+    }
+
+    @Override
+    public Set<String> getGenomeIDs() {
+        return new TreeSet<String>(this.source.getGenomeIDs());
     }
 
 

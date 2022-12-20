@@ -4,11 +4,14 @@
 package org.theseed.genome.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+
+import org.theseed.io.MarkerFile;
 
 /**
  * This class iterates through all the SEED genome directories in an Organism directory.
@@ -99,6 +102,23 @@ public class OrganismDirectories implements Iterable<String> {
      */
     public Set<String> getIDs() {
         return this.genomes.keySet();
+    }
+
+    /**
+     * Delete a genome from the organism directory.  This merely marks the genome as deleted
+     * and does not remove the genome subdirectory.
+     *
+     * @param genomeId	ID of the genome to delete
+     *
+     * @throws IOException
+     */
+    public void remove(String genomeId) throws IOException {
+        File subDir = this.genomes.remove(genomeId);
+        if (subDir != null) {
+            // Here we have something to delete.  Write the marker file.
+            File deleteFile = new File(subDir, "DELETED");
+            MarkerFile.write(deleteFile, "deleted");
+        }
     }
 
 

@@ -5,8 +5,10 @@ package org.theseed.genome.iterator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -84,6 +86,26 @@ public class ContigFastaBuilder implements IGenomeTarget {
     @Override
     public String toString() {
         return "Contig Fasta Directory " + this.outDir;
+    }
+
+    @Override
+    public void remove(String genomeId) throws IOException {
+        // Get the file name for this genome.
+        File genomeFile = this.genomeMap.remove(genomeId);
+        if (genomeFile != null)
+            FileUtils.forceDelete(genomeFile);
+    }
+
+    @Override
+    public boolean canDelete() {
+        return true;
+    }
+
+    @Override
+    public Set<String> getGenomeIDs() {
+        // We return a copy of the key set so that the client can iterate over it without worrying
+        // about modifications.
+        return new TreeSet<String>(this.genomeMap.keySet());
     }
 
 }

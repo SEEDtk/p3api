@@ -4,6 +4,7 @@
 package org.theseed.genome.iterator;
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.theseed.genome.Genome;
 
@@ -30,8 +31,31 @@ public interface IGenomeTarget {
     public void add(Genome genome) throws IOException;
 
     /**
+     * Delete a genome from this target.  This is an optional operation, and it is permissible to
+     * throw an UnsupportedOperationException.
+     *
+     * @param genomeId	ID of genome to delete
+     *
+     * @throws IOException
+     */
+    public void remove(String genomeId) throws IOException;
+
+    /**
+     * @return TRUE if it is possible to to random deletes on this target type, else FALSE
+     */
+    public boolean canDelete();
+
+    /**
      * Complete processing for this directory's output.
      */
     public void finish();
+
+    /**
+     * Get the set of genome IDs in this target.  This is an optional operation, and it is permissible
+     * to throw an UnsupportedOperationException.
+     *
+     * @return a sorted clone of the ID set for the target
+     */
+    public Set<String> getGenomeIDs();
 
 }

@@ -178,4 +178,19 @@ public class ProteinFastaBuilder implements IGenomeTarget {
         return "Protein Fasta File " + this.outFile;
     }
 
+    @Override
+    public void remove(String genomeId) throws IOException {
+        throw new UnsupportedOperationException("Cannot delete a genome from a protein fasta file.");
+    }
+
+    @Override
+    public boolean canDelete() {
+        return false;
+    }
+
+    @Override
+    public Set<String> getGenomeIDs() {
+        throw new UnsupportedOperationException("Protein FASTA files do not support this operation.");
+    }
+
 }

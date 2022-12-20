@@ -15,6 +15,7 @@ import org.theseed.genome.GenomeMultiDirectory;
  *
  */
 public enum GenomeTargetType {
+    /** compressed multiple-directory structure designed to hold large genome sets */
     MASTER {
         @Override
         public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
@@ -25,32 +26,44 @@ public enum GenomeTargetType {
                 retVal = new GenomeMultiDirectory(directory);
             return retVal;
         }
-    }, DIR {
+    },
+    /** standard directory of GTO files */
+    DIR {
         @Override
         public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
             return NormalDirectorySource.create(directory, clearFlag);
         }
-    }, PFASTA {
+    },
+    /** single file of all proteins in the genomes */
+    PFASTA {
         @Override
         public IGenomeTarget create(File fastaFile, boolean clearFlag) throws IOException {
             return new ProteinFastaBuilder(fastaFile, clearFlag);
         }
-    }, DNAFASTA {
+    },
+    /** directory of contig FASTA files, one per genome */
+    DNAFASTA {
         @Override
         public IGenomeTarget create(File fastaFile, boolean clearFlag) throws IOException {
             return new ContigFastaBuilder(fastaFile, clearFlag);
         }
-    }, CORE {
+    },
+    /** SEED organism directory, with one subdirectory per genome */
+    CORE {
         @Override
         public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
             return new CoreOutputDirectory(directory, clearFlag);
         }
-    }, LIST {
+    },
+    /** flat file listing the genomes */
+    LIST {
         @Override
         public IGenomeTarget create(File listFile, boolean clearFlag) throws IOException {
             return new ListFileBuilder(listFile, clearFlag);
         }
-    }, PEGFASTA {
+    },
+    /** directory of protein FASTA files, one per genome */
+    PEGFASTA {
         @Override
         public IGenomeTarget create(File directory, boolean clearFlag) throws IOException {
             return new PegFastaBuilder(directory, clearFlag);

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -86,5 +87,22 @@ public class ListFileBuilder implements IGenomeTarget {
             throw new UncheckedIOException(e);
         }
     }
+
+    @Override
+    public void remove(String genomeId) throws IOException {
+        throw new UnsupportedOperationException("Cannot delete a genome from a list file.");
+    }
+
+    @Override
+    public boolean canDelete() {
+        return false;
+    }
+
+    @Override
+    public Set<String> getGenomeIDs() {
+        throw new UnsupportedOperationException("List file targets do not support this operation.");
+    }
+
+
 
 }

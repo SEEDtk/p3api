@@ -5,6 +5,10 @@ package org.theseed.genome.iterator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -27,6 +31,8 @@ public class PegFastaBuilder implements IGenomeTarget {
     // FIELDS
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(PegFastaBuilder.class);
+    /** pattern for genome file names */
+    private static final Pattern FASTA_PATTERN = Pattern.compile("(\\d+\\.\\d+)\\.faa");
 
     /** output directory name */
     private File outDir;
@@ -79,6 +85,32 @@ public class PegFastaBuilder implements IGenomeTarget {
 
     @Override
     public void finish() {
+    }
+
+    @Override
+    public void remove(String genomeId) throws IOException {
+        File gFile = this.getFileName(genomeId);
+        if (gFile.exists())
+            FileUtils.forceDelete(gFile);
+    }
+
+    @Override
+    public boolean canDelete() {
+        return true;
+    }
+
+    @Override
+    public Set<String> getGenomeIDs() {
+        // We will build the genome ID set in here.
+        Set<String> retVal = new TreeSet<String>();
+        File[] files = this.outDir.listFiles();
+        // Loop through the files, extracting genome IDs from FASTA output files.
+        for (File file : files) {
+            Matcher m = FASTA_PATTERN.matcher(file.getName());
+            if (m.matches())
+                retVal.add(m.group(1));
+        }
+        return retVal;
     }
 
 }

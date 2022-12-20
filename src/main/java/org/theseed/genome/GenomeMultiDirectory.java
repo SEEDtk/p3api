@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -342,6 +343,16 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
     @Override
     public String toString() {
         return "GenomeM Master Directory " + this.masterDir.toString();
+    }
+
+    @Override
+    public boolean canDelete() {
+        return true;
+    }
+
+    @Override
+    public Set<String> getGenomeIDs() {
+        return new TreeSet<String>(this.getIDs());
     }
 
 }
