@@ -5,6 +5,7 @@ package org.theseed.proteins.kmers.reps;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -13,6 +14,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Genome;
 import org.theseed.genome.Feature;
@@ -341,6 +344,20 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         // Loop through the representatives, looking for a match.  We do this in parallel.
         Representation retVal = this.genomeMap.values().parallelStream().map(x -> new Representation(x, testSeq))
             .collect(Representation::new, (x,r) -> x.merge(r), (x,y) -> x.merge(y));
+        return retVal;
+    }
+
+    /**
+     * @return a collection of acceptable representatives for a specific genome
+     *
+     * @param genome	genome to test
+     */
+    public Collection<Representation> findClose(Genome genome) {
+        // Get the seed protein.
+        var protKmers = this.getSeedProtein(genome);
+        // Get all the good representatives.
+        List<Representation> retVal = this.genomeMap.values().parallelStream().map(x -> new Representation(x, protKmers))
+                .filter(x -> x.getSimilarity() >= this.threshold).collect(Collectors.toList());
         return retVal;
     }
 
