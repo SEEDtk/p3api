@@ -22,6 +22,8 @@ public class FastaSampleGroup extends FastqSampleGroup {
     // FIELDS
     /** master sample directory */
     private File masterDirectory;
+    /** name for contig files */
+    private static final String CONTIG_FILE_NAME = "contigs.fasta";
 
     /**
      * File filter for identifying FASTA sample group directories.
@@ -30,7 +32,7 @@ public class FastaSampleGroup extends FastqSampleGroup {
 
         @Override
         protected boolean isSample(File dir) {
-            File contigFile = new File(dir, "contigs.fasta");
+            File contigFile = new File(dir, CONTIG_FILE_NAME);
             return contigFile.isFile();
         }
 
@@ -61,7 +63,7 @@ public class FastaSampleGroup extends FastqSampleGroup {
         List<File> subDirs = dirFilter.getSampleDirs(this.masterDirectory);
         for (File subDir : subDirs) {
             // For each sample, build a descriptor.
-            SampleDescriptor desc = new FastaSampleDescriptor(subDir, "contig.fasta");
+            SampleDescriptor desc = new FastaSampleDescriptor(subDir, CONTIG_FILE_NAME);
             retVal.put(subDir.getName(), desc);
         }
         return retVal;

@@ -57,6 +57,25 @@ class TestSampleGroups {
         sampleSet = group.getSamples();
         assertThat(sampleSet.size(), equalTo(2));
         assertThat(sampleSet, containsInAnyOrder("ERR1136887", "ERS006602"));
+        rStream = group.sampleIter("ERS006602");
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("NODE_1_length_177931_cov_13.2654"));
+        assertThat(read.getCoverage(), closeTo(13.2654, 0.0001));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("NODE_2_length_109977_cov_11.0852"));
+        assertThat(read.getCoverage(), closeTo(11.0852, 0.0001));
+        assertThat(read.getSequence(), equalTo("aacttcattggtcggtgcattcctgcttcaaactcgaagagagcacaggtacgtcaatcatcaccgacccgtaccacccgtacgtcggtttctcgatgcccgaagtttcttgcgacgccgtgacgctcagtc"));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("NODE_3_length_70673_cov_11.7944"));
+        assertThat(read.getCoverage(), closeTo(11.7944, 0.0001));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("NODE_4_length_68806_cov_10.5822"));
+        assertThat(read.getCoverage(), closeTo(10.5822, 0.0001));
+        assertThat(rStream.hasNext(), equalTo(false));
     }
 
 }
