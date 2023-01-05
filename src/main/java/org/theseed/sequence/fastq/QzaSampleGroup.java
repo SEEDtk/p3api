@@ -32,7 +32,7 @@ public class QzaSampleGroup extends FastqSampleGroup  {
     /**
      * File filter for QZA files in the input directory
      */
-    public static class filter implements FileFilter {
+    public static class Filter implements FileFilter {
 
         @Override
         public boolean accept(File pathname) {

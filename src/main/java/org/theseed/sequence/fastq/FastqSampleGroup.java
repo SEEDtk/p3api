@@ -7,12 +7,19 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.stream.Collectors;
 
 /**
  * This object represents a group of samples stored in FASTQ format.  It returns a list of sample IDs, and each sample can be read
  * as an iterable of SeqRead objects.
+ *
+ * The subclass must provide a way to map sample IDs to sample descriptors.  The sample descriptor provides ReadStream objects
+ * that act as iterators (or iterables) for SeqRead.  The SeqRead objects provide a uniform way for the client to access
+ * sequences.
  *
  * @author Bruce Parrello
  *
@@ -27,6 +34,7 @@ public abstract class FastqSampleGroup implements AutoCloseable {
      * This enum describes the types of sample groups.
      */
     public static enum Type {
+        /** QZA file containing compressed Amplicon data produced by Qiime */
         QZA {
             @Override
             public FastqSampleGroup create(File sampleDir) throws IOException {
@@ -35,9 +43,34 @@ public abstract class FastqSampleGroup implements AutoCloseable {
 
             @Override
             public FileFilter getFilter() {
-                return new QzaSampleGroup.filter();
+                return new QzaSampleGroup.Filter();
+            }
+        },
+        /** directory of paired-end FASTQ files */
+        FASTQ {
+            @Override
+            public FastqSampleGroup create(File sampleDir) throws IOException {
+                return new FastqDirSampleGroup(sampleDir);
+            }
+
+            @Override
+            public FileFilter getFilter() {
+                return new FastqDirSampleGroup.Filter();
+            }
+        },
+        /** directory of assembled FASTA files */
+        FASTA {
+            @Override
+            public FastqSampleGroup create(File sampleDir) throws IOException {
+                return new FastaSampleGroup(sampleDir);
+            }
+
+            @Override
+            public FileFilter getFilter() {
+                return new FastaSampleGroup.Filter();
             }
         };
+
 
         /**
          * Create a FASTQ sample group of the specified type.
@@ -53,11 +86,55 @@ public abstract class FastqSampleGroup implements AutoCloseable {
 
     }
 
+    /**
+     * A two-tiered group is a directory of directories, each subdirectory containing a sample.  This
+     * method provides the basic pattern for all filters used to find two-tiered groups.
+     */
+    public abstract static class TierFilter implements FileFilter {
+
+        @Override
+        public boolean accept(File pathname) {
+            boolean retVal = pathname.isDirectory();
+            if (retVal) {
+                File[] subs = pathname.listFiles(File::isDirectory);
+                retVal = Arrays.stream(subs).filter(x -> this.isSample(x)).findAny().isPresent();
+            }
+            return retVal;
+        }
+
+        /**
+         * @return a list of the subdirectories containing samples in the specified sample group
+         *
+         * @param pathname	directory containing the sample group
+         */
+        public List<File> getSampleDirs(File pathname) {
+            File[] subs = pathname.listFiles(File::isDirectory);
+            List<File> retVal = Arrays.stream(subs).filter(x -> this.isSample(x)).collect(Collectors.toList());
+            return retVal;
+        }
+
+        /**
+         * This checks to see if a directory contains a single sample.
+         *
+         * @param dir	directory to check
+         *
+         * @return TRUE if the specified directory contains a sample, else FALSE
+         */
+        protected abstract boolean isSample(File dir);
+    }
+
+
+    /**
+     * Create a FASTQ sample group in the specified file or directory.
+     *
+     * @param sampleDir		file or directory containing the group
+     *
+     * @throws IOException
+     */
     public FastqSampleGroup(File sampleDir) throws IOException {
         this.init();
         this.sampleMap = this.computeSamples(sampleDir);
     }
-
 
     /**
      * Initialize this object.

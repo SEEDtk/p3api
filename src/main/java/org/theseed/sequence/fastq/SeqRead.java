@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Contig;
@@ -32,14 +33,20 @@ public class SeqRead {
     private String lseq;
     /** right sequence string (empty if none) */
     private String rseq;
-    /** combined sequence quality (generally 0 to 99, logarithmic) */
+    /** combined sequence quality (generally 0 to 99, logarithmic, defaults for FASTA) */
     private double qual;
+    /** coverage (defaults to 1.0 for FASTQ) */
+    private double coverage;
     /** current phred offset, indicating the 0 value for quality */
     private static int phredOffset = 33;
     /** match pattern for extracting sequence label and type */
     private static Pattern ID_PATTERN = Pattern.compile("@(\\S+).*");
     /** match pattern for determining direction */
     private static Pattern DIR_PATTERN = Pattern.compile("(.+)[./]([12])");
+    /** list of valid DNA characters */
+    private static String VALID_NA = "acgt";
+    /** default quality for contigs */
+    private static double DEFAULT_QUAL = 30.0;
 
     /**
      * Set the phred offset.
@@ -106,14 +113,20 @@ public class SeqRead {
         this.label = label;
         this.lseq = left;
         this.rseq = (right == null ? "" : right);
-        // Create the quality string.
-        String qualString = (right == null ? lqual : lqual + rqual);
-        // Compute the mean quality.
-        this.qual = 0.0;
-        for (int i = 0; i < qualString.length(); i++)
-            this.qual += (int) qualString.charAt(i) - phredOffset;
-        if (qualString.length() > 0)
-            this.qual /= qualString.length();
+        // Default the quality if there is no quality string.
+        if (lqual == null)
+            this.qual = DEFAULT_QUAL;
+        else {
+            // Create the quality string.
+            String qualString = (right == null ? lqual : lqual + rqual);
+            // Compute the mean quality.
+            this.qual = 0.0;
+            for (int i = 0; i < qualString.length(); i++)
+                this.qual += (int) qualString.charAt(i) - phredOffset;
+            if (qualString.length() > 0)
+                this.qual /= qualString.length();
+        }
+        this.coverage = 1.0;
     }
 
     /**
@@ -186,7 +199,7 @@ public class SeqRead {
                     retVal.reverse = false;
                 }
                 // Now read the sequence.
-                retVal.seq = reader.readLine();
+                retVal.seq = reader.readLine().toLowerCase();
                 if (retVal.seq == null)
                     throw new IOException("No sequence record found for \"" + label + "\".");
                 // Verify that we have a quality string.
@@ -380,6 +393,73 @@ public class SeqRead {
         if (this.rseq.length() > retVal)
             retVal = this.rseq.length();
         return retVal;
+    }
+
+    /**
+     * Compute the single sequence for this read.  If it is paired, find the overlap and merge the
+     * sequences.
+     *
+     * @return a forward sequence for this read, consisting of the isolated forward part, the
+     * 		   overlapping part, and the reverse-complement of the isolated backward part
+     */
+    public String getSequence() {
+        // Normalize the two sequences.
+        String nrmLeft = this.lseq;
+        String revRight = Contig.reverse(this.rseq);
+        // Get the lesser of the two lengths.
+        int leftLen = nrmLeft.length();
+        final int maxN = (leftLen < revRight.length() ? leftLen : revRight.length());
+        // Now we find the overlap.  We score each possible overlap length, keeping the high score.  The
+        // overlap score is +1 for each match, -1 for each mismatch, and 0 for each position with an
+        // ambiguity character.
+        int bestN = 0;
+        int bestScore = 0;
+        final int leftLast = leftLen - 1;
+        for (int n = 1; n < maxN; n++) {
+            // Score this overlap.
+            int score = IntStream.range(0, n).map(i -> this.score(nrmLeft.charAt(leftLast - i), revRight.charAt(i))).sum();
+            if (score > bestScore) {
+                bestN = n;
+                bestScore = score;
+            }
+        }
+        // Now we stitch the pieces together.
+        var retVal = nrmLeft + revRight.substring(bestN);
+        return retVal.toString();
+    }
+
+    /**
+     * @return the score for two DNA characters in an overlap alignment
+     *
+     * @param ch1	first character
+     * @param ch2	aligned character
+     */
+    private int score(char ch1, char ch2) {
+        int retVal;
+        if (ch1 == ch2)
+            retVal = 1;
+        else if (VALID_NA.indexOf(ch1) < 0 || VALID_NA.indexOf(ch2) < 0)
+            retVal = 0;
+        else
+            retVal = -1;
+        return retVal;
+    }
+
+    /**
+     * @return the coverage
+     */
+    public double getCoverage() {
+        return this.coverage;
+    }
+
+    /**
+     * Specify the coverage of the read.  This is only used if the read is actually a
+     * contig.
+     *
+     * @param coverage 	the coverage to set
+     */
+    public void setCoverage(double coverage) {
+        this.coverage = coverage;
     }
 
 }
