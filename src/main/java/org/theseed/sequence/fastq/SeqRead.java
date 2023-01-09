@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
-
 import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Contig;
 import org.theseed.sequence.DnaKmers;
@@ -403,29 +401,37 @@ public class SeqRead {
      * 		   overlapping part, and the reverse-complement of the isolated backward part
      */
     public String getSequence() {
-        // Normalize the two sequences.
-        String nrmLeft = this.lseq;
-        String revRight = Contig.reverse(this.rseq);
-        // Get the lesser of the two lengths.
-        int leftLen = nrmLeft.length();
-        final int maxN = (leftLen < revRight.length() ? leftLen : revRight.length());
-        // Now we find the overlap.  We score each possible overlap length, keeping the high score.  The
-        // overlap score is +1 for each match, -1 for each mismatch, and 0 for each position with an
-        // ambiguity character.
-        int bestN = 0;
-        int bestScore = 0;
-        final int leftLast = leftLen - 1;
-        for (int n = 1; n < maxN; n++) {
-            // Score this overlap.
-            int score = IntStream.range(0, n).map(i -> this.score(nrmLeft.charAt(leftLast - i), revRight.charAt(i))).sum();
-            if (score > bestScore) {
-                bestN = n;
-                bestScore = score;
+        String retVal;
+        if (this.rseq.isEmpty())
+            retVal = this.lseq;
+        else if (this.lseq.isEmpty())
+            retVal = this.rseq;
+        else {
+            // Get the left sequence.
+            String nrmLeft = this.lseq;
+            String revRight = Contig.reverse(this.rseq);
+            // Get the lesser of the two lengths.
+            int leftLen = nrmLeft.length();
+            final int maxN = (leftLen < revRight.length() ? leftLen : revRight.length());
+            // Now we find the overlap.  We score each possible overlap length, keeping the high score.  The
+            // overlap score is +1 for each match, -1 for each mismatch, and 0 for each position with an
+            // ambiguity character.
+            int bestN = 0;
+            int bestScore = 0;
+            int score = 0;
+            final int leftLast = leftLen - 1;
+            for (int n = 0; n < maxN; n++) {
+                // Score this overlap.
+                score += this.score(nrmLeft.charAt(leftLast - n), revRight.charAt(n));
+                if (score > bestScore) {
+                    bestN = n;
+                    bestScore = score;
+                }
             }
+            // Now we stitch the pieces together.
+            retVal = nrmLeft + revRight.substring(bestN);
         }
-        // Now we stitch the pieces together.
-        var retVal = nrmLeft + revRight.substring(bestN);
-        return retVal.toString();
+        return retVal;
     }
 
     /**
