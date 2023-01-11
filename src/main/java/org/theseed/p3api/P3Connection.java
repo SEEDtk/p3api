@@ -150,12 +150,8 @@ public class P3Connection extends Connection {
     private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
     /** list of domains for prokaryotes */
     public static final List<String> DOMAINS = Arrays.asList("Bacteria", "Archaea");
-
-    // JSON KEY BUFFERS
-    private static final KeyBuffer STRING = new KeyBuffer("", "");
-    private static final KeyBuffer INT = new KeyBuffer("", 0);
-    private static final KeyBuffer COLLECTION = new KeyBuffer("", new JsonArray());
-    private static final KeyBuffer DOUBLE = new KeyBuffer("", 0.0);
+    /** empty string list */
+    private static final JsonArray EMPTY_LIST = new JsonArray();
 
     /**
      * Extract a string from a record field.
@@ -166,7 +162,8 @@ public class P3Connection extends Connection {
      * @return the string value of the field
      */
     public static String getString(JsonObject record, String keyName) {
-        String retVal = record.getStringOrDefault(STRING.use(keyName));
+        KeyBuffer stringBuffer = new KeyBuffer(keyName, "");
+        String retVal = record.getStringOrDefault(stringBuffer);
         return retVal;
     }
 
@@ -179,7 +176,8 @@ public class P3Connection extends Connection {
      * @return the integer value of the field
      */
     public static int getInt(JsonObject record, String keyName) {
-        int retVal = record.getIntegerOrDefault(INT.use(keyName));
+        KeyBuffer intBuffer = new KeyBuffer(keyName, 0);
+        int retVal = record.getIntegerOrDefault(intBuffer);
         return retVal;
     }
 
@@ -192,7 +190,8 @@ public class P3Connection extends Connection {
      * @return the floating-point value of the field
      */
     public static double getDouble(JsonObject record, String keyName) {
-        double retVal = record.getDoubleOrDefault(DOUBLE.use(keyName));
+        KeyBuffer doubleBuffer = new KeyBuffer(keyName, 0.0);
+        double retVal = record.getDoubleOrDefault(doubleBuffer);
         return retVal;
     }
 
@@ -205,7 +204,8 @@ public class P3Connection extends Connection {
      * @return an array of the strings in the field
      */
     public static String[] getStringList(JsonObject record, String keyName) {
-        JsonArray list = record.getCollectionOrDefault(COLLECTION.use(keyName));
+        KeyBuffer listBuffer = new KeyBuffer(keyName, EMPTY_LIST);
+        JsonArray list = record.getCollectionOrDefault(listBuffer);
         int length = list.size();
         String[] retVal = new String[length];
         for (int i = 0; i < length; i++) {
@@ -223,7 +223,8 @@ public class P3Connection extends Connection {
      * @return an array of the integers in the field
      */
     public static int[] getIntegerList(JsonObject record, String keyName) {
-        JsonArray list = record.getCollectionOrDefault(COLLECTION.use(keyName));
+        KeyBuffer listBuffer = new KeyBuffer(keyName, EMPTY_LIST);
+        JsonArray list = record.getCollectionOrDefault(listBuffer);
         int length = list.size();
         int[] retVal = new int[length];
         for (int i = 0; i < length; i++) {
