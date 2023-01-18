@@ -12,7 +12,7 @@ import org.theseed.sequence.FastaInputStream;
 
 /**
  * This is a sample descriptor for a FASTA sample.  The FASTA sample has a single file containing contigs that are
- * read as sequences.  It overrides the "reader" method because the read stream uses the InputFastaStream object
+ * read as sequences.  It overrides the "reader" method because its read stream uses the InputFastaStream object
  * rather than a straight input stream.
  *
  * @author Bruce Parrello
@@ -27,12 +27,19 @@ public class FastaSampleDescriptor extends SampleDescriptor {
     /**
      * Create the FASTA sample descriptor.  There is only the forward file.
      *
-     * @param dir		subdirectory containing the sample
+     * @param dir		subdirectory or file containing the sample
      * @param forward	name of the FASTA file
      */
     public FastaSampleDescriptor(File dir, String forward) {
         super(forward, null);
-        this.contigFile = new File(dir, forward);
+        if (dir.isFile()) {
+            // Here we have a sample encoded in a simple file.
+            this.contigFile = dir;
+        } else {
+            // Here we have a sample inside a directory.  The difference means more to the client,
+            // which gets the sample ID from the directory name instead of the file name.
+            this.contigFile = new File(dir, forward);
+        }
     }
 
     @Override

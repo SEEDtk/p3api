@@ -152,25 +152,43 @@ public abstract class ReadStream implements Iterator<SeqRead>, Iterable<SeqRead>
         private InputStream forwardStream;
         /** reader for forward stream */
         private BufferedReader forwardReader;
+        /** saved left part for an unpaired read */
+        SeqRead.Part leftBuffer;
 
         public Single(InputStream forwardStream) throws IOException {
             this.forwardStream = forwardStream;
             this.forwardReader = getReader(forwardStream);
+            this.leftBuffer = null;
             this.setNext(this.readAhead());
         }
 
         /**
-         * Input and format the next read.  If we are at end-of-file, this will store NULL.
+         * Input and format the next read.  If we are at end-of-file, this will return NULL.
          *
          * @throws IOException
          */
         @Override
         protected SeqRead readAhead() throws IOException {
             SeqRead retVal = null;
-            // Get the left sequence.
-            SeqRead.Part leftPart = SeqRead.read(this.forwardReader);
+            // Get the left read.  This may be saved in the buffer; if not, we read it from
+            // the file.
+            SeqRead.Part leftPart = this.leftBuffer;
+            if (leftPart == null)
+                leftPart = SeqRead.read(this.forwardReader);
+            // Only proceed if we found a read part.  If we didn't, we will return NULL,
+            // which the parent will interpret as end-of-file.
             if (leftPart != null) {
-                retVal = new SeqRead(leftPart);
+                // Check for a matching right sequence.
+                SeqRead.Part rightPart = SeqRead.read(this.forwardReader);
+                if (rightPart != null && rightPart.matches(leftPart)) {
+                    // Here we have an interlaced paired read.
+                    retVal = new SeqRead(leftPart, rightPart);
+                } else {
+                    // Here we have a singleton.  We return the left part and buffer the
+                    // right part as the next left part.
+                    this.leftBuffer = rightPart;
+                    retVal = new SeqRead(leftPart);
+                }
             }
             return retVal;
         }
