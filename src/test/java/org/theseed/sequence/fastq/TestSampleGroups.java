@@ -23,8 +23,8 @@ class TestSampleGroups {
         // Check as a FASTQ directory.  Should be two samples.
         FastqSampleGroup group = FastqSampleGroup.Type.FASTQ.create(testDir);
         var sampleSet = group.getSamples();
-        assertThat(sampleSet.size(), equalTo(2));
-        assertThat(sampleSet, containsInAnyOrder("SRR11321054", "SRR11321056"));
+        assertThat(sampleSet.size(), equalTo(3));
+        assertThat(sampleSet, containsInAnyOrder("SRR11321054", "SRR11321056", "sample.x"));
         ReadStream rStream = group.sampleIter("SRR11321054");
         assertThat(rStream.hasNext(), equalTo(true));
         SeqRead read = rStream.next();
@@ -53,10 +53,42 @@ class TestSampleGroups {
         allSeq = read.getSequence();
         assertThat(allSeq.substring(0, 100), equalTo(read.getLseq().substring(0, 100)));
         assertThat(rStream.hasNext(), equalTo(false));
+        rStream = group.sampleIter("sample.x");
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("ERR1912949.1"));
+        assertThat(read.getLseq(), equalTo("ctcaagtcctgacttacctcaacccttaccacggtgagcattttatcttttactcgcggatccttgagctcgcggataagcgcaactatttcg"));
+        assertThat(read.getRseq(), equalTo("aagcgctttaaggacgacgtaaaagaggttcagtccggctacgaatgcggaatcggtcttgagaaattcaacgacattaaagagggagacatc"));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("ERR1912949.2"));
+        assertThat(read.getLseq(), equalTo("catttggttttacctccataatttcgtataatcggttttcgtatcggtgatgccagtgtgcttgtcggtgaaaaatccgctgtgctgcaaatc"));
+        assertThat(read.getRseq(), equalTo("aaccggacttcaaaattgccgtacacgccgtacactctgtacggcatttttcaacttcatccgcaaaatacggttttgcttgtgcctttggtg"));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("ERR1912949.3"));
+        assertThat(read.getLseq(), equalTo("cagcacagcaacttcccggtcattgatgcgctggaagagaacaagatgcttcaccagcaggtcaaggagctgaacggagaactgaaacgggcc"));
+        assertThat(read.getRseq(), equalTo(""));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("ERR1912949.4"));
+        assertThat(read.getLseq(), equalTo("tgtaatattaagcatcctgccccaactgtcataaaaatagtttactacagccgtgccattggcgtcaaccagtcctgtgatgcacatcagtcc"));
+        assertThat(read.getRseq(), equalTo(""));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("ERR1912949.5"));
+        assertThat(read.getLseq(), equalTo("cgcaccactctttattaactgcctgcaacattgcatatcacttatacgatagaaatcaatttgttttttatacgtataagcatacactattaa"));
+        assertThat(read.getRseq(), equalTo(""));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("ERR1912949.6"));
+        assertThat(read.getLseq(), equalTo("gaatattttattagcagggggagctggctacattggttctcatacagcagtggaattattaacagcaggacatgacgtagttatcgtagataa"));
+        assertThat(read.getRseq(), equalTo(""));
+        assertThat(rStream.hasNext(), equalTo(false));
         group = FastqSampleGroup.Type.FASTA.create(testDir);
         sampleSet = group.getSamples();
-        assertThat(sampleSet.size(), equalTo(2));
-        assertThat(sampleSet, containsInAnyOrder("ERR1136887", "ERS006602"));
+        assertThat(sampleSet.size(), equalTo(3));
+        assertThat(sampleSet, containsInAnyOrder("ERR1136887", "ERS006602", "verify"));
         rStream = group.sampleIter("ERS006602");
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
@@ -76,6 +108,18 @@ class TestSampleGroups {
         assertThat(read.getLabel(), equalTo("NODE_4_length_68806_cov_10.5822"));
         assertThat(read.getCoverage(), closeTo(10.5822, 0.0001));
         assertThat(rStream.hasNext(), equalTo(false));
+        rStream = group.sampleIter("verify");
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("fig|1650663.6.peg.717|EDD77_10475|"));
+        assertThat(read.getSequence(), equalTo("atggaagcaaagatcaatgctctgaaagagcagatggagatttcgcttggcgctgtgcagtaa"));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("fig|1879010.6635.peg.1860|"));
+        assertThat(read.getCoverage(), closeTo(50.0, 0.0001));
+        assertThat(read.getSequence(), equalTo("atggaagagaagatcaaggcactgaaagagcagatggaagccgctctcggcagtgtagag"));
+        assertThat(rStream.hasNext(), equalTo(false));
+
     }
 
 }

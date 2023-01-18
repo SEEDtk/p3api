@@ -80,15 +80,17 @@ public abstract class FastqSampleGroup implements AutoCloseable {
         public abstract FastqSampleGroup create(File sampleDir) throws IOException;
 
         /**
-         * @return the file filter for the specified type
+         * @return the file filter that accepts sample groups of the specified type
          */
         public abstract FileFilter getFilter();
 
     }
 
     /**
-     * A two-tiered group is a directory of directories, each subdirectory containing a sample.  This
-     * method provides the basic pattern for all filters used to find two-tiered groups.
+     * A two-tiered group is a directory of directories files and directories.  A sample can be stored
+     * as a single file (interlaced or singleton), or as a directory containing both paired-end read files.
+     * If it is a single file, the base file name is the sample ID.  Otherwise, the directory name is the
+     * sample ID.  This method provides the basic pattern for all filters used to find two-tiered groups.
      */
     public abstract static class TierFilter implements FileFilter {
 
@@ -103,12 +105,12 @@ public abstract class FastqSampleGroup implements AutoCloseable {
         }
 
         /**
-         * @return a list of the subdirectories containing samples in the specified sample group
+         * @return a list of the files and subdirectories containing samples in the specified sample group
          *
          * @param pathname	directory containing the sample group
          */
         public List<File> getSampleDirs(File pathname) {
-            File[] subs = pathname.listFiles(File::isDirectory);
+            File[] subs = pathname.listFiles();
             List<File> retVal = Arrays.stream(subs).filter(x -> this.isSample(x)).collect(Collectors.toList());
             return retVal;
         }
@@ -116,11 +118,11 @@ public abstract class FastqSampleGroup implements AutoCloseable {
         /**
          * This checks to see if a directory contains a single sample.
          *
-         * @param dir	directory to check
+         * @param file	file or directory to check
          *
-         * @return TRUE if the specified directory contains a sample, else FALSE
+         * @return TRUE if the specified file or directory contains a sample, else FALSE
          */
-        protected abstract boolean isSample(File dir);
+        protected abstract boolean isSample(File file);
     }
 
 
