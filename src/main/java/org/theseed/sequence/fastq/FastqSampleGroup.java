@@ -98,7 +98,7 @@ public abstract class FastqSampleGroup implements AutoCloseable {
         public boolean accept(File pathname) {
             boolean retVal = pathname.isDirectory();
             if (retVal) {
-                File[] subs = pathname.listFiles(File::isDirectory);
+                File[] subs = pathname.listFiles();
                 retVal = Arrays.stream(subs).filter(x -> this.isSample(x)).findAny().isPresent();
             }
             return retVal;
