@@ -36,7 +36,7 @@ public class FastqDirSampleGroup extends FastqSampleGroup {
     /** master directory containing the sample subdirectories */
     private File masterDirectory;
     /** pattern for paired filename endings */
-    private static final Pattern ENDING_PATTERN = Pattern.compile(".+_([12])\\.fastq(?:\\.gz)?");
+    private static final Pattern ENDING_PATTERN = Pattern.compile(".+_R?([12])(?:_001)?\\.fastq(?:\\.gz)?");
 
 
     /**
