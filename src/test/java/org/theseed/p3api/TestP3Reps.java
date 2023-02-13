@@ -23,7 +23,7 @@ import org.theseed.proteins.kmers.reps.RepGenomeDb;
 public class TestP3Reps {
 
     @Test
-    public void test() throws IOException {
+    public void testP3Reps() throws IOException {
         File testFile = new File("data", "p3kmers.tbl");
         List<String> genomes = TabbedLineReader.readColumn(testFile, "genome_id");
         RepGenomeDb repdb = RepGenomeDb.load(new File("data", "rep200.db"));
