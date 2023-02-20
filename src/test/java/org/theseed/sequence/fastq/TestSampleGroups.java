@@ -20,6 +20,7 @@ class TestSampleGroups {
     @Test
     void testDirTypes() throws IOException {
         File testDir = new File("data", "fqTest");
+        SeqRead.setMinOverlap(5);
         // Check as a FASTQ directory.  Should be two samples.
         FastqSampleGroup group = FastqSampleGroup.Type.FASTQ.create(testDir);
         var sampleSet = group.getSamples();

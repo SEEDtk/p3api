@@ -37,6 +37,8 @@ public class SeqRead {
     private double coverage;
     /** current phred offset, indicating the 0 value for quality */
     private static int phredOffset = 33;
+    /** minimum overlap score */
+    private static int minOverlap = 5;
     /** match pattern for extracting sequence label and type */
     private static Pattern ID_PATTERN = Pattern.compile("@(\\S+).*");
     /** match pattern for determining direction */
@@ -53,6 +55,15 @@ public class SeqRead {
      */
     public static void setPhredOffset(int newOffset) {
         phredOffset = newOffset;
+    }
+
+    /**
+     * Set the minimum overlap score.
+     *
+     * @param newMin		new value to use
+     */
+    public static void setMinOverlap(int newMin) {
+        minOverlap = newMin;
     }
 
     /**
@@ -429,7 +440,10 @@ public class SeqRead {
                 }
             }
             // Now we stitch the pieces together.
-            retVal = nrmLeft + revRight.substring(bestN);
+            String right = revRight.substring(bestN);
+            if (bestN < minOverlap)
+                right = "x" + right;
+            retVal = nrmLeft + right;
         }
         return retVal;
     }
