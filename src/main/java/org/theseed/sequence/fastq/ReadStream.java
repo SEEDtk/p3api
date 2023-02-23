@@ -56,6 +56,20 @@ public abstract class ReadStream implements Iterator<SeqRead>, Iterable<SeqRead>
     }
 
     /**
+     * Safely get the next read in the stream.
+     *
+     * @return the next read in the stream, or NULL if we are at the end of the stream
+     *
+     * @throws IOException
+     */
+    public SeqRead safeNext() throws IOException {
+        SeqRead retVal = this.nextRead;
+        if (retVal != null)
+            this.nextRead = this.readAhead();
+        return retVal;
+    }
+
+    /**
      * Store the next read to return.
      *
      * @param read		next read to return, or NULL if we are at the end of the stream

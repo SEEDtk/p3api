@@ -35,7 +35,7 @@ public abstract class SampleDescriptor {
      *
      * @throws IOException
      */
-    protected ReadStream reader() throws IOException {
+    public ReadStream reader() throws IOException {
         ReadStream retVal;
         if (this.forwardName == null && this.reverseName == null)
             retVal = ReadStream.NULL;
