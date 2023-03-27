@@ -18,9 +18,10 @@ import org.junit.jupiter.api.Test;
 class TestReadStreams {
 
     @Test
-    void test() throws IOException {
+    void testSampleGroupTypes() throws IOException {
         File sampleDir = new File("data");
-        FastqSampleDescriptor sampleDesc = new FastqSampleDescriptor(sampleDir, "small_test.fastq.gz", null);
+        FastqSampleDescriptor sampleDesc = new FastqSampleDescriptor(sampleDir, "small", "small_test.fastq.gz", null);
+        assertThat(sampleDesc.getId(), equalTo("small"));
         ReadStream inStream = sampleDesc.reader();
         var iter = inStream.iterator();
         assertThat(iter.hasNext(), equalTo(true));
@@ -53,7 +54,8 @@ class TestReadStreams {
         inStream.close();
         // Now do paired-end.
         sampleDir = new File("data/fqTest", "SRR11321054");
-        sampleDesc = new FastqSampleDescriptor(sampleDir, "SRR11321054_1.fastq", "SRR11321054_2.fastq");
+        sampleDesc = new FastqSampleDescriptor(sampleDir, "SRR11321054", "SRR11321054_1.fastq", "SRR11321054_2.fastq");
+        assertThat(sampleDesc.getId(), equalTo("SRR11321054"));
         inStream = sampleDesc.reader();
         iter = inStream.iterator();
         assertThat(iter.hasNext(), equalTo(true));

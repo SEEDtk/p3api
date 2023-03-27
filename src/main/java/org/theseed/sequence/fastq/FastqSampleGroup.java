@@ -7,11 +7,17 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * This object represents a group of samples stored in FASTQ format.  It returns a list of sample IDs, and each sample can be read
@@ -125,6 +131,121 @@ public abstract class FastqSampleGroup implements AutoCloseable {
         protected abstract boolean isSample(File file);
     }
 
+    /**
+     * This object is a balanced Spliterator for a sample group.  It returns a set of sample descriptors, and as much
+     * as possible tries to split in such a way that both sides of the split have the same total estimated
+     * size, so they take the same time to process.
+     *
+     * The sample group should not be modified while a splitter is active.  This is the normal mode of processing in any case.
+     */
+    protected static class Splitter implements Spliterator<SampleDescriptor> {
+
+        /** list of sample descriptors for this group */
+        private List<SampleDescriptor> samples;
+        /** position of next descriptor to return in the list */
+        private int pos;
+
+        /**
+         * Construct a splitter for an entire sample group.
+         *
+         * @param group		sample group to iterate over
+         */
+        protected Splitter(FastqSampleGroup group) {
+            this.samples = new ArrayList<SampleDescriptor>(group.sampleMap.values());
+            this.pos = 0;
+        }
+
+        /**
+         * Construct a splitter for a list of samples.
+         *
+         * @param samples	list of samples to process
+         */
+        protected Splitter(List<SampleDescriptor> samples) {
+            this.samples = samples;
+            this.pos = 0;
+        }
+
+        /**
+         * Process the next sample descriptor, if any, and position past it.
+         *
+         * @param action	action to use to process the descriptor
+         *
+         * @return TRUE if successful, FALSE if we were at the end of the list
+         */
+        @Override
+        public boolean tryAdvance(Consumer<? super SampleDescriptor> action) {
+            boolean retVal;
+            if (pos < samples.size()) {
+                // Here we have another sample to process.
+                retVal = true;
+                action.accept(samples.get(pos));
+                pos++;
+            } else {
+                // Denote we are at the end.
+                retVal = false;
+            }
+            return retVal;
+        }
+
+        /**
+         * Split the list into two balanced components.  We split from the current position (which is the next
+         * sample to process) to the end, and return a new spliterator for one half after reconfiguring ourselves
+         * for the other half.
+         *
+         * @return	the spliterator for the other half
+         */
+        @Override
+        public Spliterator<SampleDescriptor> trySplit() {
+            Spliterator<SampleDescriptor> retVal;
+            // If there is only one sample left we don't split.
+            int remaining = this.samples.size() - this.pos;
+            if (remaining <= 1)
+                retVal = null;
+            else {
+                // Compute the size for the entire list.  This will be our running total of the size of the
+                // remaining samples.
+                long total = this.length();
+                // Set up the new list.
+                List<SampleDescriptor> newList = new ArrayList<SampleDescriptor>(remaining - 1);
+                long newTotal = 0;
+                // Loop until the old list is almost empty or it is smaller or equal to the new list, moving samples
+                // from the end of the old list to the beginning of the new list.
+                for (int tail = this.samples.size() - 1; tail > this.pos && newTotal < total; tail--) {
+                    // Move the last element in the old list to the new list.
+                    SampleDescriptor popped = this.samples.remove(tail);
+                    newList.add(popped);
+                    // Adjust the lengths.
+                    long len = popped.estimatedSize();
+                    total -= len;
+                    newTotal += len;
+                }
+                // Create a spliterator from the new list.
+                retVal = new Splitter(newList);
+            }
+            return retVal;
+        }
+
+        /**
+         * @return the number of samples left to process in this list
+         */
+        @Override
+        public long estimateSize() {
+            return this.samples.size() - this.pos;
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.DISTINCT + Spliterator.IMMUTABLE + Spliterator.NONNULL + Spliterator.SUBSIZED + Spliterator.SIZED;
+        }
+
+        /**
+         * @return the estimated file size of this splitter
+         */
+        public long length() {
+            return IntStream.range(pos, this.samples.size()).mapToLong(i -> this.samples.get(i).estimatedSize()).sum();
+        }
+
+    }
 
     /**
      * Create a FASTQ sample group in the specified file or directory.
@@ -148,8 +269,17 @@ public abstract class FastqSampleGroup implements AutoCloseable {
     /**
      * @return the set of sample IDs for this sample group
      */
-    public Set<String> getSamples() {
+    public Set<String> getSampleIDs() {
         return this.sampleMap.keySet();
+    }
+
+    /**
+     * @return the descriptor for the specified sample (or NULL if the ID is invalid)
+     *
+     * @param id		ID of the desired sample
+     */
+    public SampleDescriptor getDescriptor(String id) {
+        return this.sampleMap.get(id);
     }
 
     /**
@@ -190,11 +320,34 @@ public abstract class FastqSampleGroup implements AutoCloseable {
         }
     }
 
-
     /**
-     *
+     * Clean up any special resources.
      */
     protected abstract void cleanup() throws IOException;
+
+    /**
+     * @return a sequential stream for this sample group
+     */
+    public Stream<SampleDescriptor> stream() {
+        return this.stream(false);
+    }
+
+    /**
+     * @return a parallel stream for this sample group
+     */
+    public Stream<SampleDescriptor> parallelStream() {
+        return this.stream(true);
+    }
+
+    /**
+     * @return a stream for this sample group
+     *
+     * @param paraFlag	TRUE for a parallel stream, else FALSE
+     */
+    public Stream<SampleDescriptor> stream(boolean paraFlag) {
+        Stream<SampleDescriptor> retVal = StreamSupport.stream(new Splitter(this), paraFlag);
+        return retVal;
+    }
 
 
 }

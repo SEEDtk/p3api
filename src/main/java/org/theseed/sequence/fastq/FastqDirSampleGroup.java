@@ -99,7 +99,7 @@ public class FastqDirSampleGroup extends FastqSampleGroup {
                 // If this is a single-file sample, extract the sample ID.  Note that this will work
                 // even for a "fastq.gz" file.
                 sampleId = StringUtils.substringBeforeLast(sampleFileName, ".fastq");
-                desc = new FastqSampleDescriptor(sampleFile.getParentFile(), sampleFileName, null);
+                desc = new FastqSampleDescriptor(sampleFile.getParentFile(), sampleId, sampleFileName, null);
             } else {
                 // Here we have paired files.  The sample ID is the base name.
                 sampleId = sampleFileName;
@@ -116,7 +116,7 @@ public class FastqDirSampleGroup extends FastqSampleGroup {
                             rightFile = subFile.getName();
                     }
                 }
-                desc = new FastqSampleDescriptor(sampleFile, leftFile, rightFile);
+                desc = new FastqSampleDescriptor(sampleFile, sampleId, leftFile, rightFile);
             }
             retVal.put(sampleId, desc);
         }

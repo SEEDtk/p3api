@@ -28,10 +28,11 @@ public class FastaSampleDescriptor extends SampleDescriptor {
      * Create the FASTA sample descriptor.  There is only the forward file.
      *
      * @param dir		subdirectory or file containing the sample
+     * @param id		sample ID
      * @param forward	name of the FASTA file
      */
-    public FastaSampleDescriptor(File dir, String forward) {
-        super(forward, null);
+    public FastaSampleDescriptor(File dir, String id, String forward) {
+        super(id, forward, null);
         if (dir.isFile()) {
             // Here we have a sample encoded in a simple file.
             this.contigFile = dir;
@@ -91,6 +92,11 @@ public class FastaSampleDescriptor extends SampleDescriptor {
             this.inStream.close();
         }
 
+    }
+
+    @Override
+    public long estimatedSize() {
+        return this.contigFile.length();
     }
 
 }

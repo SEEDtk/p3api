@@ -21,13 +21,20 @@ public abstract class SampleDescriptor {
     private String forwardName;
     /** name of reverse stream, or NULL if there is none */
     private String reverseName;
+    /** ID of the sample */
+    private String sampleId;
 
     /**
      * Construct a SampleDescriptor from a pair of stream names.
+     *
+     * @param id		ID of the sample
+     * @param forward	file base name for forward sequences
+     * @param reverse	file base name of reverse sequences (or NULL if none)
      */
-    public SampleDescriptor(String forward, String reverse) {
-           this.forwardName = forward;
-           this.reverseName = reverse;
+    public SampleDescriptor(String id, String forward, String reverse) {
+        this.sampleId = id;
+        this.forwardName = forward;
+        this.reverseName = reverse;
     }
 
     /**
@@ -77,5 +84,31 @@ public abstract class SampleDescriptor {
      * @throws IOException
      */
     protected abstract InputStream getInputStream(String fileName) throws IOException;
+
+    /**
+     * @return the estimated sample size
+     */
+    public abstract long estimatedSize();
+
+    /**
+     * @return the forward-stream base name
+     */
+    protected String getForwardName() {
+        return this.forwardName;
+    }
+
+    /**
+     * @return the reverse-stream base name
+     */
+    protected String getReverseName() {
+        return this.reverseName;
+    }
+
+    /**
+     * @return the sample ID
+     */
+    public String getId() {
+        return this.sampleId;
+    }
 
 }

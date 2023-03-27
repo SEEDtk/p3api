@@ -84,10 +84,10 @@ public class FastaSampleGroup extends FastqSampleGroup {
             if (subFile.isFile()) {
                 // We have a FASTA file here.  Extract the ID.
                 sampleId = StringUtils.substringBeforeLast(sampleFileName, ".");
-                desc = new FastaSampleDescriptor(sampleDir, sampleFileName);
+                desc = new FastaSampleDescriptor(sampleDir, sampleId, sampleFileName);
             } else {
                 sampleId = sampleFileName;
-                desc = new FastaSampleDescriptor(subFile, CONTIG_FILE_NAME);
+                desc = new FastaSampleDescriptor(subFile, sampleId, CONTIG_FILE_NAME);
             }
             retVal.put(sampleId, desc);
         }

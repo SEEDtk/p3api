@@ -21,11 +21,19 @@ class TestSampleGroups {
     void testDirTypes() throws IOException {
         File testDir = new File("data", "fqTest");
         SeqRead.setMinOverlap(5);
-        // Check as a FASTQ directory.  Should be two samples.
+        // Check as a FASTQ directory.  Should be three samples.
         FastqSampleGroup group = FastqSampleGroup.Type.FASTQ.create(testDir);
-        var sampleSet = group.getSamples();
+        var sampleSet = group.getSampleIDs();
         assertThat(sampleSet.size(), equalTo(3));
         assertThat(sampleSet, containsInAnyOrder("SRR11321054", "SRR11321056", "sample.x"));
+        // Verify the sizes.
+        SampleDescriptor desc = group.getDescriptor("SRR11321054");
+        assertThat(desc.estimatedSize(), equalTo(5336L));
+        desc = group.getDescriptor("SRR11321056");
+        assertThat(desc.estimatedSize(), equalTo(2672L));
+        desc = group.getDescriptor("sample.x");
+        assertThat(desc.estimatedSize(), equalTo(3240L));
+        // Check reading.
         ReadStream rStream = group.sampleIter("SRR11321054");
         assertThat(rStream.hasNext(), equalTo(true));
         SeqRead read = rStream.next();
@@ -86,10 +94,19 @@ class TestSampleGroups {
         assertThat(read.getLseq(), equalTo("gaatattttattagcagggggagctggctacattggttctcatacagcagtggaattattaacagcaggacatgacgtagttatcgtagataa"));
         assertThat(read.getRseq(), equalTo(""));
         assertThat(rStream.hasNext(), equalTo(false));
+        // Try as a FASTA group.
         group = FastqSampleGroup.Type.FASTA.create(testDir);
-        sampleSet = group.getSamples();
+        sampleSet = group.getSampleIDs();
         assertThat(sampleSet.size(), equalTo(3));
         assertThat(sampleSet, containsInAnyOrder("ERR1136887", "ERS006602", "verify"));
+        // Check the sizes.
+        desc = group.getDescriptor("ERR1136887");
+        assertThat(desc.estimatedSize(), equalTo(947L));
+        desc = group.getDescriptor("ERS006602");
+        assertThat(desc.estimatedSize(), equalTo(317692L));
+        desc = group.getDescriptor("verify");
+        assertThat(desc.estimatedSize(), equalTo(416L));
+        // Read the contigs.
         rStream = group.sampleIter("ERS006602");
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();

@@ -81,8 +81,10 @@ public class QzaSampleGroup extends FastqSampleGroup  {
         }
         // Form all the pairs into samples.
         SortedMap<String, SampleDescriptor> retVal = new TreeMap<String, SampleDescriptor>();
-        for (Map.Entry<String, Pair> pairEntry : pairMap.entrySet())
-            retVal.put(pairEntry.getKey(), pairEntry.getValue().create(this.controller));
+        for (Map.Entry<String, Pair> pairEntry : pairMap.entrySet()) {
+            String sampleId = pairEntry.getKey();
+            retVal.put(sampleId, pairEntry.getValue().create(sampleId, this.controller));
+        }
         return retVal;
     }
 
@@ -124,10 +126,11 @@ public class QzaSampleGroup extends FastqSampleGroup  {
         /**
          * @return a sample descriptor for this file pair
          *
+         * @param id			ID of the sample
          * @param controller	zip-file controller
          */
-        public SampleDescriptor create(ZipFile controller) {
-            return new ZipSampleDescriptor(controller, this.forwardEntry, this.reverseEntry);
+        public SampleDescriptor create(String id, ZipFile controller) {
+            return new ZipSampleDescriptor(controller, id, this.forwardEntry, this.reverseEntry);
         }
 
     }
