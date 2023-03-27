@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -161,8 +162,8 @@ public abstract class FastqSampleGroup implements AutoCloseable {
          *
          * @param samples	list of samples to process
          */
-        protected Splitter(List<SampleDescriptor> samples) {
-            this.samples = samples;
+        protected Splitter(Collection<SampleDescriptor> samples) {
+            this.samples = new ArrayList<SampleDescriptor>(samples);
             this.setup();
         }
 
@@ -354,6 +355,21 @@ public abstract class FastqSampleGroup implements AutoCloseable {
      */
     public Stream<SampleDescriptor> stream(boolean paraFlag) {
         Stream<SampleDescriptor> retVal = StreamSupport.stream(new Splitter(this), paraFlag);
+        return retVal;
+    }
+
+    /**
+     * @return a stream for a specified subset of the sample group
+     *
+     * @param sampleIDs		set of sample IDs to process
+     * @param paraFlag	TRUE for a parallel stream, else FALSE
+     */
+    public Stream<SampleDescriptor> stream(Collection<String> sampleIDs, boolean paraFlag) {
+        // Get all the named descriptors.
+        List<SampleDescriptor> samples = sampleIDs.stream().map(x -> this.sampleMap.get(x)).filter(x -> x != null)
+                .collect(Collectors.toList());
+        // Create the stream.
+        Stream<SampleDescriptor> retVal = StreamSupport.stream(new Splitter(samples), paraFlag);
         return retVal;
     }
 
