@@ -11,10 +11,12 @@ import java.util.zip.GZIPInputStream;
  * This is the base class for an object that describes a sample.  It contains the information necessary
  * to retrieve the sample from its constituent files.
  *
+ * Sample descriptors are ordered by file size followed by sample ID.
+ *
  * @author Bruce Parrello
  *
  */
-public abstract class SampleDescriptor {
+public abstract class SampleDescriptor implements Comparable<SampleDescriptor> {
 
     // FIELDS
     /** name of forward stream */
@@ -109,6 +111,14 @@ public abstract class SampleDescriptor {
      */
     public String getId() {
         return this.sampleId;
+    }
+
+    @Override
+    public int compareTo(SampleDescriptor o) {
+        int retVal = Long.compare(this.estimatedSize(), o.estimatedSize());
+        if (retVal == 0)
+            retVal = this.sampleId.compareTo(o.sampleId);
+        return retVal;
     }
 
 }

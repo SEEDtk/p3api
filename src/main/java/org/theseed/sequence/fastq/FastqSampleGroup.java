@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
@@ -152,7 +153,7 @@ public abstract class FastqSampleGroup implements AutoCloseable {
          */
         protected Splitter(FastqSampleGroup group) {
             this.samples = new ArrayList<SampleDescriptor>(group.sampleMap.values());
-            this.pos = 0;
+            this.setup();
         }
 
         /**
@@ -162,9 +163,16 @@ public abstract class FastqSampleGroup implements AutoCloseable {
          */
         protected Splitter(List<SampleDescriptor> samples) {
             this.samples = samples;
-            this.pos = 0;
+            this.setup();
         }
 
+        /**
+         * Sort the samples and position on the first one.
+         */
+        private void setup() {
+            Collections.sort(samples);
+            this.pos = 0;
+        }
         /**
          * Process the next sample descriptor, if any, and position past it.
          *
