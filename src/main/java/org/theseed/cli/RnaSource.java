@@ -3,6 +3,8 @@
  */
 package org.theseed.cli;
 
+import java.util.regex.Pattern;
+
 import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -15,6 +17,10 @@ import com.github.cliftonlabs.json_simple.JsonObject;
  *
  */
 public abstract class RnaSource {
+
+    // FIELDS
+    /** this pattern is used to extract the sample ID from the fastq file name */
+    protected static final Pattern NAME_PATTERN = Pattern.compile("(?:.+/)?(.+?)(?:_(?:\\d_)?[ps]trim)?\\.(?:fastq|fq)(?:\\.gz)?");
 
     /**
      * Store this source in a JSON parameter object.
@@ -113,11 +119,30 @@ public abstract class RnaSource {
 
         @Override
         public void store(JsonObject parms) {
-            JsonArray source = new JsonArray()
-                    .addChain(new JsonObject()
-                            .putChain("read1", this.leftFile)
-                            .putChain("read2", this.rightFile));
-            parms.put("paired_end_libs", source);
+            // Compute the sample ID.
+            String sampleId = "sample";
+            var m = NAME_PATTERN.matcher(this.leftFile);
+            if (m.matches())
+                sampleId = m.group(1);
+            // Do we really have two files? If not, only the leftfile will be present.
+            if (this.rightFile != null) {
+                // Yes, we have two files.
+                JsonArray source = new JsonArray()
+                        .addChain(new JsonObject()
+                                .putChain("read1", this.leftFile)
+                                .putChain("read2", this.rightFile)
+                                .putChain("sample_id", sampleId)
+                                );
+                parms.put("paired_end_libs", source);
+            } else {
+                // Only one file, use single-end.
+                JsonArray source = new JsonArray()
+                        .addChain(new JsonObject()
+                                .putChain("read", this.leftFile)
+                                .putChain("sample_id", sampleId)
+                                );
+                parms.put("single_end_libs", source);
+            }
         }
 
         @Override
