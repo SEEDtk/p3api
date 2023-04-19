@@ -96,11 +96,11 @@ public abstract class CliTask implements Comparable<CliTask> {
         try {
             retVal = ProcessUtils.runProgram(program, parms);
         } catch (Exception e) {
-            throw new RuntimeException("Error executing " + command + ": " + e.toString());
+            throw new CliTaskException(this, "Error executing " + command + ": " + e.toString());
         }
         // Throw an error if it failed.
         if (retVal == null)
-            throw new RuntimeException(command + " failed with nonzero exit code.");
+            throw new CliTaskException(this, command + " failed with nonzero exit code.");
         return retVal;
     }
 
@@ -129,11 +129,11 @@ public abstract class CliTask implements Comparable<CliTask> {
         // Run the command.
         List<String> output = this.run("appserv-start-app", parms);
         if (output.size() < 1)
-            throw new RuntimeException("No output from submission of " + service + ".");
+            throw new CliTaskException(this, "No output from submission of " + service + ".");
         // Extract the task ID.
         Matcher m = TASK_ID_PATTERN.matcher(output.get(0));
         if (! m.matches())
-            throw new RuntimeException("Invalid output from submission of " + service + ":  " + output.get(0));
+            throw new CliTaskException(this, "Invalid output from submission of " + service + ":  " + output.get(0));
         this.taskId = m.group(1);
     }
 
