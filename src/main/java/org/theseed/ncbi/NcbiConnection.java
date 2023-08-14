@@ -50,11 +50,11 @@ public class NcbiConnection extends Connection {
     /** default chunk size */
     private static int DEFAULT_CHUNK_SIZE = 200;
     /** ENTREZ URL for ID search */
-    private static final String SEARCH_URL = "https://www.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
+    private static final String SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi";
     /** ENTREZ URL for data fetch */
-    private static final String FETCH_URL = "https://www.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi";
+    private static final String FETCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi";
     /** ENTREZ URL for field list fetch */
-    private static final String INFO_URL = "https://www.ncbi.nlm.nih.gov/entrez/eutils/einfo.fcgi";
+    private static final String INFO_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/einfo.fcgi";
 
     /**
      * This class describes a field.  It is returned by the getFieldNames method.

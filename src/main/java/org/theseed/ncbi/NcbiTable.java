@@ -94,7 +94,6 @@ public enum NcbiTable {
         }
 
     }, GEO {
-
         @Override
         public String db() {
             return "gds";
@@ -110,7 +109,25 @@ public enum NcbiTable {
             return "retmode=xml";
         }
 
+    }, ASSEMBLY {
+
+        @Override
+        public String db() {
+            return "assembly";
+        }
+
+        @Override
+        public String tagName() {
+            return "DocumentSummary";
+        }
+
+        @Override
+        public String returnType() {
+            return "rettype=docsum&retmode=xml";
+        }
+
     };
+
     /**
      * @return the name of the table
      */

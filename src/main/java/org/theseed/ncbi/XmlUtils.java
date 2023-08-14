@@ -205,7 +205,9 @@ public class XmlUtils {
                 Node child = children.item(i);
                 switch (child.getNodeType()) {
                 case Node.TEXT_NODE :
-                    textElements.add(child);
+                    String context = child.getTextContent();
+                    if (StringUtils.isBlank(context))
+                        textElements.add(child);
                     break;
                 case Node.ELEMENT_NODE :
                     deferred.add((Element) child);
