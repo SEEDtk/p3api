@@ -4,6 +4,7 @@
 package org.theseed.ncbi;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.w3c.dom.Element;
@@ -48,6 +49,13 @@ public class NcbiListQuery extends NcbiQuery {
     public int addId(String idValue) {
         this.values.add(idValue);
         return this.values.size();
+    }
+
+    /**
+     * Add a collection of IDs to the list.
+     */
+    public void addIds(Collection<String> idValues) {
+        this.values.addAll(idValues);
     }
 
     /**
