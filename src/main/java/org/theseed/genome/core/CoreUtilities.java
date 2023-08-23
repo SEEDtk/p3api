@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.io.TabbedLineReader;
 
 /**
@@ -23,35 +25,29 @@ import org.theseed.io.TabbedLineReader;
 public class CoreUtilities {
 
     // FIELDS
-    /** if TRUE, status messages will be written to STDERR */
-    private boolean debug;
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(CoreUtilities.class);
     /** base organism directory */
     private File orgDir;
     /** cache of genome sequences */
     private Map<String, PegList> genomeMap;
-
-    // CONSTANTS
-
     /** path-and-name suffix to convert a genome ID to the complete path to the assigned-functions file */
     private static final String FUNCTION_FILE_SUFFIX = File.separator + "assigned_functions";
-
-    /** path-and-name suffix to convert a genome ID to the complete path to the deleted-pegs file */
-    private static final String DELETED_PEGS_FILE_SUFFIX = File.separator + "Features" + File.separator + "peg" + File.separator + "deleted.features";
-
     /** path-and-name suffix to convert a genome ID to the complete path to the peg FASTA file */
     private static final String PEG_FILE_SUFFIX = File.separator + "Features" + File.separator + "peg" + File.separator + "fasta";
-
     /** genome ID extraction pattern */
     private static final Pattern GENOME_ID_PATTERN = Pattern.compile("fig\\|(\\d+\\.\\d+)\\.\\w+\\.\\d+");
+    /** feature type extraction pattern */
+    private static final Pattern FID_TYPE_PATTERN = Pattern.compile("fig\\|\\d+\\.\\d+\\.(\\w+)\\.\\d+");
+
+
 
     /**
      * Connect this object to an organism directory and initialize the genome cache.
      *
-     * @param debugFlag		TRUE if status messages should be written to STDERR, else FALSE
      * @param organismDir	target organism directory
      */
-    public CoreUtilities(boolean debugFlag, File organismDir) {
-        this.debug = debugFlag;
+    public CoreUtilities(File organismDir) {
         this.orgDir = organismDir;
         this.genomeMap = new HashMap<String, PegList>(1500);
     }
@@ -91,10 +87,10 @@ public class CoreUtilities {
         PegList retVal = null;
         File pegFile = new File(this.orgDir, genomeId + PEG_FILE_SUFFIX);
         if (! pegFile.isFile()) {
-            if (this.debug) System.err.println("Could not find sequences for genome " + genomeId + ".");
+            log.info("Could not find sequences for genome " + genomeId + ".");
         } else {
             // Here the genome exists.
-            if (this.debug) System.err.println("Reading sequences for genome " + genomeId + ".");
+            log.info("Reading sequences for genome " + genomeId + ".");
             retVal = new PegList(pegFile);
         }
         return retVal;
@@ -108,16 +104,35 @@ public class CoreUtilities {
      * @throws IOException
      */
     public Map<String, String> getGenomeFunctions(String genomeId) throws IOException {
+        return getGenomeFunctions(genomeId, "peg");
+    }
+
+    /**
+     * Extract the feature assignments for a given list of feature types in a single genome.
+     * The assigned-functions file may contain multiple assignments for a given feature.  In
+     * this case, the last one is kept.  In addition, we have to check the deleted-features
+     * files.
+     *
+     * @param genomeId	ID of the source genome
+     * @param type		array of feature types to include
+     *
+     * @return a map from feature IDs to assigned functions
+     *
+     * @throws IOException
+     */
+    public Map<String, String> getGenomeFunctions(String genomeId, String... type) throws IOException {
         Map<String, String> retVal = new HashMap<String, String>(6000);
         // This set will hold the deleted features.
-        Set<String> deletedPegs = new HashSet<String>(100);
-        File deleteFile = new File(this.orgDir, genomeId + DELETED_PEGS_FILE_SUFFIX);
-        if (deleteFile.exists()) {
-            if (this.debug) System.err.println("Reading deleted pegs for " + genomeId + ".");
-            try (TabbedLineReader deleteReader = new TabbedLineReader(deleteFile, 1)) {
-                for (TabbedLineReader.Line line : deleteReader) {
-                    String peg = line.get(0);
-                    deletedPegs.add(peg);
+        Set<String> deletedFids = new HashSet<String>(100);
+        for (String type0 : type) {
+            File deleteFile = new File(this.orgDir, genomeId + deletedFidSuffix(type0));
+            if (deleteFile.exists()) {
+                log.info("Reading deleted fids of type " + type0 + " for " + genomeId + ".");
+                try (TabbedLineReader deleteReader = new TabbedLineReader(deleteFile, 1)) {
+                    for (TabbedLineReader.Line line : deleteReader) {
+                        String fid = line.get(0);
+                        deletedFids.add(fid);
+                    }
                 }
             }
         }
@@ -125,11 +140,21 @@ public class CoreUtilities {
         // storing the pegs in a map, only the last function will be kept, which is desired behavior.
         File functionFile = new File(this.orgDir, genomeId + FUNCTION_FILE_SUFFIX);
         try (TabbedLineReader functionReader = new TabbedLineReader(functionFile, 2)) {
-            if (this.debug) System.err.println("Reading assigned functions for " + genomeId + ".");
+            log.info("Reading assigned functions for " + genomeId + ".");
             for (TabbedLineReader.Line line : functionReader) {
-                String peg = line.get(0);
-                if (peg.contains("peg") && ! deletedPegs.contains(peg)) {
-                    retVal.put(peg, line.get(1));
+                String fid = line.get(0);
+                if (! deletedFids.contains(fid)) {
+                    // Verify we have an acceptable type.  Most of the time we only have one,
+                    // so there is a
+                    Matcher m = FID_TYPE_PATTERN.matcher(fid);
+                    if (m.matches()) {
+                        String fType = m.group(1);
+                        boolean ok = fType.contentEquals(type[0]);
+                        for (int i = 1; i < type.length && ! ok; i++)
+                            ok = fType.contentEquals(type[i]);
+                        if (ok)
+                            retVal.put(fid, line.get(1));
+                    }
                 }
             }
         }
@@ -140,9 +165,9 @@ public class CoreUtilities {
      * @return an object for iterating through all the genomes
      */
     public Iterable<String> getGenomes() {
-        if (this.debug) System.err.println("Reading genomes from " + this.orgDir + ".");
+        log.info("Reading genomes from " + this.orgDir + ".");
         OrganismDirectories retVal = new OrganismDirectories(this.orgDir);
-        if (this.debug) System.err.println(retVal.size() + " genomes found.");
+        log.info(retVal.size() + " genomes found.");
         return retVal;
     }
 
@@ -157,6 +182,29 @@ public class CoreUtilities {
         if (matcher.matches()) {
             retVal = matcher.group(1);
         }
+        return retVal;
+    }
+
+    /**
+     * @return the type for a feature ID, or NULL if the feature ID is invalid
+     *
+     * @param fid	the ID of the feature whose type code is desired
+     */
+    public static String typeOf(String fid) {
+        Matcher m = FID_TYPE_PATTERN.matcher(fid);
+        String retVal = null;
+        if (m.matches())
+            retVal = m.group(1);
+        return retVal;
+    }
+
+    /**
+     * @return the filename suffix for a deleted-features file of the specified type
+     *
+     * @param type	feature type
+     */
+    public static String deletedFidSuffix(String type) {
+        String retVal =  File.separator + "Features" + File.separator + type + File.separator + "deleted.features";
         return retVal;
     }
 
