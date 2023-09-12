@@ -42,6 +42,8 @@ public class RuleCompiler {
         List<String> retVal = new ArrayList<String>();
         // The current token is built in here.
         StringBuilder buffer = new StringBuilder(30);
+        // This tracks internal parens in the token.
+        int pLevel = 0;
         // Loop through the string.
         final int n = line.length();
         int i = 0;
@@ -55,13 +57,19 @@ public class RuleCompiler {
             case '{' :
             case '}' :
             case ')' :
-                endToken(buffer, retVal);
-                retVal.add(Character.toString(ch));
+                if (pLevel == 0) {
+                    endToken(buffer, retVal);
+                    retVal.add(Character.toString(ch));
+                } else {
+                    buffer.append(')');
+                    pLevel--;
+                }
                 break;
             case '(' :
-                if (buffer.length() > 0)
+                if (buffer.length() > 0) {
                     buffer.append('(');
-                else
+                    pLevel++;
+                } else
                     retVal.add("(");
                 break;
             default :

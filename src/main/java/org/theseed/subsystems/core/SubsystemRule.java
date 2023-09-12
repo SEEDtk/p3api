@@ -47,4 +47,18 @@ public abstract class SubsystemRule {
      */
     public abstract boolean check(Set<String> roleSet);
 
+    /**
+     * @return the hash code for this rule
+     */
+    @Override
+    public abstract int hashCode();
+
+    /**
+     * @return TRUE if this rule is equal to the specified other rule
+     *
+     * @param other		other object to compare
+     */
+    @Override
+    public abstract boolean equals(Object other);
+
 }

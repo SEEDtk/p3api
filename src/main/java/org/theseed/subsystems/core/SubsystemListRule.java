@@ -113,4 +113,26 @@ public class SubsystemListRule extends SubsystemRule {
         return this.mode;
     }
 
+    @Override
+    public int hashCode() {
+        int retVal = this.num;
+        for (SubsystemRule subRule : this.rules)
+            retVal = 19 * retVal + subRule.hashCode();
+        return retVal;
+
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        boolean retVal = false;
+        if (other instanceof SubsystemListRule) {
+            SubsystemListRule o = (SubsystemListRule) other;
+            final int n = this.rules.size();
+            retVal = (this.num == o.num && n == o.rules.size());
+            for (int i = 0; i < n && retVal; i++)
+                retVal = this.rules.get(i).equals(o.rules.get(i));
+        }
+        return retVal;
+    }
+
 }

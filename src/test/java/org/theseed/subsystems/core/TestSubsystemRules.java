@@ -27,12 +27,12 @@ class TestSubsystemRules {
                 "1.3.N", new SubsystemPrimitiveRule("MethCoaMutaN"),
                 "1.3.C", new SubsystemPrimitiveRule("MethCoaMutaC"),
                 "1.3l",  new SubsystemPrimitiveRule("MethCoaMutaL"),
-                "1.3s1", new SubsystemPrimitiveRule("MethCoaMutaLs"),
+                "1.3s1(a)", new SubsystemPrimitiveRule("MethCoaMutaLs"),
                 "mcl1",  new SubsystemPrimitiveRule("MalyCoaLyas")
                 );
-        String rule = "1.3 or (1.3.N and 1.3.C) or 2 of {1.3l, 1.3s1, mcl1}";
+        String rule = "1.3 or (1.3.N and 1.3.C) or 2 of {1.3l, 1.3s1(a), mcl1}";
         List<String> tokens = RuleCompiler.tokenize(rule);
-        assertThat(tokens, contains("1.3", "or", "(", "1.3.N", "and", "1.3.C", ")", "or", "2", "of", "{", "1.3l", "1.3s1", "mcl1", "}"));
+        assertThat(tokens, contains("1.3", "or", "(", "1.3.N", "and", "1.3.C", ")", "or", "2", "of", "{", "1.3l", "1.3s1(a)", "mcl1", "}"));
         SubsystemRule compiled = RuleCompiler.parseRule(rule, nameSpace);
         Set<String> roles = Set.of("FakeRule1", "MethCoaMuta", "MethCoaMutaC");
         assertThat(compiled.check(roles), equalTo(true));
@@ -54,7 +54,7 @@ class TestSubsystemRules {
         assertThat(compiled.check(roles), equalTo(true));
         roles = Set.of("FakeRule1", "MethCoaMutaLs", "FakeRule2", "MethCoaMutaC", "MethCoaLyas", "MethCoaMutaL");
         assertThat(compiled.check(roles), equalTo(true));
-        rule = "(mcl1 and not (1 of {1.3, (1.3.N)}) or (1.3s1 and not 1.3.C)";
+        rule = "(mcl1 and not (1 of {1.3, (1.3.N)}) or (1.3s1(a) and not 1.3.C)";
         compiled = RuleCompiler.parseRule(rule, nameSpace);
         roles = Set.of("FakeRule1", "MethCoaMuta", "MethCoaMutaC");
         assertThat(compiled.check(roles), equalTo(false));

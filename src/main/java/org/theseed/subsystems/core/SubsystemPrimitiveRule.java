@@ -36,5 +36,19 @@ public class SubsystemPrimitiveRule extends SubsystemRule {
     public boolean check(Set<String> roleSet) {
         return roleSet.contains(this.roleId);
     }
+    @Override
+    public int hashCode() {
+        return 17 * this.roleId.hashCode() + 1;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        boolean retVal;
+        if (other instanceof SubsystemPrimitiveRule)
+            retVal = this.roleId.equals(((SubsystemPrimitiveRule) other).roleId);
+        else
+            retVal = false;
+        return retVal;
+    }
 
 }

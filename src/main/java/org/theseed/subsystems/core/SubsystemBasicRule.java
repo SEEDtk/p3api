@@ -39,4 +39,19 @@ public class SubsystemBasicRule extends SubsystemRule {
         return this.parm.check(roleSet);
     }
 
+    @Override
+    public int hashCode() {
+        return 31 * this.parm.hashCode() + 1;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        boolean retVal;
+        if (other instanceof SubsystemBasicRule)
+            retVal = this.parm.equals(((SubsystemBasicRule) other).parm);
+        else
+            retVal = false;
+        return retVal;
+    }
+
 }

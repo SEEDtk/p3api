@@ -39,4 +39,19 @@ public class SubsystemNegativeRule extends SubsystemRule {
         return ! this.parm.check(roleSet);
     }
 
+    @Override
+    public int hashCode() {
+        return 59 * this.parm.hashCode() + 1;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        boolean retVal;
+        if (other instanceof SubsystemNegativeRule)
+            retVal = this.parm.equals(((SubsystemNegativeRule) other).parm);
+        else
+            retVal = false;
+        return retVal;
+    }
+
 }
