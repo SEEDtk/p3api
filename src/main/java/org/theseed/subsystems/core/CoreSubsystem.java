@@ -4,8 +4,11 @@
 package org.theseed.subsystems.core;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,12 +66,31 @@ public class CoreSubsystem {
     private Map<String, Row> spreadsheet;
     /** classifications */
     private List<String> classes;
+    /** number of invalid rules */
+    private int badRules;
+    /** number of invalid roles */
+    private int badRoles;
     /** common representation of an empty cell */
     private static final Set<String> EMPTY_CELL = Collections.emptySet();
     /** marker to separate file sections */
     private static final String SECTION_MARKER = "//";
     /** main rule parser, for separating the rule name and the text to compile */
-    private static final Pattern RULE_PATTERN = Pattern.compile("\\s*(\\S+)\\s+means\\s+(.+)");
+    private static final Pattern RULE_PATTERN = Pattern.compile("\\s*(\\S+)\\s+(?:means|if)\\s+(.+)");
+    /** subsystem directory filter */
+    private static final FileFilter DIR_SS_FILTER = new FileFilter() {
+
+        @Override
+        public boolean accept(File pathname) {
+            // We accept the file if it is a directory and has a spreadsheet file in it.
+            boolean retVal = pathname.isDirectory();
+            if (retVal) {
+                File ssFile = new File(pathname, "spreadsheet");
+                retVal = ssFile.exists();
+            }
+            return retVal;
+        }
+
+    };
 
     /**
      * This class describes a spreadsheet row.  It contains the the variant code and the list of peg sets in column order.
@@ -155,6 +177,9 @@ public class CoreSubsystem {
      * @throws ParseFailureException
      */
     public CoreSubsystem(File inDir, RoleMap roleDefs) throws IOException, ParseFailureException {
+        // Clear the error counters.
+        this.badRoles = 0;
+        this.badRules = 0;
         // Compute the real subsystem name.
         this.name = dirToName(inDir);
         log.info("Reading subsystem {}.", this.name);
@@ -189,26 +214,26 @@ public class CoreSubsystem {
      */
     private void readSpreadsheet(File inDir) throws IOException, ParseFailureException {
         // The file has three sections, separated by "//" markers.
-        try (LineReader reader = new LineReader(new File(inDir, "spreadsheet"))) {
+        File inFile = new File(inDir, "spreadsheet");
+        try (LineReader reader = new LineReader(inFile)) {
             // Loop through the first section.  This has the roles.
+            int ruleIdx = 1;
             for (String[] line : reader.new Section(SECTION_MARKER)) {
                 // The line contains an abbreviation and a role name.  We convert the role name to an ID
                 // and create a rule for the abbreviation.
                 String roleName = line[1];
                 Role role = this.roleMap.getByName(roleName);
                 if (role == null) {
-                    // The role is not in the map.  This is only an error if the subsystem is a good one.
-                    // If it is a bad one, we must add the role to the map.
-                    String message = "Invalid role name \"" + roleName + "\" found in " + inDir + ".";
-                    if (this.isGood())
-                        throw new ParseFailureException(message);
-                    else {
-                        role = this.roleMap.findOrInsert(roleName);
-                        log.warn(message);
-                    }
+                    // The role is not in the map, which is a role error.
+                    log.warn("Invalid role name \"{}\" found in {}.", roleName, inFile);
+                    this.badRoles++;
+                    role = new Role("invalid", roleName);
                 }
-                this.ruleMap.put(line[0], new SubsystemPrimitiveRule(role.getId()));
+                var roleRule = new SubsystemPrimitiveRule(role.getId());
+                this.ruleMap.put(line[0], roleRule);
+                this.ruleMap.put(Integer.toString(ruleIdx), roleRule);
                 this.roles.add(role);
+                ruleIdx++;
             }
             // The second section has the auxiliary roles.  These should be 1-based index numbers.
             this.auxRoles = new TreeSet<String>();
@@ -270,8 +295,10 @@ public class CoreSubsystem {
                             // map.
                             String key = m.group(1);
                             String rule = m.group(2);
-                            SubsystemRule newRule = RuleCompiler.parseRule(rule, this.ruleMap);
+                            RuleCompiler compiler = new RuleCompiler(rule, this.ruleMap);
+                            SubsystemRule newRule = compiler.compiledRule();
                             targetMap.put(key, newRule);
+                            this.badRules += compiler.getBadRuleCount();
                         }
                     }
                 }
@@ -473,5 +500,33 @@ public class CoreSubsystem {
         return retVal;
     }
 
+    /**
+     * @return the list of subsystem directories for a CoreSEED instance
+     *
+     * @param coreDir	CoreSEED data directory name
+     *
+     * @throws IOException
+     */
+    public static List<File> getSubsystemDirectories(File coreDir) throws IOException {
+        File subMaster = new File(coreDir, "Subsystems");
+        if (! subMaster.isDirectory())
+            throw new FileNotFoundException(coreDir + " does not appear to be a CoreSEED data directory.");
+        File[] subFiles = subMaster.listFiles(DIR_SS_FILTER);
+        return Arrays.asList(subFiles);
+    }
+
+    /**
+     * @return the number of bad rule identifiers
+     */
+    public int getBadRuleCount() {
+        return this.badRules;
+    }
+
+    /**
+     * @return the number of bad role names
+     */
+    public int getBadRoleCount() {
+        return this.badRoles;
+    }
 
 }

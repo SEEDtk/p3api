@@ -8,7 +8,9 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.theseed.genome.Genome;
@@ -28,10 +30,10 @@ class TestCoreSubsystem {
 
     @Test
     void testCoreSubsystemLoad() throws IOException, ParseFailureException {
-        RoleMap roleMap = RoleMap.load(new File("data", "core.roles.in.subsystems"));
+        RoleMap roleMap = RoleMap.load(new File("data/ss_test/Subsystems", "core.roles.in.subsystems"));
         CoreSubsystem[] subs = new CoreSubsystem[4];
         for (int subIdx = 0; subIdx < 4; subIdx++) {
-            File inDir = new File("data/ss_test", SUB_NAMES[subIdx]);
+            File inDir = new File("data/ss_test/Subsystems", SUB_NAMES[subIdx]);
             subs[subIdx] = new CoreSubsystem(inDir, roleMap);
             assertThat(subs[subIdx].getName(), equalTo(REAL_NAMES[subIdx]));
         }
@@ -75,6 +77,20 @@ class TestCoreSubsystem {
                 sub = subs[i];
                 assertThat(sub.getName(), sub.isGood(), equalTo(false));
             }
+        }
+    }
+
+    @Test
+    void testSubsystemList() throws IOException {
+        // Verify that we find four subsystems directories.
+        List<File> subs = CoreSubsystem.getSubsystemDirectories(new File("data", "ss_test"));
+        assertThat(subs.size(), equalTo(4));
+        List<String> subNames = subs.stream().map(x -> x.getName()).collect(Collectors.toList());
+        assertThat(subNames, containsInAnyOrder(SUB_NAMES));
+        // Verify that all found directories have spreadsheets.
+        for (File sub : subs) {
+            File ssFile = new File(sub, "spreadsheet");
+            assertThat(sub.getName(), ssFile.exists(), equalTo(true));
         }
     }
 

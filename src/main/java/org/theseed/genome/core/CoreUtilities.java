@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.io.MarkerFile;
 import org.theseed.io.TabbedLineReader;
 
 /**
@@ -35,6 +36,8 @@ public class CoreUtilities {
     private static final String FUNCTION_FILE_SUFFIX = File.separator + "assigned_functions";
     /** path-and-name suffix to convert a genome ID to the complete path to the peg FASTA file */
     private static final String PEG_FILE_SUFFIX = File.separator + "Features" + File.separator + "peg" + File.separator + "fasta";
+    /** path-and-name suffix to convert a genome ID to the name file */
+    private static final String NAME_FILE_SUFFIX = File.separator + "GENOME";
     /** genome ID extraction pattern */
     private static final Pattern GENOME_ID_PATTERN = Pattern.compile("fig\\|(\\d+\\.\\d+)\\.\\w+\\.\\d+");
     /** feature type extraction pattern */
@@ -55,9 +58,7 @@ public class CoreUtilities {
     /**
      * Return the list of pegs in a genome.  A cache is maintained of genomes already found.
      *
-     * @param orgDir	CoreSEED organism directory
      * @param genomeId	ID of genomes whose pegs are desired
-     * @param gMap		hash of genome IDs to cached peg lists
      *
      * @return a PegList object for the identified genome, or NULL if the genome does not exist
      *
@@ -99,12 +100,25 @@ public class CoreUtilities {
     /**
      * @return a map of peg IDs to functions for a genome
      *
-     * @param the genome ID
+     * @param genomeId 	the genome ID
      *
      * @throws IOException
      */
     public Map<String, String> getGenomeFunctions(String genomeId) throws IOException {
         return getGenomeFunctions(genomeId, "peg");
+    }
+
+    /**
+     * @return the name of a genome
+     *
+     * @param genomeId 	the genome ID
+     *
+     * @throws IOException
+     */
+    public String getGenomeName(String genomeId) throws IOException {
+        File nameFile = new File(this.orgDir, genomeId + NAME_FILE_SUFFIX);
+        String retVal = MarkerFile.read(nameFile);
+        return retVal;
     }
 
     /**

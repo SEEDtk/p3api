@@ -30,6 +30,8 @@ public class RuleCompiler {
     private List<String> tokens;
     /** map of identifiers to rules */
     private Map<String, SubsystemRule> nameMap;
+    /** number of bad rule identifiers found */
+    private int badRules;
 
     /**
      * Tokenize a rule string.
@@ -51,15 +53,18 @@ public class RuleCompiler {
             char ch = line.charAt(i);
             switch (ch) {
             case ' ' :
-            case ',' :
                 endToken(buffer, retVal);
                 break;
             case '{' :
             case '}' :
+            case ',' :
+                endToken(buffer, retVal);
+                retVal.add(Character.toString(ch));
+                break;
             case ')' :
                 if (pLevel == 0) {
                     endToken(buffer, retVal);
-                    retVal.add(Character.toString(ch));
+                    retVal.add(")");
                 } else {
                     buffer.append(')');
                     pLevel--;
@@ -121,6 +126,7 @@ public class RuleCompiler {
         this.tokens = tokenize(line);
         this.nameMap = nameSpace;
         this.stack.push(new SubsystemBasicRule());
+        this.badRules = 0;
     }
 
     /**
@@ -128,25 +134,31 @@ public class RuleCompiler {
      *
      * @throws ParseFailureException
      */
-    private SubsystemRule compiledRule() throws ParseFailureException {
+    public SubsystemRule compiledRule() throws ParseFailureException {
         // Process tokens until we run out.
         while (! this.tokens.isEmpty()) {
             String token = this.tokens.remove(0);
             if (StringUtils.isNumeric(token)) {
-                // This is a number, which heralds the start of a list rule.
-                this.startListRule(token);
+                // This is a number.  If we are inside a numeric list rule, it is a role index.
+                // Otherwise, it is the start of a list rule.
+                if (! this.listContext())
+                    this.startListRule(token);
+                else
+                    this.processIdentifier(token);
+            } else if (token.contentEquals(",")) {
+                // In list context, a comma is ignored.  In any other context, we
+                // unroll to list context.
+                while (! this.listContext())
+                    this.unroll();
             } else if (token.contentEquals("{")) {
                 // Valid open braces are automatically eaten by startListRule.
                 throw new ParseFailureException("Unexpected open brace found.");
             } else if (token.contentEquals("}")) {
                 // Here we are ending a list rule.
-                if (this.stack.peek() instanceof SubsystemListRule) {
-                    SubsystemListRule rule = (SubsystemListRule) this.stack.peek();
-                    if (rule.type() != SubsystemListRule.Mode.NUM)
-                        throw new ParseFailureException("Unexpected closing brace found.");
+                if (! this.listContext())
+                    throw new ParseFailureException("Unexpected closing brace found.");
+                else
                     this.closeListRule();
-                } else
-                    throw new ParseFailureException("Closing brace found outside of list-rule context.");
             } else if (token.contentEquals("(")) {
                 // An open parenthesis starts a sub-rule.
                 this.startSubRule();
@@ -178,19 +190,39 @@ public class RuleCompiler {
     }
 
     /**
+     * @return TRUE if a numeric subsystem list rule is in progress, else FALSE
+     */
+    private boolean listContext() {
+        boolean retVal = false;
+        if (this.stack.peek() instanceof SubsystemListRule) {
+            SubsystemListRule rule = (SubsystemListRule) this.stack.peek();
+            retVal = (rule.type() == SubsystemListRule.Mode.NUM);
+        }
+        return retVal;
+    }
+
+    /**
      * Process a binary operator.  The binary operators are AND and OR.  If a list rule of the specified mode is
      * active, then we continue on.  If another rule is on the stack, we use it to start a list rule in the
      * mode indicated.
      *
      * @param mode	mode of this operator (AND or OR).
+     *
+     * @throws ParseFailureException
      */
-    private void processOperator(Mode mode) {
+    private void processOperator(Mode mode) throws ParseFailureException {
         // Get the top rule on the stack.
         SubsystemRule top = this.stack.peek();
         if (top instanceof SubsystemListRule && ((SubsystemListRule) top).type() == mode) {
             // Here we are continuing a list rule of the same type.  The next identifier is added to it.
+        } else if (this.listContext()) {
+            // Here we are in the middle of a numeric list and we are switching to an expression mode.
+            SubsystemListRule topList = (SubsystemListRule) top;
+            SubsystemRule lastRule = topList.popLast();
+            SubsystemListRule newRule = new SubsystemListRule(mode, lastRule);
+            this.stack.push(newRule);
         } else {
-            // Here we are changing modes.
+            // Here we are changing modes outside of a list context.
             top = this.stack.pop();
             SubsystemListRule newRule = new SubsystemListRule(mode, top);
             this.stack.push(newRule);
@@ -206,8 +238,10 @@ public class RuleCompiler {
      */
     private void processIdentifier(String token) throws ParseFailureException {
         SubsystemRule subRule = this.nameMap.get(token);
-        if (subRule == null)
-            throw new ParseFailureException("No rule found for identifier\"" + token + "\".");
+        if (subRule == null) {
+            subRule = new FailRule();
+            this.badRules++;
+        }
         // Here the token represents a real rule.
         this.stack.peek().addParm(subRule, this);
     }
@@ -268,6 +302,13 @@ public class RuleCompiler {
      */
     private void closeListRule() throws ParseFailureException {
         this.unroll();
+    }
+
+    /**
+     * @return the number of bad identifiers
+     */
+    public int getBadRuleCount() {
+        return this.badRules;
     }
 
 }

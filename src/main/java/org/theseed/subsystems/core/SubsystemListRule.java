@@ -135,4 +135,19 @@ public class SubsystemListRule extends SubsystemRule {
         return retVal;
     }
 
+    /**
+     * Remove and return the last parameter for this rule.
+     *
+     * @return the last parameter in this rule's sub-list
+     *
+     * @throws ParseFailureException
+     */
+    public SubsystemRule popLast() throws ParseFailureException {
+        final int n = this.rules.size() - 1;
+        if (n < 0)
+            throw new ParseFailureException("Unexpected operator in list context.");
+        SubsystemRule retVal = this.rules.remove(n);
+        return retVal;
+    }
+
 }
