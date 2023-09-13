@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -30,8 +32,8 @@ public class RuleCompiler {
     private List<String> tokens;
     /** map of identifiers to rules */
     private Map<String, SubsystemRule> nameMap;
-    /** number of bad rule identifiers found */
-    private int badRules;
+    /** set of bad rule identifiers found */
+    private Set<String> badIds;
 
     /**
      * Tokenize a rule string.
@@ -126,7 +128,7 @@ public class RuleCompiler {
         this.tokens = tokenize(line);
         this.nameMap = nameSpace;
         this.stack.push(new SubsystemBasicRule());
-        this.badRules = 0;
+        this.badIds = new TreeSet<String>();
     }
 
     /**
@@ -148,17 +150,14 @@ public class RuleCompiler {
             } else if (token.contentEquals(",")) {
                 // In list context, a comma is ignored.  In any other context, we
                 // unroll to list context.
-                while (! this.listContext())
-                    this.unroll();
+                this.findListContext();
             } else if (token.contentEquals("{")) {
                 // Valid open braces are automatically eaten by startListRule.
                 throw new ParseFailureException("Unexpected open brace found.");
             } else if (token.contentEquals("}")) {
                 // Here we are ending a list rule.
-                if (! this.listContext())
-                    throw new ParseFailureException("Unexpected closing brace found.");
-                else
-                    this.closeListRule();
+                this.findListContext();
+                this.closeListRule();
             } else if (token.contentEquals("(")) {
                 // An open parenthesis starts a sub-rule.
                 this.startSubRule();
@@ -179,6 +178,16 @@ public class RuleCompiler {
         }
         SubsystemRule retVal = this.stack.pop();
         return retVal;
+    }
+
+    /**
+     * @throws ParseFailureException
+     */
+    private void findListContext() throws ParseFailureException {
+        while (! this.listContext() && this.stack.size() >= 1)
+            this.unroll();
+        if (! this.listContext())
+            throw new ParseFailureException("Unexpected closing brace found");
     }
 
     /**
@@ -240,7 +249,7 @@ public class RuleCompiler {
         SubsystemRule subRule = this.nameMap.get(token);
         if (subRule == null) {
             subRule = new FailRule();
-            this.badRules++;
+            this.badIds.add(token);
         }
         // Here the token represents a real rule.
         this.stack.peek().addParm(subRule, this);
@@ -307,8 +316,15 @@ public class RuleCompiler {
     /**
      * @return the number of bad identifiers
      */
-    public int getBadRuleCount() {
-        return this.badRules;
+    public int getBadIdCount() {
+        return this.badIds.size();
+    }
+
+    /**
+     * @return the set of bad identifiers
+     */
+    public Set<String> getBadIds() {
+        return this.badIds;
     }
 
 }

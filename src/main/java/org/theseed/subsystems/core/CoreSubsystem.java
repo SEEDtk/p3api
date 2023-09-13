@@ -66,8 +66,8 @@ public class CoreSubsystem {
     private Map<String, Row> spreadsheet;
     /** classifications */
     private List<String> classes;
-    /** number of invalid rules */
-    private int badRules;
+    /** set of invalid identifiers */
+    private Set<String> badIds;
     /** number of invalid roles */
     private int badRoles;
     /** common representation of an empty cell */
@@ -75,7 +75,7 @@ public class CoreSubsystem {
     /** marker to separate file sections */
     private static final String SECTION_MARKER = "//";
     /** main rule parser, for separating the rule name and the text to compile */
-    private static final Pattern RULE_PATTERN = Pattern.compile("\\s*(\\S+)\\s+(?:means|if)\\s+(.+)");
+    private static final Pattern RULE_PATTERN = Pattern.compile("\\s*(\\S+)\\s+(?:(?:means|if|is)\\s+)?(.+)");
     /** subsystem directory filter */
     private static final FileFilter DIR_SS_FILTER = new FileFilter() {
 
@@ -179,7 +179,7 @@ public class CoreSubsystem {
     public CoreSubsystem(File inDir, RoleMap roleDefs) throws IOException, ParseFailureException {
         // Clear the error counters.
         this.badRoles = 0;
-        this.badRules = 0;
+        this.badIds = new TreeSet<String>();
         // Compute the real subsystem name.
         this.name = dirToName(inDir);
         log.info("Reading subsystem {}.", this.name);
@@ -298,7 +298,7 @@ public class CoreSubsystem {
                             RuleCompiler compiler = new RuleCompiler(rule, this.ruleMap);
                             SubsystemRule newRule = compiler.compiledRule();
                             targetMap.put(key, newRule);
-                            this.badRules += compiler.getBadRuleCount();
+                            this.badIds.addAll(compiler.getBadIds());
                         }
                     }
                 }
@@ -525,8 +525,15 @@ public class CoreSubsystem {
     /**
      * @return the number of bad rule identifiers
      */
-    public int getBadRuleCount() {
-        return this.badRules;
+    public int getBadIdCount() {
+        return this.badIds.size();
+    }
+
+    /**
+     * @return the set of bad rule identifiers
+     */
+    public Set<String> getBadIds() {
+        return this.badIds;
     }
 
     /**
@@ -555,6 +562,15 @@ public class CoreSubsystem {
      */
     public boolean hasRules() {
         return this.variantRules.size() > 0;
+    }
+
+    /**
+     * @return TRUE if the specified variant code has a rule
+     *
+     * @param vCode		variant code to check
+     */
+    public boolean isRuleVariant(String vCode) {
+        return this.variantRules.containsKey(vCode);
     }
 
 }

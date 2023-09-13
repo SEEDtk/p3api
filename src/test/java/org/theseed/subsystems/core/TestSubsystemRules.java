@@ -78,11 +78,18 @@ class TestSubsystemRules {
         assertThat(compiled.check(roles), equalTo(true));
         roles = Set.of("FakeRule1", "MethCoaMutaN", "FakeRule2", "MethCoaMutaC", "MalyCoaLyas", "MethCoaMutaL");
         assertThat(compiled.check(roles), equalTo(false));
-        rule = "1 of { 1.3, 1.3.N and 1.3.s1(a), 1.3.C } and mcl1";
+        rule = "1 of { 1.3, 1.3.C, 1.3.N and 1.3s1(a) } and mcl1";
         compiled = RuleCompiler.parseRule(rule, nameSpace);
+        roles = Set.of("FakeRule1", "MethCoaMutaN", "FakeRule2", "MethCoaMutaC", "MalyCoaLyas", "MethCoaMutaL");
+        assertThat(compiled.check(roles), equalTo(true));
+        roles = Set.of("FakeRule1", "MethCoaMutaN", "FakeRule2", "MalyCoaLyas", "MethCoaMutaL");
+        assertThat(compiled.check(roles), equalTo(false));
+        roles = Set.of("FakeRule1", "MethCoaMutaN", "MethCoaMutaLs", "MalyCoaLyas", "MethCoaMutaL");
         assertThat(compiled.check(roles), equalTo(true));
         roles = Set.of("FakeRule1", "MalyCoaLyas", "MethCoaMutaL");
         assertThat(compiled.check(roles), equalTo(false));
+        roles = Set.of("FakeRule1", "MalyCoaLyas", "MethCoaMuta");
+        assertThat(compiled.check(roles), equalTo(true));
     }
 
 }
