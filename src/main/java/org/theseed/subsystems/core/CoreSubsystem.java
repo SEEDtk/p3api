@@ -464,6 +464,13 @@ public class CoreSubsystem {
     }
 
     /**
+     * @return the number of genome rows in the spreadsheet
+     */
+    public int getRowCount() {
+        return this.spreadsheet.size();
+    }
+
+    /**
      * Compute the variant code for a specified role set in this subsystem.
      *
      * @param roleSet	set of roles in the genome
@@ -527,6 +534,27 @@ public class CoreSubsystem {
      */
     public int getBadRoleCount() {
         return this.badRoles;
+    }
+
+    /**
+     * @return the set of genomes in the spreadsheet
+     */
+    public Set<String> getRowGenomes() {
+        return this.spreadsheet.keySet();
+    }
+
+    /**
+     * @return the number of roles in this subsystem
+     */
+    public int getRoleCount() {
+        return this.roles.size();
+    }
+
+    /**
+     * @return TRUE if there are variant rules for this subsystem
+     */
+    public boolean hasRules() {
+        return this.variantRules.size() > 0;
     }
 
 }
