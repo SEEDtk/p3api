@@ -53,6 +53,9 @@ public abstract class SubsystemRule {
     @Override
     public abstract int hashCode();
 
+    @Override
+    public abstract String toString();
+
     /**
      * @return TRUE if this rule is equal to the specified other rule
      *
@@ -60,5 +63,28 @@ public abstract class SubsystemRule {
      */
     @Override
     public abstract boolean equals(Object other);
+
+    /**
+     * @return TRUE if this is a compound rule, else FALSE
+     */
+    protected abstract boolean isCompound();
+
+    /**
+     * This is used to normalize the second operand of an equality operator.  If the
+     * operand is not a subsystem rule, we return NULL.  If it is a basic rule, we
+     * unspool it.
+     *
+     * @param operand	operand to normalize
+     *
+     * @return a non-basic subsystem rule, or NULL if the operand is invalid
+     */
+    public SubsystemRule normalize(Object operand) {
+        SubsystemRule retVal = null;
+        if (operand instanceof SubsystemBasicRule)
+            retVal = ((SubsystemBasicRule) operand).unspool();
+        else if (operand instanceof SubsystemRule)
+            retVal = (SubsystemRule) operand;
+        return retVal;
+    }
 
 }

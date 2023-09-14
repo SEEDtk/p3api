@@ -71,6 +71,11 @@ class TestCoreSubsystem {
         genome = new Genome(new File("data/ss_test_gto", "306264.1.gto"));
         gRoleSet = CoreSubsystem.getRoleSet(genome, roleMap);
         assertThat(sub.applyRules(gRoleSet), equalTo("active.1.0"));
+        // Test the string representation of some rules.
+        SubsystemRule rule = sub.getRule("active.1.0");
+        String ruleString = rule.toString();
+        SubsystemRule recursive = RuleCompiler.parseRule(ruleString, sub.getNameSpace());
+        assertThat(recursive, equalTo(rule));
         // Now test the bad ones.
         for (int i = 0; i < 4; i++) {
             if (i != 2) {

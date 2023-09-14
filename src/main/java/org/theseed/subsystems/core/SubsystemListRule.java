@@ -6,6 +6,7 @@ package org.theseed.subsystems.core;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.theseed.utils.ParseFailureException;
 
@@ -33,17 +34,32 @@ public class SubsystemListRule extends SubsystemRule {
             protected void updateCount(SubsystemListRule rule) {
                 rule.num = rule.rules.size();
             }
+
+            @Override
+            public String print(SubsystemListRule rule) {
+                return "(" + rule.printBoolean(" and ") + ")";
+            }
         },
         /** this list rule is simulating an OR */
         OR {
             @Override
             protected void updateCount(SubsystemListRule rule) {
             }
+
+            @Override
+            public String print(SubsystemListRule rule) {
+                return "(" + rule.printBoolean(" or ") + ")";
+            }
         },
         /** this is a standard list rule */
         NUM {
             @Override
             protected void updateCount(SubsystemListRule rule) {
+            }
+
+            @Override
+            public String print(SubsystemListRule rule) {
+                return Integer.toString(rule.num) + " of {" + rule.printBoolean(", ") + "}";
             }
         };
 
@@ -53,6 +69,12 @@ public class SubsystemListRule extends SubsystemRule {
          * @param rule	rule possessing this mode
          */
         protected abstract void updateCount(SubsystemListRule rule);
+
+        /**
+         * Convert the specified rule to a string.
+         */
+        public abstract String print(SubsystemListRule rule);
+
     }
 
     /**
@@ -66,6 +88,15 @@ public class SubsystemListRule extends SubsystemRule {
         this.num = 1;
         this.setup();
         this.rules.add(top);
+    }
+
+    /**
+     * @return a printed version of this rule using the specified delimiter between sub-rules
+     *
+     * @param delim		delimiter (e.g. " and ", " or ", or ", ")
+     */
+    protected String printBoolean(String delim) {
+        return this.rules.stream().map(x -> x.toString()).collect(Collectors.joining(delim));
     }
 
     /**
@@ -125,8 +156,9 @@ public class SubsystemListRule extends SubsystemRule {
     @Override
     public boolean equals(Object other) {
         boolean retVal = false;
-        if (other instanceof SubsystemListRule) {
-            SubsystemListRule o = (SubsystemListRule) other;
+        SubsystemRule right = this.normalize(other);
+        if (right != null && right instanceof SubsystemListRule) {
+            SubsystemListRule o = (SubsystemListRule) right;
             final int n = this.rules.size();
             retVal = (this.num == o.num && n == o.rules.size());
             for (int i = 0; i < n && retVal; i++)
@@ -148,6 +180,22 @@ public class SubsystemListRule extends SubsystemRule {
             throw new ParseFailureException("Unexpected operator in list context.");
         SubsystemRule retVal = this.rules.remove(n);
         return retVal;
+    }
+
+    @Override
+    public String toString() {
+        // The way we print this depends on the mode.
+        String retVal;
+        if (this.rules.isEmpty())
+            retVal = "FAIL";
+        else
+            retVal = this.mode.print(this);
+        return retVal;
+    }
+
+    @Override
+    protected boolean isCompound() {
+        return true;
     }
 
 }

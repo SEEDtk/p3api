@@ -70,6 +70,10 @@ public class CoreSubsystem {
     private Set<String> badIds;
     /** number of invalid roles */
     private int badRoles;
+    /** roles not found during current rule */
+    private Set<String> notFound;
+    /** roles found during current rule */
+    private Set<String> found;
     /** common representation of an empty cell */
     private static final Set<String> EMPTY_CELL = Collections.emptySet();
     /** marker to separate file sections */
@@ -190,6 +194,9 @@ public class CoreSubsystem {
         // Initialize the rule namespace and the role list.
         this.ruleMap = new HashMap<String, SubsystemRule>();
         this.roles = new ArrayList<Role>();
+        // Initialize the tracking sets.
+        this.found = new TreeSet<String>();
+        this.notFound = new TreeSet<String>();
         // Read in the subsystem spreadsheet.  This will initialize the name space, collect the
         // rule list and auxiliary rules, and store the rows.
         this.spreadsheet = new HashMap<String, Row>();
@@ -229,8 +236,12 @@ public class CoreSubsystem {
                     this.badRoles++;
                     role = new Role("invalid", roleName);
                 }
+                // Create the rule for this role.
                 var roleRule = new SubsystemPrimitiveRule(role.getId());
+                // Connect it to the abbreviation.
                 this.ruleMap.put(line[0], roleRule);
+                roleRule.setTracking(this, line[0]);
+                // Establish the role in the current column position.
                 this.ruleMap.put(Integer.toString(ruleIdx), roleRule);
                 this.roles.add(role);
                 ruleIdx++;
@@ -489,6 +500,10 @@ public class CoreSubsystem {
             if (rule.check(roleSet))
                 retVal = ruleEntry.getKey();
         }
+        // Clear the tracking sets.  These are only available after an analyzeRule.
+        this.found.clear();
+        this.notFound.clear();
+        // Return the results.
         return retVal;
     }
 
@@ -572,5 +587,79 @@ public class CoreSubsystem {
     public boolean isRuleVariant(String vCode) {
         return this.variantRules.containsKey(vCode);
     }
+
+    /**
+     * Record the results of a primitive-rule match.
+     *
+     * @param abbr		role abbreviation
+     * @param retVal	TRUE if the role was found, else FALSE
+     */
+    public void record(String abbr, boolean retVal) {
+        if (retVal)
+            this.found.add(abbr);
+        else
+            this.notFound.add(abbr);
+    }
+
+    /**
+     * Analyze the specified rule to determine what was found and not found.
+     *
+     * @param ruleName		name of the rule to analyze
+     * @param roleSet		set of roles to use
+     *
+     * @return a string containing the abbreviations of the found roles, a slash, and the abbreviations of the missing roles
+     *
+     * @throws ParseFailureException
+     */
+    public String analyzeRule(String ruleName, Set<String> roleSet) throws ParseFailureException {
+        // Insure the tracking sets are empty.
+        this.notFound.clear();
+        this.found.clear();
+        // Test the rule.
+        SubsystemRule rule = this.variantRules.get(ruleName);
+        if (rule == null)
+            throw new ParseFailureException("Invalid rule name \"" + ruleName + "\".");
+        rule.check(roleSet);
+        String retVal = StringUtils.join(this.found, ",") + "/" + StringUtils.join(this.notFound, ",");
+        return retVal;
+    }
+
+    /**
+     * @return the rule with the given name, or NULL if there is none
+     *
+     * @param name 		name of the desired rule
+     */
+    public SubsystemRule getRule(String name) {
+        SubsystemRule retVal = this.variantRules.get(name);
+        if (retVal == null)
+            retVal = this.ruleMap.get(name);
+        return retVal;
+    }
+
+    /**
+     * This can be used immediately after an "analyzeRule" to get the roles not found.
+     *
+     * @return the roles not-found
+     */
+    public Set<String> getNotFound() {
+        return this.notFound;
+    }
+
+    /**
+     * This can be used immediately after an "analyzeRule" to get the roles found.
+     *
+     * @return the roles found
+     */
+    public Set<String> getFound() {
+        return this.found;
+    }
+
+    /**
+     * @return the main rule name space for this subsystem
+     */
+    protected Map<String, SubsystemRule> getNameSpace() {
+        return this.ruleMap;
+    }
+
 
 }

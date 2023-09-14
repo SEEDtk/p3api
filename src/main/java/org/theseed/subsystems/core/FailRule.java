@@ -32,7 +32,19 @@ public class FailRule extends SubsystemRule {
 
     @Override
     public boolean equals(Object other) {
-        return (other instanceof FailRule);
+        SubsystemRule operand = this.normalize(other);
+        boolean retVal = (operand != null && operand instanceof FailRule);
+        return retVal;
+    }
+
+    @Override
+    public String toString() {
+        return "FAIL";
+    }
+
+    @Override
+    protected boolean isCompound() {
+        return false;
     }
 
 }

@@ -56,6 +56,9 @@ class TestSubsystemRules {
         assertThat(compiled.check(roles), equalTo(true));
         roles = Set.of("FakeRule1", "MethCoaMutaLs", "FakeRule2", "MethCoaMutaC", "MethCoaLyas", "MethCoaMutaL");
         assertThat(compiled.check(roles), equalTo(true));
+        String rule2 = "(" + rule + ")";
+        SubsystemRule compiled2 = RuleCompiler.parseRule(rule2, nameSpace);
+        assertThat(compiled, equalTo(compiled2));
         rule = "(mcl1 and not (1 of {1.3, (1.3.N)}) or (1.3s1(a) and not 1.3.C)";
         compiled = RuleCompiler.parseRule(rule, nameSpace);
         roles = Set.of("FakeRule1", "MethCoaMuta", "MethCoaMutaC");

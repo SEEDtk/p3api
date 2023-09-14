@@ -47,11 +47,22 @@ public class SubsystemNegativeRule extends SubsystemRule {
     @Override
     public boolean equals(Object other) {
         boolean retVal;
-        if (other instanceof SubsystemNegativeRule)
-            retVal = this.parm.equals(((SubsystemNegativeRule) other).parm);
+        SubsystemRule operand = this.normalize(other);
+        if (operand != null && operand instanceof SubsystemNegativeRule)
+            retVal = this.parm.equals(((SubsystemNegativeRule) operand).parm);
         else
             retVal = false;
         return retVal;
+    }
+
+    @Override
+    public String toString() {
+        return "not (" + this.parm.toString() + ")";
+    }
+
+    @Override
+    protected boolean isCompound() {
+        return false;
     }
 
 }

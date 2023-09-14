@@ -44,14 +44,44 @@ public class SubsystemBasicRule extends SubsystemRule {
         return 31 * this.parm.hashCode() + 1;
     }
 
+    /**
+     * Unspool this basic rule to find the first real rule underneath it.
+     *
+     * @return the first non-basic rule that is a descendant of this one
+     */
+    protected SubsystemRule unspool() {
+        SubsystemRule retVal = this.parm;
+        while (retVal instanceof SubsystemBasicRule)
+            retVal = ((SubsystemBasicRule) retVal).parm;
+        return retVal;
+    }
+
     @Override
     public boolean equals(Object other) {
-        boolean retVal;
-        if (other instanceof SubsystemBasicRule)
-            retVal = this.parm.equals(((SubsystemBasicRule) other).parm);
-        else
-            retVal = false;
+        // Equality is tricky, since the basic rule has no effect and just passes the check through
+        // to the parameter.  We unspool both operands until we get something other that a basic rule.
+        boolean retVal = false;
+        if (other instanceof SubsystemRule) {
+            SubsystemRule left = this.unspool();
+            SubsystemRule right = (SubsystemRule) other;
+            if (right instanceof SubsystemBasicRule)
+                right = ((SubsystemBasicRule) right).unspool();
+            retVal = left.equals(right);
+        }
         return retVal;
+    }
+
+    @Override
+    public String toString() {
+        String retVal = this.parm.toString();
+        if (this.parm.isCompound())
+            retVal = "(" + retVal + ")";
+        return retVal;
+    }
+
+    @Override
+    protected boolean isCompound() {
+        return false;
     }
 
 }
