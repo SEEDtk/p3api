@@ -62,6 +62,8 @@ public class CoreSubsystem {
     private RoleMap roleMap;
     /** list of roles, in order */
     private List<Role> roles;
+    /** original role names, in order */
+    private List<String> roleNames;
     /** subsystem spreadsheet */
     private Map<String, Row> spreadsheet;
     /** classifications */
@@ -74,6 +76,8 @@ public class CoreSubsystem {
     private Set<String> notFound;
     /** roles found during current rule */
     private Set<String> found;
+    /** list of feature types used in subsystems */
+    public static final String[] FID_TYPES = new String[] { "opr", "aSDomain", "pbs", "rna", "rsw", "sRNA", "peg" };
     /** common representation of an empty cell */
     private static final Set<String> EMPTY_CELL = Collections.emptySet();
     /** marker to separate file sections */
@@ -194,6 +198,7 @@ public class CoreSubsystem {
         // Initialize the rule namespace and the role list.
         this.ruleMap = new HashMap<String, SubsystemRule>();
         this.roles = new ArrayList<Role>();
+        this.roleNames = new ArrayList<String>();
         // Initialize the tracking sets.
         this.found = new TreeSet<String>();
         this.notFound = new TreeSet<String>();
@@ -208,6 +213,25 @@ public class CoreSubsystem {
         log.info("Subsystem {} v{} has {} roles, {} variant rules, {} namespace rules, and {} spreadsheet rows.",
                 this.name, this.version, this.roles.size(), this.variantRules.size(), this.ruleMap.size(),
                 this.spreadsheet.size());
+    }
+
+    /**
+     * This is a dummy core-subsystem to use as a placeholder.
+     */
+    public CoreSubsystem() {
+        this.name = "(none)";
+        this.good = false;
+        this.auxRoles = Collections.emptySet();
+        this.badIds = Collections.emptySet();
+        this.classes = Arrays.asList("", "", "");
+        this.found = Collections.emptySet();
+        this.notFound = Collections.emptySet();
+        this.roleMap = null;
+        this.roles = Collections.emptyList();
+        this.ruleMap = Collections.emptyMap();
+        this.variantRules = new LinkedHashMap<String, SubsystemRule>();
+        this.spreadsheet = Collections.emptyMap();
+        this.version = 1;
     }
 
     /**
@@ -244,6 +268,7 @@ public class CoreSubsystem {
                 // Establish the role in the current column position.
                 this.ruleMap.put(Integer.toString(ruleIdx), roleRule);
                 this.roles.add(role);
+                this.roleNames.add(roleName);
                 ruleIdx++;
             }
             // The second section has the auxiliary roles.  These should be 1-based index numbers.
@@ -659,6 +684,20 @@ public class CoreSubsystem {
      */
     protected Map<String, SubsystemRule> getNameSpace() {
         return this.ruleMap;
+    }
+
+    /**
+     * @return a map from role IDs to original names for this subsystem
+     */
+    public Map<String, String> getOriginalNameMap() {
+        final int n = this.roles.size();
+		Map<String, String> retVal = new HashMap<String, String>(n * 4 / 3 + 1);
+        for (int i = 0; i < n; i++) {
+            String roleId = this.roles.get(i).getId();
+            String roleName = this.roleNames.get(i);
+            retVal.put(roleId, roleName);
+        }
+        return retVal;
     }
 
 
