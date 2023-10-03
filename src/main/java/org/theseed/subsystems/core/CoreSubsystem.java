@@ -637,15 +637,18 @@ public class CoreSubsystem {
      * @throws ParseFailureException
      */
     public String analyzeRule(String ruleName, Set<String> roleSet) throws ParseFailureException {
+        String retVal;
         // Insure the tracking sets are empty.
         this.notFound.clear();
         this.found.clear();
         // Test the rule.
         SubsystemRule rule = this.variantRules.get(ruleName);
         if (rule == null)
-            throw new ParseFailureException("Invalid rule name \"" + ruleName + "\".");
-        rule.check(roleSet);
-        String retVal = StringUtils.join(this.found, ",") + "/" + StringUtils.join(this.notFound, ",");
+            retVal = "<no match>";
+        else {
+            rule.check(roleSet);
+            retVal = StringUtils.join(this.found, ",") + "/" + StringUtils.join(this.notFound, ",");
+        }
         return retVal;
     }
 
@@ -691,7 +694,7 @@ public class CoreSubsystem {
      */
     public Map<String, String> getOriginalNameMap() {
         final int n = this.roles.size();
-		Map<String, String> retVal = new HashMap<String, String>(n * 4 / 3 + 1);
+        Map<String, String> retVal = new HashMap<String, String>(n * 4 / 3 + 1);
         for (int i = 0; i < n; i++) {
             String roleId = this.roles.get(i).getId();
             String roleName = this.roleNames.get(i);
@@ -700,5 +703,52 @@ public class CoreSubsystem {
         return retVal;
     }
 
+    /**
+     * This method will look at a role and return TRUE if it exactly matches one of the subsystem roles, else FALSE.
+     *
+     * @param roleString	role string to check
+     *
+     * @return TRUE if the role string exactly matches a subsystem role, else FALSE
+     */
+    public boolean isExactRole(String roleString) {
+        return this.roleNames.stream().anyMatch(x -> x.contentEquals(roleString));
+    }
+
+    /**
+     * This method will look at a role string and return the role ID if the role is in this subsystem, else NULL.
+     *
+     * @param roleString	role string to check
+     *
+     * @return the ID of the role if it is in the subsystem, else NULL
+     */
+    public String getRoleId(String roleString) {
+        String retVal = null;
+        Role role = this.roleMap.getByName(roleString);
+        if (role != null) {
+            final String roleId = role.getId();
+            boolean found = this.roles.stream().anyMatch(x -> roleId.contentEquals(x.getId()));
+            if (found) retVal = roleId;
+        }
+        return retVal;
+    }
+
+    /**
+     * @return the expected role string for the role with the specified ID
+     *
+     * @param roleId	ID of the desired role
+     *
+     * @return the actual name of the role in this subsystem, or NULL if the role ID is not found
+     */
+    public String getExpectedRole(String roleId) {
+        String retVal = null;
+        // Find the role ID in the role list.
+        int i = 0;
+        final int n = this.roles.size();
+        while (i < n && ! this.roles.get(i).getId().contentEquals(roleId))
+            i++;
+        if (i < n)
+            retVal = this.roleNames.get(i);
+        return retVal;
+    }
 
 }

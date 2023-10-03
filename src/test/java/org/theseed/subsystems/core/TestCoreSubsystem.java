@@ -24,14 +24,14 @@ import org.theseed.utils.ParseFailureException;
 class TestCoreSubsystem {
 
     protected static final String[] SUB_NAMES = new String[] { "Citrate_Metabolism", "Cluster_with_dapF",
-            "Histidine_Biosynthesis", "ZZ_gjo_need_homes_3" };
+            "Histidine_Biosynthesis", "ZZ_gjo_need_homes_3", "2-oxoisovalerate_to_2-isopropyl-3-oxosuccinate_module" };
     protected static final String[] REAL_NAMES = new String[] { "Citrate Metabolism", "Cluster with dapF",
-            "Histidine Biosynthesis", "ZZ gjo need homes 3" };
+            "Histidine Biosynthesis", "ZZ gjo need homes 3", "2-oxoisovalerate to 2-isopropyl-3-oxosuccinate module" };
 
     @Test
     void testCoreSubsystemLoad() throws IOException, ParseFailureException {
         RoleMap roleMap = RoleMap.load(new File("data/ss_test/Subsystems", "core.roles.in.subsystems"));
-        CoreSubsystem[] subs = new CoreSubsystem[4];
+        CoreSubsystem[] subs = new CoreSubsystem[5];
         for (int subIdx = 0; subIdx < 4; subIdx++) {
             File inDir = new File("data/ss_test/Subsystems", SUB_NAMES[subIdx]);
             subs[subIdx] = new CoreSubsystem(inDir, roleMap);
@@ -62,6 +62,16 @@ class TestCoreSubsystem {
                 "fig|306264.1.peg.624", "fig|306264.1.peg.1724", "fig|306264.1.peg.625"));
         assertThat(sub.fidSetOf("100226.99").size(), equalTo(0));
         assertThat(sub.fidSetOf("218496.1"), containsInAnyOrder("fig|218496.1.rna.767", "fig|218496.1.peg.760"));
+        // Test the role helpers.
+        assertThat(sub.getRoleId("Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo("HistPhosAlteForm"));
+        assertThat(sub.isExactRole("Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(true));
+        assertThat(sub.getRoleId("Histidinol-phosphatase [alternative form]"), equalTo("HistPhosAlteForm"));
+        assertThat(sub.isExactRole("Histidinol-phosphatase [alternative form]"), equalTo(false));
+        assertThat(sub.getRoleId("Histidine-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(null));
+        assertThat(sub.isExactRole("Histidine-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(false));
+        assertThat(sub.getRoleId("Phenylalanyl-tRNA synthetase alpha chain"), equalTo(null));
+        assertThat(sub.isExactRole("Phenylalanyl-tRNA synthetase alpha chain"), equalTo(false));
+        assertThat(sub.getExpectedRole("HistPhosAlteForm"), equalTo("Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"));
         Genome genome = new Genome(new File("data/ss_test_gto", "1215343.11.gto"));
         Set<String> gRoleSet = CoreSubsystem.getRoleSet(genome, roleMap);
         assertThat(gRoleSet, hasItem("PhosSynt4"));
@@ -89,7 +99,7 @@ class TestCoreSubsystem {
     void testSubsystemList() throws IOException {
         // Verify that we find four subsystems directories.
         List<File> subs = CoreSubsystem.getSubsystemDirectories(new File("data", "ss_test"));
-        assertThat(subs.size(), equalTo(4));
+        assertThat(subs.size(), equalTo(5));
         List<String> subNames = subs.stream().map(x -> x.getName()).collect(Collectors.toList());
         assertThat(subNames, containsInAnyOrder(SUB_NAMES));
         // Verify that all found directories have spreadsheets.

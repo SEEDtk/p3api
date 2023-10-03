@@ -18,6 +18,22 @@ import org.theseed.subsystems.core.SubsystemListRule.Mode;
 import org.theseed.utils.ParseFailureException;
 
 /**
+ * This module compiles a subsystem rule from a string.  Subsystem rule strings consist of a name, an optional
+ * connector word, and an expression.  The connector word can be "means", "is", or "if".  This object compiles
+ * the expression part.  The expression part can be
+ *
+ * 1) a role abbreviation
+ * 2) a name for another rule
+ * 3) a role index number (1-based)
+ * 4) two expressions connected by "or"
+ * 5) two expressions connected by "and"
+ * 6) a number followed by " of " and a comma-delimited list of expressions enclosed by curly braces
+ *
+ * The precedence rules for these operators are mostly undefined, so parentheses should be used frequently.
+ *
+ * Rules generally come in two packages.  In the definitions file, the name associated with the rule can be used as
+ * shorthand for the rule itself.  In the rules file, the name associated with the rule is the desired variant code.
+ *
  * @author Bruce Parrello
  *
  */
