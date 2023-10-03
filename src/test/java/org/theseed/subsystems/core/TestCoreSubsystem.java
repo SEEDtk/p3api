@@ -64,13 +64,13 @@ class TestCoreSubsystem {
         assertThat(sub.fidSetOf("218496.1"), containsInAnyOrder("fig|218496.1.rna.767", "fig|218496.1.peg.760"));
         // Test the role helpers.
         assertThat(sub.getRoleId("Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo("HistPhosAlteForm"));
-        assertThat(sub.isExactRole("Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(true));
+        assertThat(sub.isExactRole("HistPhosAlteForm", "Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(true));
         assertThat(sub.getRoleId("Histidinol-phosphatase [alternative form]"), equalTo("HistPhosAlteForm"));
-        assertThat(sub.isExactRole("Histidinol-phosphatase [alternative form]"), equalTo(false));
+        assertThat(sub.isExactRole("HistPhosAlteForm", "Histidinol-phosphatase [alternative form]"), equalTo(false));
         assertThat(sub.getRoleId("Histidine-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(null));
-        assertThat(sub.isExactRole("Histidine-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(false));
+        assertThat(sub.isExactRole("HistPhosAlteForm", "Histidine-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo(false));
         assertThat(sub.getRoleId("Phenylalanyl-tRNA synthetase alpha chain"), equalTo(null));
-        assertThat(sub.isExactRole("Phenylalanyl-tRNA synthetase alpha chain"), equalTo(false));
+        assertThat(sub.isExactRole("PhenTrnaSyntAlph", "Phenylalanyl-tRNA synthetase alpha chain"), equalTo(false));
         assertThat(sub.getExpectedRole("HistPhosAlteForm"), equalTo("Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"));
         Genome genome = new Genome(new File("data/ss_test_gto", "1215343.11.gto"));
         Set<String> gRoleSet = CoreSubsystem.getRoleSet(genome, roleMap);

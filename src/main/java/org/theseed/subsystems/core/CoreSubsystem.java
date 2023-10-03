@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,6 +65,8 @@ public class CoreSubsystem {
     private List<Role> roles;
     /** original role names, in order */
     private List<String> roleNames;
+    /** map of role IDs to original names */
+    private Map<String, String> roleIdNameMap;
     /** subsystem spreadsheet */
     private Map<String, Row> spreadsheet;
     /** classifications */
@@ -192,7 +195,8 @@ public class CoreSubsystem {
         this.name = dirToName(inDir);
         log.info("Reading subsystem {}.", this.name);
         // Save the role definitions.
-        this.roleMap = roleDefs;
+        this.roleMap = new RoleMap();
+        this.roleIdNameMap = new HashMap<String, String>();
         // Now get the classification and version.
         this.setClassification(inDir);
         // Initialize the rule namespace and the role list.
@@ -205,7 +209,7 @@ public class CoreSubsystem {
         // Read in the subsystem spreadsheet.  This will initialize the name space, collect the
         // rule list and auxiliary rules, and store the rows.
         this.spreadsheet = new HashMap<String, Row>();
-        this.readSpreadsheet(inDir);
+        this.readSpreadsheet(roleDefs, inDir);
         // Compile the variant rules.
         this.variantRules = new LinkedHashMap<String, SubsystemRule>();
         this.readRules(inDir, "checkvariant_definitions", this.ruleMap);
@@ -226,7 +230,8 @@ public class CoreSubsystem {
         this.classes = Arrays.asList("", "", "");
         this.found = Collections.emptySet();
         this.notFound = Collections.emptySet();
-        this.roleMap = null;
+        this.roleMap = new RoleMap();
+        this.roleIdNameMap = new TreeMap<String, String>();
         this.roles = Collections.emptyList();
         this.ruleMap = Collections.emptyMap();
         this.variantRules = new LinkedHashMap<String, SubsystemRule>();
@@ -238,12 +243,13 @@ public class CoreSubsystem {
      * Now we read the subsystem spreadsheet, which contains the bulk of the data.  This includes the role list,
      * the auxiliary role set, and the genome rows.
      *
+     * @param roleDefs	role definition map
      * @param inDir		subsystem directory
      *
      * @throws IOException
      * @throws ParseFailureException
      */
-    private void readSpreadsheet(File inDir) throws IOException, ParseFailureException {
+    private void readSpreadsheet(RoleMap roleDefs, File inDir) throws IOException, ParseFailureException {
         // The file has three sections, separated by "//" markers.
         File inFile = new File(inDir, "spreadsheet");
         try (LineReader reader = new LineReader(inFile)) {
@@ -253,7 +259,7 @@ public class CoreSubsystem {
                 // The line contains an abbreviation and a role name.  We convert the role name to an ID
                 // and create a rule for the abbreviation.
                 String roleName = line[1];
-                Role role = this.roleMap.getByName(roleName);
+                Role role = roleDefs.getByName(roleName);
                 if (role == null) {
                     // The role is not in the map, which is a role error.
                     log.warn("Invalid role name \"{}\" found in {}.", roleName, inFile);
@@ -269,7 +275,11 @@ public class CoreSubsystem {
                 this.ruleMap.put(Integer.toString(ruleIdx), roleRule);
                 this.roles.add(role);
                 this.roleNames.add(roleName);
+                this.roleIdNameMap.put(role.getId(), roleName);
                 ruleIdx++;
+                // Add the role to the internal role map.
+                var roles = roleDefs.getAllById(role.getId());
+                this.roleMap.putAll(roles);
             }
             // The second section has the auxiliary roles.  These should be 1-based index numbers.
             this.auxRoles = new TreeSet<String>();
@@ -706,12 +716,14 @@ public class CoreSubsystem {
     /**
      * This method will look at a role and return TRUE if it exactly matches one of the subsystem roles, else FALSE.
      *
+     * @param roleId		ID of the role to check
      * @param roleString	role string to check
      *
      * @return TRUE if the role string exactly matches a subsystem role, else FALSE
      */
-    public boolean isExactRole(String roleString) {
-        return this.roleNames.stream().anyMatch(x -> x.contentEquals(roleString));
+    public boolean isExactRole(String roleId, String roleString) {
+        String expectedString = this.roleIdNameMap.get(roleId);
+        return StringUtils.equals(roleString, expectedString);
     }
 
     /**
@@ -724,11 +736,8 @@ public class CoreSubsystem {
     public String getRoleId(String roleString) {
         String retVal = null;
         Role role = this.roleMap.getByName(roleString);
-        if (role != null) {
-            final String roleId = role.getId();
-            boolean found = this.roles.stream().anyMatch(x -> roleId.contentEquals(x.getId()));
-            if (found) retVal = roleId;
-        }
+        if (role != null)
+            retVal = role.getId();
         return retVal;
     }
 
