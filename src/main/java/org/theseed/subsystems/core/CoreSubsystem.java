@@ -79,6 +79,14 @@ public class CoreSubsystem {
     private Set<String> notFound;
     /** roles found during current rule */
     private Set<String> found;
+    /** description note */
+    private String description;
+    /** set of pubmed IDs from the notes */
+    private Set<Integer> pubmed;
+    /** basic note */
+    private String note;
+    /** variant description map */
+    private Map<String, String> variantNotes;
     /** list of feature types used in subsystems */
     public static final String[] FID_TYPES = new String[] { "opr", "aSDomain", "pbs", "rna", "rsw", "sRNA", "peg" };
     /** common representation of an empty cell */
@@ -87,6 +95,10 @@ public class CoreSubsystem {
     private static final String SECTION_MARKER = "//";
     /** main rule parser, for separating the rule name and the text to compile */
     private static final Pattern RULE_PATTERN = Pattern.compile("\\s*(\\S+)\\s+(?:(?:means|if|is)\\s+)?(.+)");
+    /** pattern for matching a marker line */
+    private static final Pattern NOTES_MARKER = Pattern.compile("####+");
+    /** pattern for finding pubmed IDs */
+    private static final Pattern PUBMED_REFERENCE = Pattern.compile("PMID:\\s+(\\d+))");
     /** subsystem directory filter */
     private static final FileFilter DIR_SS_FILTER = new FileFilter() {
 
@@ -210,6 +222,8 @@ public class CoreSubsystem {
         // rule list and auxiliary rules, and store the rows.
         this.spreadsheet = new HashMap<String, Row>();
         this.readSpreadsheet(roleDefs, inDir);
+        // Now read in the notes.
+        this.readNotes(inDir);
         // Compile the variant rules.
         this.variantRules = new LinkedHashMap<String, SubsystemRule>();
         this.readRules(inDir, "checkvariant_definitions", this.ruleMap);
@@ -237,6 +251,17 @@ public class CoreSubsystem {
         this.variantRules = new LinkedHashMap<String, SubsystemRule>();
         this.spreadsheet = Collections.emptyMap();
         this.version = 1;
+        this.initNoteData();
+    }
+
+    /**
+     * Initialize the data normally taken from the notes file.
+     */
+    private void initNoteData() {
+        this.note = "";
+        this.description = "";
+        this.variantNotes = new TreeMap<String, String>();
+        this.pubmed = new TreeSet<Integer>();
     }
 
     /**
@@ -310,6 +335,112 @@ public class CoreSubsystem {
         }
         log.info("Spreadsheet for {} contained {} roles ({} auxiliary) and {} rows.", this.name,
                 this.roles.size(), this.auxRoles.size(), this.spreadsheet.size());
+    }
+
+    /**
+     * Read in the notes file.  We have variant notes, description notes, and just plain notes.  All of these
+     * are separated by a line of pound signs, with a label underneath in all caps indicating the content.
+     *
+     * @param inDir		subsystem input directory
+     *
+     * @throws IOException
+     */
+    private void readNotes(File inDir) throws IOException {
+        // Clear all the notes data.
+        this.initNoteData();
+        // Insure we have a notes file in the first place.
+        File noteFile = new File(inDir, "notes");
+        if (noteFile.exists()) {
+            try (LineReader noteStream = new LineReader(noteFile)) {
+                // Here we have the note file.  Each section of the file begins with a line of pound signs.
+                String line = noteStream.next();
+                while (noteStream.hasNext()) {
+                    // Here we are getting a section name.
+                    line = noteStream.next();
+                    // Process the section according to the name.
+                    switch (line) {
+                    case "DESCRIPTION" :
+                        this.description = this.processNotesText(noteStream);
+                        break;
+                    case "NOTES" :
+                        this.note = this.processNotesText(noteStream);
+                        break;
+                    case "VARIANTS" :
+                        this.processNotesVariants(noteStream);
+                        break;
+                    default :
+                        this.skipNotesText(noteStream);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Read a text section of the notes file.  We pass through the text unmodified, joining the
+     * lines with new-line characters, only pausing to extract embedded pubmed IDs.
+     *
+     * @param noteStream	line reader for the notes file, positioned after a label line
+     *
+     * @return a single string with the note text
+     */
+    private String processNotesText(LineReader noteStream) {
+        // We read in the lines until we hit a marker.  Each line is added to the line list
+        // for the final join, but it is also parsed for pubmed IDs.
+        boolean done = false;
+        List<String> retVal = new ArrayList<String>();
+        while (noteStream.hasNext() && ! done) {
+            String line = noteStream.next();
+            if (NOTES_MARKER.matcher(line).matches())
+                done = true;
+            else {
+                retVal.add(line);
+                // Here we parse for the pubmed references.  The "find" method will always get
+                // the next one and fail when there are no more.
+                Matcher m = PUBMED_REFERENCE.matcher(line);
+                while (m.find()) {
+                    // The pubmed ID is in group 1.
+                    int pubmedId = Integer.valueOf(m.group(1));
+                    this.pubmed.add(pubmedId);
+                }
+            }
+        }
+        // Join all the strings together and return the result.
+        return StringUtils.join(retVal, '\n');
+    }
+
+    /**
+     * Skip over an invalid or unused section of the notes file.
+     *
+     * @param noteStream	line reader for the notes file
+     */
+    private void skipNotesText(LineReader noteStream) {
+        // The section ends when we hit end-of-file or read a marker line.
+        boolean done = false;
+        while (noteStream.hasNext() && ! done)
+            done = NOTES_MARKER.matcher(noteStream.next()).matches();
+    }
+
+    /**
+     * This processes the variant notes.  Unlike a normal notes text section, the variants are a two-column
+     * table consisting of variant codes and descriptions.
+     *
+     * @param noteStream	line reader for the notes file
+     */
+    private void processNotesVariants(LineReader noteStream) {
+        // The section ends when we hit end-of-file or read a marker line.
+        boolean done = false;
+        while (noteStream.hasNext() && ! done) {
+            String line = noteStream.next();
+            if (NOTES_MARKER.matcher(line).matches())
+                done = true;
+            else {
+                // Split on the first tab.  Note we ignore any line that is badly-formed.
+                String[] pieces = StringUtils.split(line, "\t", 2);
+                if (pieces.length == 2)
+                    this.variantNotes.put(pieces[0], pieces[1]);
+            }
+        }
     }
 
     /**
@@ -758,6 +889,34 @@ public class CoreSubsystem {
         if (i < n)
             retVal = this.roleNames.get(i);
         return retVal;
+    }
+
+    /**
+     * @return the description notes
+     */
+    public String getDescription() {
+        return this.description;
+    }
+
+    /**
+     * @return the pubmed ID set
+     */
+    public Set<Integer> getPubmed() {
+        return this.pubmed;
+    }
+
+    /**
+     * @return the note text
+     */
+    public String getNote() {
+        return this.note;
+    }
+
+    /**
+     * @return the map of variant IDs to variant notes (for variants with notes)
+     */
+    public Map<String, String> getVariantNotes() {
+        return this.variantNotes;
     }
 
 }
