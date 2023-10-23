@@ -34,6 +34,9 @@ import org.theseed.proteins.Role;
 import org.theseed.proteins.RoleMap;
 import org.theseed.utils.ParseFailureException;
 
+import com.github.cliftonlabs.json_simple.JsonArray;
+import com.github.cliftonlabs.json_simple.JsonObject;
+
 /**
  * A core subsystem contains various bits of information about a subsystem found in the CoreSEED.
  * This includes the name, the three classifications, the roles, the role IDs, the abbreviations,
@@ -50,7 +53,7 @@ public class CoreSubsystem {
     /** subsystem name */
     private String name;
     /** rule namespace */
-    private Map<String, SubsystemRule> ruleMap;
+    private LinkedHashMap<String, SubsystemRule> ruleMap;
     /** map of variant rules, in priority order */
     private LinkedHashMap<String, SubsystemRule> variantRules;
     /** version number */
@@ -65,6 +68,8 @@ public class CoreSubsystem {
     private List<Role> roles;
     /** original role names, in order */
     private List<String> roleNames;
+    /** role abbreviations, in order */
+    private List<String> roleAbbrs;
     /** map of role IDs to original names */
     private Map<String, String> roleIdNameMap;
     /** subsystem spreadsheet */
@@ -98,7 +103,7 @@ public class CoreSubsystem {
     /** pattern for matching a marker line */
     private static final Pattern NOTES_MARKER = Pattern.compile("####+");
     /** pattern for finding pubmed IDs */
-    private static final Pattern PUBMED_REFERENCE = Pattern.compile("PMID:\\s+(\\d+))");
+    private static final Pattern PUBMED_REFERENCE = Pattern.compile("PMID:\\s+(\\d+)");
     /** subsystem directory filter */
     private static final FileFilter DIR_SS_FILTER = new FileFilter() {
 
@@ -212,8 +217,9 @@ public class CoreSubsystem {
         // Now get the classification and version.
         this.setClassification(inDir);
         // Initialize the rule namespace and the role list.
-        this.ruleMap = new HashMap<String, SubsystemRule>();
+        this.ruleMap = new LinkedHashMap<String, SubsystemRule>();
         this.roles = new ArrayList<Role>();
+        this.roleAbbrs = new ArrayList<String>();
         this.roleNames = new ArrayList<String>();
         // Initialize the tracking sets.
         this.found = new TreeSet<String>();
@@ -247,7 +253,8 @@ public class CoreSubsystem {
         this.roleMap = new RoleMap();
         this.roleIdNameMap = new TreeMap<String, String>();
         this.roles = Collections.emptyList();
-        this.ruleMap = Collections.emptyMap();
+        this.roleAbbrs = Collections.emptyList();
+        this.ruleMap = new LinkedHashMap<String, SubsystemRule>();
         this.variantRules = new LinkedHashMap<String, SubsystemRule>();
         this.spreadsheet = Collections.emptyMap();
         this.version = 1;
@@ -300,6 +307,7 @@ public class CoreSubsystem {
                 this.ruleMap.put(Integer.toString(ruleIdx), roleRule);
                 this.roles.add(role);
                 this.roleNames.add(roleName);
+                this.roleAbbrs.add(line[0]);
                 this.roleIdNameMap.put(role.getId(), roleName);
                 ruleIdx++;
                 // Add the role to the internal role map.
@@ -917,6 +925,51 @@ public class CoreSubsystem {
      */
     public Map<String, String> getVariantNotes() {
         return this.variantNotes;
+    }
+
+    /**
+     * @return a JSON object containing the high-level subsystem data
+     */
+    public JsonObject getSubsystemJson() {
+        JsonObject retVal = new JsonObject();
+        retVal.put("subsystem_name", this.name);
+        retVal.put("version", this.version);
+        retVal.put("superclass", this.getSuperClass());
+        retVal.put("class", this.getMiddleClass());
+        retVal.put("subclass", this.getSubClass());
+        retVal.put("description", this.description);
+        retVal.put("notes", this.note);
+        // If there are pubmed IDs, put them in as an array.
+        if (! this.pubmed.isEmpty()) {
+            JsonArray pubmeds = new JsonArray();
+            pubmeds.addAll(this.pubmed);
+            retVal.put("pmid", pubmeds);
+        }
+        // If there are rules, add them here.
+        if (! this.ruleMap.isEmpty()) {
+            JsonArray ruleDefs = new JsonArray();
+            for (var ruleEntry : this.ruleMap.entrySet()) {
+                String ruleKey = ruleEntry.getKey();
+                String ruleText = ruleEntry.getValue().toString();
+                // Here is our clumsy way to get rid of the internal rules.
+                if (! ruleText.equals(ruleKey) && ! StringUtils.isNumeric(ruleKey))
+                    ruleDefs.add(ruleKey + " means " + ruleText);
+            }
+            retVal.put("rule_defs", ruleDefs);
+        }
+        // Finally, list the roles and role IDs in order.
+        JsonArray roleList = new JsonArray();
+        JsonArray idList = new JsonArray();
+        for (int i = 0; i < this.roles.size(); i++) {
+            Role role = this.roles.get(i);
+            final String roleId = role.getId();
+            String realName = this.roleIdNameMap.get(roleId);
+            roleList.add(realName);
+            idList.add(this.roleAbbrs.get(i));
+        }
+        retVal.put("role_abbrs", idList);
+        retVal.put("role_names", roleList);
+        return retVal;
     }
 
 }
