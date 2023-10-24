@@ -430,6 +430,23 @@ public class CoreSubsystem {
     }
 
     /**
+     * @return the role name for the specified spreadsheet column
+     *
+     * @param idx	column index
+     */
+    public String getRole(int idx) {
+        return this.roleNames.get(idx);
+    }
+
+    /**
+     * @return the role abbreviation for the specified spreadsheet column
+     * @param idx	column index
+     */
+    public String getRoleAbbr(int idx) {
+        return this.roleAbbrs.get(idx);
+    }
+
+    /**
      * This processes the variant notes.  Unlike a normal notes text section, the variants are a two-column
      * table consisting of variant codes and descriptions.
      *
@@ -618,7 +635,7 @@ public class CoreSubsystem {
      *
      * @param roleId	ID of the role of interest
      */
-    public Object isAuxRole(String roleId) {
+    public boolean isAuxRole(String roleId) {
         return this.auxRoles.contains(roleId);
     }
 
@@ -653,6 +670,27 @@ public class CoreSubsystem {
      */
     public int getRowCount() {
         return this.spreadsheet.size();
+    }
+
+    /**
+     * @return an iterator through the spreadsheet rows
+     */
+    public Iterator<Row> rowIterator() {
+        return this.spreadsheet.values().iterator();
+    }
+
+    /**
+     * @return the set of variant codes for this subsystem
+     */
+    public Set<String> getVariantCodes() {
+        Set<String> retVal = new TreeSet<String>();
+        // Add all the variant codes we used.
+        for (Row row : this.spreadsheet.values())
+            retVal.add(row.variantCode);
+        // Add any unused variant codes that have rules.
+        retVal.addAll(this.variantRules.keySet());
+        // Return the full set.
+        return retVal;
     }
 
     /**
@@ -969,6 +1007,22 @@ public class CoreSubsystem {
         }
         retVal.put("role_abbrs", idList);
         retVal.put("role_names", roleList);
+        return retVal;
+    }
+
+    /**
+     * Compute the set of genomes that use a particular variant code.
+     *
+     * @param variantCode	variant code of interest
+     *
+     * @return the set of genomes in the spreadsheet that use the specified variant
+     */
+    public Set<String> getVariantGenomes(String variantCode) {
+        Set<String> retVal = new TreeSet<String>();
+        for (Row row : this.spreadsheet.values()) {
+            if (row.variantCode.contentEquals(variantCode))
+                retVal.add(row.genomeId);
+        }
         return retVal;
     }
 
