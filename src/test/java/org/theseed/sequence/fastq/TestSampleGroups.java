@@ -41,8 +41,11 @@ class TestSampleGroups {
         assertThat(read.getLseq(), equalTo("cctacgggaggctgcagtggggaatattgcacaatgggggaaaccctgatgcagcaacgccgcgtgagtgaagaagtatttcggtatgtaaagctctatcagcagggaagaaagttacggtacctgtctaataatccccttctaactacgtgccagctgccgcggtaatacgtagggggcaagcgttatccggatttactgggtgtaaagcgcacgcagtcggtttgttaagtcagatgtgaaatccccgggctcatcctgggaactgcatctgttactggcaagcttgagtctcgtagag"));
         assertThat(read.getRseq(), equalTo("gactacaggggtatctaatcctgtttgctccccacgctttcgcacctgagcgtcagtcttcgtccagtgggccgccttcgccaccggtattcctcctgatctctacgcatttcaccgctacacctggaattctacccccctctactacactcaagcttcccagtatcagatgcagttcccaggttgagcccgtggttttcacatctgacttaacaacccgcctgcgttcgctttacacccagtatatccggataacgctttccccctacgtattccctcggctgctggcacgtacttacc"));
         assertThat(read.getCoverage(), equalTo(1.0));
-        String allSeq = read.getSequence();
+        SeqRead.Part allPart = read.getSequence();
+        String allSeq = allPart.getSequence();
+        String allQ = allPart.getQual();
         assertThat(allSeq.substring(0, 100), equalTo(read.getLseq().substring(0, 100)));
+        assertThat(allQ.substring(0, 100), equalTo(read.getLQual().substring(0, 100)));
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
         assertThat(read.getLabel(), equalTo("SRR11321054.3"));
@@ -53,14 +56,20 @@ class TestSampleGroups {
         read = rStream.next();
         assertThat(read.getLabel(), equalTo("SRR11321054.4"));
         assertThat(read.getCoverage(), equalTo(1.0));
-        allSeq = read.getSequence();
+        allPart = read.getSequence();
+        allSeq = allPart.getSequence();
+        allQ = allPart.getQual();
         assertThat(allSeq.substring(0, 100), equalTo(read.getLseq().substring(0, 100)));
+        assertThat(allQ.substring(0, 100), equalTo(read.getLQual().substring(0, 100)));
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
         assertThat(read.getLabel(), equalTo("SRR11321054.5"));
         assertThat(read.getCoverage(), equalTo(1.0));
-        allSeq = read.getSequence();
+        allPart = read.getSequence();
+        allSeq = allPart.getSequence();
+        allQ = allPart.getQual();
         assertThat(allSeq.substring(0, 100), equalTo(read.getLseq().substring(0, 100)));
+        assertThat(allQ.substring(0, 100), equalTo(read.getLQual().substring(0, 100)));
         assertThat(rStream.hasNext(), equalTo(false));
         rStream = group.sampleIter("sample.x");
         assertThat(rStream.hasNext(), equalTo(true));
@@ -116,7 +125,7 @@ class TestSampleGroups {
         read = rStream.next();
         assertThat(read.getLabel(), equalTo("NODE_2_length_109977_cov_11.0852"));
         assertThat(read.getCoverage(), closeTo(11.0852, 0.0001));
-        assertThat(read.getSequence(), equalTo("aacttcattggtcggtgcattcctgcttcaaactcgaagagagcacaggtacgtcaatcatcaccgacccgtaccacccgtacgtcggtttctcgatgcccgaagtttcttgcgacgccgtgacgctcagtc"));
+        assertThat(read.getSequence().getSequence(), equalTo("aacttcattggtcggtgcattcctgcttcaaactcgaagagagcacaggtacgtcaatcatcaccgacccgtaccacccgtacgtcggtttctcgatgcccgaagtttcttgcgacgccgtgacgctcagtc"));
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
         assertThat(read.getLabel(), equalTo("NODE_3_length_70673_cov_11.7944"));
@@ -130,12 +139,12 @@ class TestSampleGroups {
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
         assertThat(read.getLabel(), equalTo("fig|1650663.6.peg.717|EDD77_10475|"));
-        assertThat(read.getSequence(), equalTo("atggaagcaaagatcaatgctctgaaagagcagatggagatttcgcttggcgctgtgcagtaa"));
+        assertThat(read.getSequence().getSequence(), equalTo("atggaagcaaagatcaatgctctgaaagagcagatggagatttcgcttggcgctgtgcagtaa"));
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
         assertThat(read.getLabel(), equalTo("fig|1879010.6635.peg.1860|"));
         assertThat(read.getCoverage(), closeTo(50.0, 0.0001));
-        assertThat(read.getSequence(), equalTo("atggaagagaagatcaaggcactgaaagagcagatggaagccgctctcggcagtgtagag"));
+        assertThat(read.getSequence().getSequence(), equalTo("atggaagagaagatcaaggcactgaaagagcagatggaagccgctctcggcagtgtagag"));
         assertThat(rStream.hasNext(), equalTo(false));
 
     }

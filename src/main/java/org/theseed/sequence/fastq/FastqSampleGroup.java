@@ -283,6 +283,13 @@ public abstract class FastqSampleGroup implements AutoCloseable {
     }
 
     /**
+     * @return the number of samples in the group
+     */
+    public int size() {
+        return this.sampleMap.size();
+    }
+
+    /**
      * @return the descriptor for the specified sample (or NULL if the ID is invalid)
      *
      * @param id		ID of the desired sample

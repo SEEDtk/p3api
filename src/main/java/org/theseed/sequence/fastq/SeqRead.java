@@ -8,13 +8,18 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
+
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.genome.Contig;
 import org.theseed.sequence.DnaKmers;
+import org.theseed.sequence.ISequence;
 import org.theseed.sequence.SequenceKmers;
 
 /**
- * This object represents a sequence read.  A sequence read consists of a label, forward and reverse DNA sequences, and a quality score.
+ * This object represents a sequence read.  A sequence read consists of a label, forward and reverse DNA sequences, and a quality string.
  * The reverse sequence is optional.
  *
  * A nested class is provided for representation of the read as DNA kmers.
@@ -25,18 +30,24 @@ import org.theseed.sequence.SequenceKmers;
 public class SeqRead {
 
     // FIELDS
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(SeqRead.class);
     /** label for this read */
     private String label;
     /** left sequence string */
     private String lseq;
     /** right sequence string (empty if none) */
     private String rseq;
-    /** combined sequence quality (generally 0 to 99, logarithmic, defaults for FASTA) */
-    private double qual;
+    /** left quality string */
+    private String lqual;
+    /* right quality string */
+    private String rqual;
     /** coverage (defaults to 1.0 for FASTQ) */
     private double coverage;
     /** current phred offset, indicating the 0 value for quality */
     private static int phredOffset = 33;
+    /** good-result chance for each known quality code */
+    private static final double[] phredFactors = IntStream.range(0, 40).mapToDouble(i -> 1.0 - Math.pow(10.0, -i/10.0)).toArray();
     /** minimum overlap score */
     private static int minOverlap = 5;
     /** match pattern for extracting sequence label and type */
@@ -46,7 +57,7 @@ public class SeqRead {
     /** list of valid DNA characters */
     private static String VALID_NA = "acgt";
     /** default quality for contigs */
-    private static double DEFAULT_QUAL = 30.0;
+    private static char DEFAULT_QUAL = 'F';
 
     /**
      * Set the phred offset.
@@ -55,6 +66,7 @@ public class SeqRead {
      */
     public static void setPhredOffset(int newOffset) {
         phredOffset = newOffset;
+
     }
 
     /**
@@ -124,17 +136,13 @@ public class SeqRead {
         this.rseq = (right == null ? "" : right);
         // Default the quality if there is no quality string.
         if (lqual == null)
-            this.qual = DEFAULT_QUAL;
-        else {
-            // Create the quality string.
-            String qualString = (right == null ? lqual : lqual + rqual);
-            // Compute the mean quality.
-            this.qual = 0.0;
-            for (int i = 0; i < qualString.length(); i++)
-                this.qual += (int) qualString.charAt(i) - phredOffset;
-            if (qualString.length() > 0)
-                this.qual /= qualString.length();
-        }
+            this.lqual = StringUtils.repeat(DEFAULT_QUAL, left.length());
+        else
+            this.lqual = lqual;
+        if (rqual == null)
+            this.rqual = StringUtils.repeat(DEFAULT_QUAL, this.getRseq().length());
+        else
+            this.rqual = rqual;
         this.coverage = 1.0;
     }
 
@@ -160,12 +168,34 @@ public class SeqRead {
     }
 
     /**
-     * The quality indicates the error probability, which is 1e-x, where "x" is the quality level.
+     * The quality indicates the error probability as a fraction of 1.
      *
      * @return the quality level
      */
     public double getQual() {
-        return this.qual;
+        double retVal = qualChance(this.lqual, 0, this.lqual.length());
+        if (this.rqual != null)
+            retVal *= qualChance(this.rqual, 0, this.rqual.length());
+        return 1.0 - retVal;
+    }
+
+    /**
+     * Compute the correct-result chance for a substring of a quality string.
+     *
+     * @param qual		full quality string
+     * @param pos		start position
+     * @param len		length to check
+     *
+     * @return the chance of an correct in the specified region of the sequence
+     */
+    public static double qualChance(String qual, int pos, int len) {
+        double retVal = 1.0;
+        final int n = pos + len;
+        for (int i = pos; i < n; i++) {
+            int lvl = qual.charAt(i) - phredOffset;
+            retVal *= phredFactors[lvl];
+        }
+        return retVal;
     }
 
     /**
@@ -230,7 +260,7 @@ public class SeqRead {
      * This class represents a partial read.  It contains the label, the sequence, the quality string, and the
      * read type.
      */
-    public static class Part {
+    public static class Part implements ISequence {
 
         /** sequence label */
         private String label;
@@ -240,6 +270,44 @@ public class SeqRead {
         private String seq;
         /** quality string */
         private String qual;
+
+        /**
+         * Construct a blank part.
+         */
+        public Part() {
+            this.label = "";
+            this.reverse = false;
+            this.seq = "";
+            this.qual = "";
+        }
+
+        /**
+         * Construct a simple part.
+         *
+         * @param lbl	sequence label
+         * @param sq	sequence string
+         * @param q		quality string
+         */
+        public Part(String lbl, String sq, String q) {
+            this.label = lbl;
+            this.reverse = false;
+            this.seq = sq;
+            this.qual = q;
+        }
+
+        /**
+         * @return the reverse complement of a part.
+         *
+         * @param part	part to reverse
+         */
+        public static Part reverse(Part fwd) {
+            String sq = Contig.reverse(fwd.seq);
+            String q = StringUtils.reverse(fwd.qual);
+            Part retVal = new Part(fwd.label, sq, q);
+            retVal.reverse = ! fwd.reverse;
+            return retVal;
+        }
+
 
         /**
          * @return the sequence label (with the direction indicator removed)
@@ -256,14 +324,14 @@ public class SeqRead {
         }
 
         /**
-         * @return the seq
+         * @return the sequence string
          */
-        public String getSeq() {
+        public String getSequence() {
             return this.seq;
         }
 
         /**
-         * @return the qual
+         * @return the quality string
          */
         public String getQual() {
             return this.qual;
@@ -276,6 +344,13 @@ public class SeqRead {
          */
         public boolean matches(Part other) {
             return this.label.equals(other.label);
+        }
+
+        /**
+         * @return the length of this part's sequence
+         */
+        public int length() {
+            return this.seq.length();
         }
 
     }
@@ -351,10 +426,9 @@ public class SeqRead {
         int result = 1;
         result = prime * result + ((this.label == null) ? 0 : this.label.hashCode());
         result = prime * result + ((this.lseq == null) ? 0 : this.lseq.hashCode());
-        long temp;
-        temp = Double.doubleToLongBits(this.qual);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
+        result = prime * result + ((this.lqual == null) ? 0 : this.lqual.hashCode());
         result = prime * result + ((this.rseq == null) ? 0 : this.rseq.hashCode());
+        result = prime * result + ((this.rqual == null) ? 0 : this.rqual.hashCode());
         return result;
     }
 
@@ -381,9 +455,11 @@ public class SeqRead {
         } else if (!this.lseq.equals(other.lseq)) {
             return false;
         }
-        if (Double.doubleToLongBits(this.qual) != Double.doubleToLongBits(other.qual)) {
+        if (this.lqual == null) {
+            if (other.lqual != null)
+                return false;
+        } else if (! this.lqual.equals(other.lqual))
             return false;
-        }
         if (this.rseq == null) {
             if (other.rseq != null) {
                 return false;
@@ -391,6 +467,11 @@ public class SeqRead {
         } else if (!this.rseq.equals(other.rseq)) {
             return false;
         }
+        if (this.rqual == null) {
+            if (other.rqual != null)
+                return false;
+        } else if (! this.rqual.equals(other.rqual))
+            return false;
         return true;
     }
 
@@ -411,16 +492,21 @@ public class SeqRead {
      * @return a forward sequence for this read, consisting of the isolated forward part, the
      * 		   overlapping part, and the reverse-complement of the isolated backward part
      */
-    public String getSequence() {
-        String retVal;
-        if (this.rseq.isEmpty())
-            retVal = this.lseq;
-        else if (this.lseq.isEmpty())
-            retVal = this.rseq;
-        else {
+    public Part getSequence() {
+        String seq;
+        String qual;
+        if (this.rseq.isEmpty()) {
+            seq = this.lseq;
+            qual = this.lqual;
+        } else if (this.lseq.isEmpty()) {
+            seq = this.rseq;
+            qual = this.rqual;
+        } else {
             // Get the left sequence.
             String nrmLeft = this.lseq;
+            String lq = this.lqual;
             String revRight = Contig.reverse(this.rseq);
+            String rq = StringUtils.reverse(this.rqual);
             // Get the lesser of the two lengths.
             int leftLen = nrmLeft.length();
             final int maxN = (leftLen < revRight.length() ? leftLen : revRight.length());
@@ -441,11 +527,15 @@ public class SeqRead {
             }
             // Now we stitch the pieces together.
             String right = revRight.substring(bestN);
-            if (bestN < minOverlap)
+            String rightq = rq.substring(bestN);
+            if (bestN < minOverlap) {
                 right = "x" + right;
-            retVal = nrmLeft + right;
+                rightq = "!" + rightq;
+            }
+            seq = nrmLeft + rightq;
+            qual = lq + rq;
         }
-        return retVal;
+       return new Part(this.label, seq, qual);
     }
 
     /**
@@ -480,6 +570,20 @@ public class SeqRead {
      */
     public void setCoverage(double coverage) {
         this.coverage = coverage;
+    }
+
+    /**
+     * @return the left quality string
+     */
+    public String getLQual() {
+        return this.lqual;
+    }
+
+    /**
+     * @return the rightt quality string
+     */
+    public String getRQual() {
+        return this.rqual;
     }
 
 }

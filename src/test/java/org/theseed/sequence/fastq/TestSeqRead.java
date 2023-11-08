@@ -71,7 +71,7 @@ public class TestSeqRead {
             SeqRead.Part part = SeqRead.read(reader);
             assertThat(part.getLabel(), equalTo("ERR2730212.1"));
             assertThat(part.isReverse(), equalTo(true));
-            assertThat(part.getSeq(), equalTo("tgtttgctccccacgctttcgagcctcaacgtcagtcatcgtccagaaagccgccttcgccactggtgttcctccta"));
+            assertThat(part.getSequence(), equalTo("tgtttgctccccacgctttcgagcctcaacgtcagtcatcgtccagaaagccgccttcgccactggtgttcctccta"));
             assertThat(part.getQual(), equalTo("GGGGGCGGGGGGGGGGGEGGGGGGGGFCFF:@FEGGAFG9FFFGGGFFECFGGCG@FGFGG@FFEF?EFEGGCDBFC"));
             try {
                 part = SeqRead.read(reader);
@@ -80,22 +80,22 @@ public class TestSeqRead {
             part = SeqRead.read(reader);
             assertThat(part.getLabel(), equalTo("ERR2730212.3"));
             assertThat(part.isReverse(), equalTo(false));
-            assertThat(part.getSeq(), equalTo("tgtttgctccccacgctttcgagcctcaacgtcagttgccgtccagtaagccgcc"));
+            assertThat(part.getSequence(), equalTo("tgtttgctccccacgctttcgagcctcaacgtcagttgccgtccagtaagccgcc"));
             assertThat(part.getQual(), equalTo("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFGGGGGGGGGGGGGGGG"));
             part = SeqRead.read(reader);
             assertThat(part.getLabel(), equalTo("ERR2730212.4"));
             assertThat(part.isReverse(), equalTo(true));
-            assertThat(part.getSeq(), equalTo("tgtttgctacccacactttcgagcctcagcgtcagttggtgcccagtaggccgcc"));
+            assertThat(part.getSequence(), equalTo("tgtttgctacccacactttcgagcctcagcgtcagttggtgcccagtaggccgcc"));
             assertThat(part.getQual(), equalTo("F9F96,CCEFEFGG,CF,,CFFC@FE@CFF7@68,<C,CF8F,CEFFF,,CF+:4"));
             part = SeqRead.read(reader);
             assertThat(part.getLabel(), equalTo("ERR2730212.5"));
             assertThat(part.isReverse(), equalTo(false));
-            assertThat(part.getSeq(), equalTo("tgtttgctacccacactttcgagcctcagcgtcagttggtgcccagtaggccgccttcgccact"));
+            assertThat(part.getSequence(), equalTo("tgtttgctacccacactttcgagcctcagcgtcagttggtgcccagtaggccgccttcgccact"));
             assertThat(part.getQual(), equalTo("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGEGGG"));
             part = SeqRead.read(reader);
             assertThat(part.getLabel(), equalTo("ERR2730212.6"));
             assertThat(part.isReverse(), equalTo(false));
-            assertThat(part.getSeq(), equalTo("tgtttgctccccacgctttcgagcctcaacgtcagtcatcgtccagaaagccgccttcgccactgg"));
+            assertThat(part.getSequence(), equalTo("tgtttgctccccacgctttcgagcctcaacgtcagtcatcgtccagaaagccgccttcgccactgg"));
             assertThat(part.getQual(), equalTo("GGGGGGGGGGGGGGEGGGGGGGGGGGGGGGGGGGGGGGFGGGGGGGCFGGGGGGGGGGGGGGGGGG"));
             part = SeqRead.read(reader);
             assertThat(part, nullValue());
