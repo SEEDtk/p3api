@@ -47,7 +47,7 @@ public class SeqRead {
     /** current phred offset, indicating the 0 value for quality */
     private static int phredOffset = 33;
     /** good-result chance for each known quality code */
-    private static final double[] phredFactors = IntStream.range(0, 40).mapToDouble(i -> 1.0 - Math.pow(10.0, -i/10.0)).toArray();
+    private static final double[] phredFactors = IntStream.range(0, 45).mapToDouble(i -> 1.0 - Math.pow(10.0, -i/10.0)).toArray();
     /** minimum overlap score */
     private static int minOverlap = 5;
     /** match pattern for extracting sequence label and type */
@@ -193,6 +193,7 @@ public class SeqRead {
         final int n = pos + len;
         for (int i = pos; i < n; i++) {
             int lvl = qual.charAt(i) - phredOffset;
+            if (lvl > 45) lvl = 45;
             retVal *= phredFactors[lvl];
         }
         return retVal;
@@ -537,7 +538,7 @@ public class SeqRead {
             seq = nrmLeft + right;
             qual = lq + rightq;
         }
-       return new Part(this.label, seq, qual);
+        return new Part(this.label, seq, qual);
     }
 
     /**
