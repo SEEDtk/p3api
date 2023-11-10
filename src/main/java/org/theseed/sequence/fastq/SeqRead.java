@@ -132,8 +132,8 @@ public class SeqRead {
      */
     private void createRead(String label, String left, String lqual, String right, String rqual) {
         this.label = label;
-        this.lseq = left;
-        this.rseq = (right == null ? "" : right);
+        this.lseq = StringUtils.lowerCase(left);
+        this.rseq = (right == null ? "" : StringUtils.lowerCase(right));
         // Default the quality if there is no quality string.
         if (lqual == null)
             this.lqual = StringUtils.repeat(DEFAULT_QUAL, left.length());
@@ -515,11 +515,13 @@ public class SeqRead {
             // ambiguity character.
             int bestN = 0;
             int bestScore = 0;
-            int score = 0;
-            final int leftLast = leftLen - 1;
-            for (int n = 0; n < maxN; n++) {
+            for (int n = minOverlap; n < maxN; n++) {
                 // Score this overlap.
-                score += this.score(nrmLeft.charAt(leftLast - n), revRight.charAt(n));
+                int left0 = leftLen - n;
+                int right0 = 0;
+                int score = 0;
+                for (int i = 0; i < n; i++)
+                    score += this.score(nrmLeft.charAt(left0 + i), revRight.charAt(right0 + i));
                 if (score > bestScore) {
                     bestN = n;
                     bestScore = score;
@@ -532,8 +534,8 @@ public class SeqRead {
                 right = "x" + right;
                 rightq = "!" + rightq;
             }
-            seq = nrmLeft + rightq;
-            qual = lq + rq;
+            seq = nrmLeft + right;
+            qual = lq + rightq;
         }
        return new Part(this.label, seq, qual);
     }

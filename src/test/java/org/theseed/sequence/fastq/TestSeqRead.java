@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.theseed.sequence.DnaKmers;
 import org.theseed.sequence.SequenceKmers;
@@ -31,10 +32,10 @@ public class TestSeqRead {
         String lbl1 = "ERR2730212.1";
         SeqRead read = new SeqRead(lbl1, l1, l1q, r1, r1q);
         assertThat(read.getLabel(), equalTo("ERR2730212.1"));
-        assertThat(read.getLseq(), equalTo(l1));
-        assertThat(read.getRseq(), equalTo(r1));
+        assertThat(read.getLseq(), equalTo(StringUtils.lowerCase(l1)));
+        assertThat(read.getRseq(), equalTo(StringUtils.lowerCase(r1)));
         double q = read.getQual();
-        assertThat(q, greaterThan(20.0));
+        assertThat(q, greaterThan(0.9));
         SequenceKmers readKmers = read.new Kmers();
         DnaKmers lKmers = new DnaKmers(l1);
         DnaKmers rKmers = new DnaKmers(r1);
@@ -54,14 +55,36 @@ public class TestSeqRead {
         String l1q = "9FCCCFCDG<FGFGGGFAFGFGDFEGFGGGCFGCGGG?C:FGEGD@BFECFGGGGDGGGCGGFFGFCCFFFGCEEFEGG9FDA<FGGGCGGF7EFCGFGGFDFEFFFFGGGCG,>CGG:=DEGCECGEGCGGEF?7FFDGFFFGGCGC@EC;FFECCCC::14FFFCFF*CCEFGCGG72?FGGF>FGCFFFGGCFGG5C5C87ECEEEFCFEGF5F*8*<<?0<0<A6:EG55C=8*0+;*/;?5*8:;*6++3+2<<:CF?+0<CFF6CF4C*:9@EDDF)7)//701)4)77)*28?684(,11)0";
         String lbl1 = "ERR2730212.1";
         SeqRead read = new SeqRead(lbl1, l1, l1q);
-        assertThat(read.getLseq(), equalTo(l1));
+        assertThat(read.getLseq(), equalTo(StringUtils.lowerCase(l1)));
         assertThat(read.getRseq(), equalTo(""));
         assertThat(read.getLabel(), equalTo("ERR2730212.1"));
         double q = read.getQual();
-        assertThat(q, greaterThan(20.0));
+        assertThat(q, greaterThan(0.9));
         SequenceKmers readKmers = read.new Kmers();
         DnaKmers lKmers = new DnaKmers(l1);
         assertThat(readKmers.distance(lKmers), equalTo(0.0));
+        SeqRead.Part part = read.getSequence();
+        assertThat(part.getSequence(), equalTo(StringUtils.lowerCase(l1)));
+        assertThat(part.getQual(), equalTo(l1q));
+        l1			= "ACGTAACCGGTTAAACCCGGGTTTAAAACCCCGGGGTTTT";
+        l1q			= "ABCDEF0123456789ABCDEF0123456789ABCDEF01";
+        String r1 	= "TGCATGCATGCATGCAAAATCCCC";
+        String r1q	= "!@#$%^&*()0123456789ABCD";
+        read = new SeqRead(lbl1, l1, l1q, r1, r1q);
+        part = read.getSequence();
+        String seq = part.getSequence();
+        String qua = part.getQual();
+        assertThat(seq, equalTo("acgtaaccggttaaacccgggtttaaaaccccggggtttttgcatgcatgcatgca"));
+        assertThat(qua, equalTo("ABCDEF0123456789ABCDEF0123456789ABCDEF01543210)(*&^%$#@!"));
+        r1 	= "ACGTACGTACGTACG";
+        r1q = "012345679ABCDEF";
+        read = new SeqRead(lbl1, l1, l1q, r1, r1q);
+        part = read.getSequence();
+        seq = part.getSequence();
+        qua = part.getQual();
+        assertThat(seq, equalTo("acgtaaccggttaaacccgggtttaaaaccccggggttttxcgtacgtacgtacgt"));
+        assertThat(qua, equalTo("ABCDEF0123456789ABCDEF0123456789ABCDEF01!FEDCBA976543210"));
+
     }
 
     @Test
