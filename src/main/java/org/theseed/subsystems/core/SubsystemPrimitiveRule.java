@@ -5,7 +5,7 @@ package org.theseed.subsystems.core;
 
 import java.util.Set;
 
-import org.theseed.utils.ParseFailureException;
+import org.theseed.basic.ParseFailureException;
 
 /**
  * This is a primitive rule.  It is satisfied if the identified role is in the role set.

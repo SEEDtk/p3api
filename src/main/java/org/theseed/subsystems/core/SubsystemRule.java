@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.theseed.utils.ParseFailureException;
+import org.theseed.basic.ParseFailureException;
 
 /**
  * This object represents a rule to be applied to a set of roles.  Essentially, a rule can be (1) a role ID, (2) an inverted

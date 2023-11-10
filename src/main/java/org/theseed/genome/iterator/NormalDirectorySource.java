@@ -13,10 +13,10 @@ import java.util.TreeSet;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.genome.GenomeDirectory;
 import org.theseed.p3api.P3Genome.Details;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * This allows the client to iterate over or store into a standard single-level genome directory.

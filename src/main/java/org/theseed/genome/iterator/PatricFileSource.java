@@ -13,12 +13,12 @@ import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.P3Genome;
 import org.theseed.p3api.P3Genome.Details;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * This genome source reads genome IDs from a file and loads them individually.  It should only be used for small files,

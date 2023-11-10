@@ -5,7 +5,7 @@ package org.theseed.subsystems.core;
 
 import java.util.Set;
 
-import org.theseed.utils.ParseFailureException;
+import org.theseed.basic.ParseFailureException;
 
 /**
  * This is a null rule that always fails.  It is used for bad identifiers.

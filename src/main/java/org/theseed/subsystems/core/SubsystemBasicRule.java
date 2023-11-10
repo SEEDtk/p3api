@@ -5,7 +5,7 @@ package org.theseed.subsystems.core;
 
 import java.util.Set;
 
-import org.theseed.utils.ParseFailureException;
+import org.theseed.basic.ParseFailureException;
 
 /**
  * A basic rule contains a single sub-rule, and is used as a placeholder during compilation.

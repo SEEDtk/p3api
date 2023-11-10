@@ -7,9 +7,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.genome.iterator.GenomeSource;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * This class presents the client with a list of genome descriptors from a genome source.

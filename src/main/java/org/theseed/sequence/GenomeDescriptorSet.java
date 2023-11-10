@@ -11,8 +11,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * This class implements a set of genome descriptors.  Its primary function is to provide functionality for

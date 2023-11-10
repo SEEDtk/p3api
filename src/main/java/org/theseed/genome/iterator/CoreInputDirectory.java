@@ -12,12 +12,12 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.genome.core.CoreGenome;
 import org.theseed.genome.core.OrganismDirectories;
 import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.P3Genome.Details;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * This genome source loads genomes from a CoreSEED directory.  It iterates through the genomes in the Organism subdirectory.

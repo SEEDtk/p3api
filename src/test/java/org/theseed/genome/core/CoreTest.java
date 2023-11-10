@@ -11,6 +11,7 @@ import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Annotation;
 import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
@@ -22,8 +23,6 @@ import org.theseed.genome.iterator.IGenomeTarget;
 import org.theseed.io.MarkerFile;
 import org.theseed.p3api.P3Connection;
 import org.theseed.sequence.Sequence;
-import org.theseed.utils.ParseFailureException;
-
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.*;

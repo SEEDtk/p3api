@@ -13,9 +13,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.proteins.RoleMap;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * @author Bruce Parrello

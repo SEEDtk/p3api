@@ -8,11 +8,11 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.io.TabbedLineReader;
-import org.theseed.proteins.Function;
-import org.theseed.utils.ParseFailureException;
+import org.theseed.roles.RoleUtilities;
 
 /**
  * This class contains the genome ID, name, seed protein, and SSU rRNA sequence for a genome.  This is the basic
@@ -243,7 +243,7 @@ public class GenomeDescriptor implements Comparable<GenomeDescriptor> {
         String bestId = null;
         int bestProt = 0;
         for (Feature feat : genome.getPegs()) {
-            String function = Function.commentFree(feat.getPegFunction());
+            String function = RoleUtilities.commentFree(feat.getPegFunction());
             // For a peg, we check for the seed protein.
             if (SEED_PROTEIN.matcher(function).matches()) {
                 int proposed = feat.getProteinTranslation().length();

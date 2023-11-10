@@ -13,9 +13,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.theseed.basic.ParseFailureException;
 import org.theseed.sequence.GenomeDescriptor;
 import org.theseed.sequence.GenomeDescriptorSet;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * Test genome descriptors for RepGen

@@ -9,9 +9,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.p3api.P3Genome;
-import org.theseed.utils.ParseFailureException;
 
 /**
  * This interface describes an iterator for returning genomes from a disk source.  This could be a file
