@@ -4,6 +4,7 @@
 package org.theseed.p3api;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -142,6 +143,8 @@ public class P3Connection extends Connection {
     private String authToken;
     /** chunk size */
     private int chunkSize;
+    /** name of the feature files */
+    public static final String JSON_FILE_NAME = "genome_feature.json";
     /** default URL */
     private static final String DATA_API_URL = "https://p3.theseed.org/services/data_api/";
     /** taxonomy URL format */
@@ -150,6 +153,16 @@ public class P3Connection extends Connection {
     private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
     /** list of domains for prokaryotes */
     public static final List<String> DOMAINS = Arrays.asList("Bacteria", "Archaea");
+    /** genome dump directory filter */
+    public static final FileFilter GENOME_FILTER = new FileFilter() {
+
+        @Override
+        public boolean accept(File pathname) {
+            File gFile = new File(pathname, JSON_FILE_NAME);
+            return gFile.canRead();
+        }
+
+    };
     /** empty string list */
     private static final JsonArray EMPTY_LIST = new JsonArray();
 
