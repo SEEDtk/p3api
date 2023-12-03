@@ -141,9 +141,10 @@ public class CoreGenome extends Genome {
     private void computeTaxonomy() throws FileNotFoundException {
         // First, get the genome name.
         String name = this.readFlag("GENOME");
-        if (name == null)
-            throw new FileNotFoundException("Missing genome name in " + this.orgDir);
-        else {
+        if (name == null) {
+            log.error("No GENOME file found in " + this.orgDir);
+            this.setName("Unknown genome in directory " + this.orgDir);
+        } else {
             this.setName(name);
         }
         // Now, get the taxonomy ID.
