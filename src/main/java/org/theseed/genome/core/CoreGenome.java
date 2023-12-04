@@ -59,6 +59,9 @@ public class CoreGenome extends Genome {
     /** empty protein map (for non-proteins) */
     private static final Map<String, String> EMPTY_MAP = new HashMap<String, String>(5);
 
+    /** empty alias set */
+    private static final Set<String> NO_ALIASES = Collections.emptySet();
+
     /** organism directory */
     private File orgDir;
 
@@ -239,9 +242,16 @@ public class CoreGenome extends Genome {
                 Map<String, Location> locationMap = new HashMap<String, Location>();
                 Map<String, Collection<String>> aliasMap = new HashMap<String, Collection<String>>();
                 File tblFile = new File(typeDir, "tbl");
-                if (! tblFile.exists())
+                if (! tblFile.exists()) {
+                    // Here we have no location data.  We have to create dummy locations for
+                    // every known protein.
                     log.warn("No features in type directory {}.", typeDir);
-                else {
+                    for (String fid : proteinMap.keySet()) {
+                        locationMap.put(fid, null);
+                        aliasMap.put(fid, NO_ALIASES);
+                    }
+                } else {
+                    // Here we have location data.
                     try (LineReader tblStream = new LineReader(tblFile)) {
                         for (String line : tblStream) {
                             String[] fields = StringUtils.split(line, '\t');
