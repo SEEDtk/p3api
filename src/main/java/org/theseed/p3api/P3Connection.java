@@ -584,64 +584,69 @@ public class P3Connection extends Connection {
                 log.warn("Genetic code information missing for {}.", taxId);
             else
                 gc = Integer.valueOf(gcNode.getTextContent());
+            // Store the genetic code.
+            genome.setGeneticCode(gc);
             // Everything is under the "Taxon" node.  We need to save all the
             // children of LineageEx, plus the ScientificName and Rank
             // at the top.
             String leafName = String.format("Unknown %s", genome.getDomain());
             String leafRank = "no rank";
             Node rootTaxon = taxonDoc.getElementsByTagName("Taxon").item(0);
-            NodeList children = rootTaxon.getChildNodes();
-            ArrayList<TaxItem> taxItems = new ArrayList<TaxItem>(30);
-            for (int i = 0; i < children.getLength(); i++) {
-                Node child = children.item(i);
-                String type = child.getNodeName();
-                switch (type) {
-                case "ScientificName" :
-                    leafName = child.getTextContent();
-                    break;
-                case "Rank" :
-                    leafRank = child.getTextContent();
-                    break;
-                case "LineageEx" :
-                    // Here we have the full lineage, and we need to convert it to tax items.
-                    NodeList lineageChildren = child.getChildNodes();
-                    for (int j = 0; j < lineageChildren.getLength(); j++) {
-                        Node lineageChild = lineageChildren.item(j);
-                        if (lineageChild.getNodeName().contentEquals("Taxon")) {
-                            NodeList lineageItems = lineageChild.getChildNodes();
-                            // The lineage node has 3 children-- TaxId, ScientificName, Rank.
-                            int taxNum = 0;
-                            String taxName = "";
-                            String taxRank = "no rank";
-                            for (int c = 0; c < lineageItems.getLength(); c++) {
-                                Node grandChild = lineageItems.item(c);
-                                String subType = grandChild.getNodeName();
-                                switch (subType) {
-                                case "TaxId" :
-                                    taxNum = Integer.valueOf(grandChild.getTextContent());
-                                    break;
-                                case "ScientificName" :
-                                    taxName = grandChild.getTextContent();
-                                    break;
-                                case "Rank" :
-                                    taxRank = grandChild.getTextContent();
-                                    break;
+            if (rootTaxon == null)
+                log.warn("Invalid taxon tree returned for {}.", taxId);
+            else {
+                NodeList children = rootTaxon.getChildNodes();
+                ArrayList<TaxItem> taxItems = new ArrayList<TaxItem>(30);
+                for (int i = 0; i < children.getLength(); i++) {
+                    Node child = children.item(i);
+                    String type = child.getNodeName();
+                    switch (type) {
+                    case "ScientificName" :
+                        leafName = child.getTextContent();
+                        break;
+                    case "Rank" :
+                        leafRank = child.getTextContent();
+                        break;
+                    case "LineageEx" :
+                        // Here we have the full lineage, and we need to convert it to tax items.
+                        NodeList lineageChildren = child.getChildNodes();
+                        for (int j = 0; j < lineageChildren.getLength(); j++) {
+                            Node lineageChild = lineageChildren.item(j);
+                            if (lineageChild.getNodeName().contentEquals("Taxon")) {
+                                NodeList lineageItems = lineageChild.getChildNodes();
+                                // The lineage node has 3 children-- TaxId, ScientificName, Rank.
+                                int taxNum = 0;
+                                String taxName = "";
+                                String taxRank = "no rank";
+                                for (int c = 0; c < lineageItems.getLength(); c++) {
+                                    Node grandChild = lineageItems.item(c);
+                                    String subType = grandChild.getNodeName();
+                                    switch (subType) {
+                                    case "TaxId" :
+                                        taxNum = Integer.valueOf(grandChild.getTextContent());
+                                        break;
+                                    case "ScientificName" :
+                                        taxName = grandChild.getTextContent();
+                                        break;
+                                    case "Rank" :
+                                        taxRank = grandChild.getTextContent();
+                                        break;
+                                    }
                                 }
+                                TaxItem item = new TaxItem(taxNum, taxName, taxRank);
+                                taxItems.add(item);
                             }
-                            TaxItem item = new TaxItem(taxNum, taxName, taxRank);
-                            taxItems.add(item);
                         }
                     }
                 }
+                // Add the leaf to the end.
+                taxItems.add(new TaxItem(taxId, leafName, leafRank));
+                // Convert the list to an array.
+                TaxItem[] lineage = new TaxItem[taxItems.size()];
+                lineage = taxItems.toArray(lineage);
+                // Store the array.
+                genome.setLineage(lineage);
             }
-            // Add the leaf to the end.
-            taxItems.add(new TaxItem(taxId, leafName, leafRank));
-            // Convert the list to an array.
-            TaxItem[] lineage = new TaxItem[taxItems.size()];
-            lineage = taxItems.toArray(lineage);
-            // Store the array and the genetic code.
-            genome.setGeneticCode(gc);
-            genome.setLineage(lineage);
             // Denote we were successful.
             retVal = true;
         }
