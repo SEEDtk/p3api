@@ -44,29 +44,24 @@ import org.theseed.sequence.Sequence;
 public class CoreGenome extends Genome {
 
     // FIELDS
-
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(CoreGenome.class);
-
     /** list of valid domains */
     public static final Set<String> DOMAINS = (Set<String>) Stream.of("Bacteria", "Archaea", "Eukaryota", "Viruses")
               .collect(Collectors.toCollection(HashSet::new));
-
     /** list of protein feature types */
     protected static final Set<String> PROTEINS = (Set<String>) Stream.of("peg", "mp")
             .collect(Collectors.toCollection(HashSet::new));
-
     /** empty protein map (for non-proteins) */
     private static final Map<String, String> EMPTY_MAP = new HashMap<String, String>(5);
-
     /** empty alias set */
     private static final Set<String> NO_ALIASES = Collections.emptySet();
-
     /** organism directory */
     private File orgDir;
-
     /** connection to PATRIC */
     private P3Connection p3;
+    /** completeness flag */
+    private boolean complete;
 
     /**
      * Construct a coreSEED genome from a genome directory.
@@ -92,6 +87,9 @@ public class CoreGenome extends Genome {
         this.readFeatures();
         // Read the annotations.
         this.readAnnotations();
+        // Set the completeness flag.
+        String cFlag = MarkerFile.readSafe(new File(inDir, "COMPLETE"));
+        this.complete = cFlag.isEmpty();
     }
 
     /**
@@ -451,6 +449,14 @@ public class CoreGenome extends Genome {
             }
         }
         return retVal;
+    }
+
+    /**
+     * @return TRUE if this genome is complete
+     */
+    @Override
+    public boolean isComplete() {
+        return this.complete;
     }
 
 }
