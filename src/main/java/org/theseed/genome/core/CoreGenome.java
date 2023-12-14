@@ -88,8 +88,8 @@ public class CoreGenome extends Genome {
         // Read the annotations.
         this.readAnnotations();
         // Set the completeness flag.
-        String cFlag = MarkerFile.readSafe(new File(inDir, "COMPLETE"));
-        this.complete = cFlag.isEmpty();
+        File cFile = new File(inDir, "COMPLETE");
+        this.complete = cFile.exists();
     }
 
     /**
