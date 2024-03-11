@@ -63,7 +63,6 @@ public abstract class Connection {
      *
      */
     public Connection() {
-        super();
         // Default the trace stuff.
         this.setTable("<none>");
         this.setChunkPosition(0);
@@ -83,6 +82,7 @@ public abstract class Connection {
         HttpClient httpClient = HttpClients.custom()
                 .setDefaultRequestConfig(RequestConfig.custom()
                         .setCookieSpec(CookieSpecs.STANDARD).build())
+                .disableRedirectHandling()
                 .build();
         this.executor = Executor.newInstance(httpClient);
     }
@@ -148,8 +148,8 @@ public abstract class Connection {
                 if (code < 400) {
                     // Here we succeeded.  Stop the loop.
                     done = true;
-                } else if (tries >= MAX_TRIES) {
-                    // Here we have tried too many times.  Build a display string for the URL.
+                } else if (tries >= MAX_TRIES || code == 403) {
+                    // Here we have tried too many times or it is an unrecoverable error.  Build a display string for the URL.
                     throwHttpError(retVal.getStatusLine().getReasonPhrase());
                 } else {
                     // We have a server error, try again.
@@ -181,11 +181,11 @@ public abstract class Connection {
     }
 
     /**
-     * Create a request builder for the specified data object.  The buffer should
+     * Create a request for the specified data object.  The buffer should
      * contain the current parameters.  We allow, however, that the parameters
      * can be modified before asking for a response, due to chunking.
      *
-     * @param table	name of the target SOLR table
+     * @param table		name of the target table
      *
      * @return a request builder with any required authorization and the proper URL
      */
