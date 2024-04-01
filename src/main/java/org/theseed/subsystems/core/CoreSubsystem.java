@@ -31,6 +31,7 @@ import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.io.LineReader;
 import org.theseed.io.MarkerFile;
+import org.theseed.io.TabbedLineReader;
 import org.theseed.proteins.Role;
 import org.theseed.proteins.RoleMap;
 
@@ -1026,4 +1027,43 @@ public class CoreSubsystem {
         return retVal;
     }
 
+    /**
+     * Compute a list of the subsystems in a CoreSEED directory, with an optional filter file.
+     *
+     * @param coreDir		CoreSEED data directory
+     * @param filterFile	name of a tab-delimited file with headerscontaining subsystem names in the first
+     * 						column, or NULL to use all the subsystems
+     *
+     * @return a list of the subsystem directories to use
+     *
+     * @throws IOException
+     */
+    public static List<File> getFilteredSubsystemDirectories(File coreDir, File filterFile) throws IOException {
+        // Get the subsystem directory list.  This will also validate the coreSEED input directory.
+        log.info("Scanning for subsystems in {}.", coreDir);
+        List<File> retVal = getSubsystemDirectories(coreDir);
+        // Check for a filter file.
+        if (filterFile == null)
+            log.info("No subsystem filtering specified.");
+        else {
+            log.info("Filter file {} specified.", filterFile);
+            if (! filterFile.canRead())
+                throw new FileNotFoundException("Filter file " + filterFile + " is not found or unreadable.");
+            Set<String> ssNames = TabbedLineReader.readSet(filterFile, "1");
+            // Now we must validate the filter subsystems.
+            Set<String> realSubs = retVal.stream().map(x -> CoreSubsystem.dirToName(x))
+                    .collect(Collectors.toSet());
+            for (String filterSub : ssNames) {
+                if (! realSubs.contains(filterSub)) {
+                    log.error("Subsystem \"{}\" not found in subsystem directory.", filterSub);
+                }
+            }
+            // Now create a version of the subsystem directory list that only contains the filtered
+            // ones.
+            List<File> allDirs = retVal;
+            retVal = allDirs.stream().filter(x -> ssNames.contains(CoreSubsystem.dirToName(x)))
+                    .collect(Collectors.toList());
+        }
+        return retVal;
+    }
 }
