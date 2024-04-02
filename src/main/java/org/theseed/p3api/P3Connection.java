@@ -61,6 +61,7 @@ public class P3Connection extends Connection {
     public enum Table {
 
         GENOME("genome", "genome_id"),
+        GENOME_AMR("genome_amr", "id"),
         FEATURE("genome_feature", "patric_id"),
         TAXONOMY("taxonomy", "taxon_id"),
         CONTIG("genome_sequence", "sequence_id"),
