@@ -46,8 +46,8 @@ public class SeqRead {
     private double coverage;
     /** current phred offset, indicating the 0 value for quality */
     private static int phredOffset = 33;
-    /** good-result chance for each known quality code */
-    private static final double[] phredFactors = IntStream.range(0, 45).mapToDouble(i -> 1.0 - Math.pow(10.0, -i/10.0)).toArray();
+    /** bad-result chance for each known quality code */
+    private static final double[] phredFactors = IntStream.range(0, 45).mapToDouble(i -> Math.pow(10.0, -i/10.0)).toArray();
     /** minimum overlap score */
     private static int minOverlap = 5;
     /** match pattern for extracting sequence label and type */
@@ -180,6 +180,20 @@ public class SeqRead {
     }
 
     /**
+     * The expected error is the number of bad base pairs expected.
+     *
+     * @return the expected error
+     */
+    public double getExpectedErrors() {
+        double retVal = 0.0;
+        if (this.lqual != null)
+            retVal = IntStream.range(0, lqual.length()).mapToDouble(i -> baseError(this.lqual, i)).sum();
+        if (this.rqual != null)
+            retVal += IntStream.range(0, lqual.length()).mapToDouble(i -> baseError(this.rqual, i)).sum();
+        return retVal;
+    }
+
+    /**
      * Compute the correct-result chance for a substring of a quality string.
      *
      * @param qual		full quality string
@@ -192,10 +206,37 @@ public class SeqRead {
         double retVal = 1.0;
         final int n = pos + len;
         for (int i = pos; i < n; i++) {
-            int lvl = qual.charAt(i) - phredOffset;
-            if (lvl > 45) lvl = 45;
-            retVal *= phredFactors[lvl];
+            double chance = baseQual(qual, i);
+            retVal *= chance;
         }
+        return retVal;
+    }
+
+    /**
+     * Compute the correct-result change for a single quality character.
+     *
+     * @param qual	quality string
+     * @param i		character position
+     *
+     * @return the chance of a correct result
+     */
+    public static double baseQual(String qual, int i) {
+        double retVal = baseError(qual, i);
+        return 1.0 - retVal;
+    }
+
+    /**
+     * Compute the bad-result chance for a single quality character.
+     *
+     * @param qual	quality string
+     * @param i		character position
+     *
+     * @return the chance of a bad result
+     */
+    public static double baseError(String qual, int i) {
+        int lvl = qual.charAt(i) - phredOffset;
+        if (lvl > 45) lvl = 45;
+        double retVal = phredFactors[lvl];
         return retVal;
     }
 
