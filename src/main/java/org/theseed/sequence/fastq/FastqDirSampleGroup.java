@@ -14,6 +14,8 @@ import java.util.regex.Matcher;
 
 import org.apache.commons.lang3.StringUtils;
 
+// TODO allow singleton files in a directory
+// TODO add singleton files to paired samples
 
 /**
  * This object manages a FASTQ sample group organized in download directories.  The group consists of a
