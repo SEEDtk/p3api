@@ -23,7 +23,8 @@ public class ZipSampleDescriptor extends SampleDescriptor {
     private long DEFAULT_SIZE = 20000000000L;
 
     /**
-     * Construct a sample descriptor for a sample in a zipped file.
+     * Construct a sample descriptor for a sample in a zipped file.  QZAs do not have singleton overflow,
+     * so we just do paired.
      *
      * @param controller	controlling zip file object
      * @param id			sample ID
@@ -31,7 +32,7 @@ public class ZipSampleDescriptor extends SampleDescriptor {
      * @param reverse		name of the reverse entry, or NULL if there is none
      */
     public ZipSampleDescriptor(ZipFile controller, String id, String forward, String reverse) {
-        super(id, forward, reverse);
+        super(id, forward, reverse, null);
         this.controller = controller;
     }
 

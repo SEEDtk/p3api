@@ -30,9 +30,10 @@ public class FastqSampleDescriptor extends SampleDescriptor {
      * @param id			ID of the sample
      * @param forward		forward file base name (or NULL)
      * @param reverse		reverse file base name (or NULL)
+     * @param single		singleton file base name (or NULL)
      */
-    public FastqSampleDescriptor(File sampleDir, String id, String forward, String reverse) {
-        super(id, forward, reverse);
+    public FastqSampleDescriptor(File sampleDir, String id, String forward, String reverse, String single) {
+        super(id, forward, reverse, single);
         this.sampleDir = sampleDir;
     }
 

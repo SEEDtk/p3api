@@ -32,7 +32,7 @@ public class FastaSampleDescriptor extends SampleDescriptor {
      * @param forward	name of the FASTA file
      */
     public FastaSampleDescriptor(File dir, String id, String forward) {
-        super(id, forward, null);
+        super(id, forward, null, null);
         if (dir.isFile()) {
             // Here we have a sample encoded in a simple file.
             this.contigFile = dir;

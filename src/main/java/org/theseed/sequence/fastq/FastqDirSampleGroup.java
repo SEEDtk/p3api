@@ -14,9 +14,6 @@ import java.util.regex.Matcher;
 
 import org.apache.commons.lang3.StringUtils;
 
-// TODO allow singleton files in a directory
-// TODO add singleton files to paired samples
-
 /**
  * This object manages a FASTQ sample group organized in download directories.  The group consists of a
  * directory of multiple samples.  Each sample is in a directory by itself with a forward file (filename ends in
@@ -38,7 +35,9 @@ public class FastqDirSampleGroup extends FastqSampleGroup {
     /** master directory containing the sample subdirectories */
     private File masterDirectory;
     /** pattern for paired filename endings */
-    private static final Pattern ENDING_PATTERN = Pattern.compile(".+_R?([12])(?:_[A-Za-z0-9]+)?\\.(?:fastq|fq)(?:\\.gz)?");
+    private static final Pattern ENDING_PATTERN = Pattern.compile(".+_R?([12s])(?:_[A-Za-z0-9]+)?\\.(?:fastq|fq)(?:\\.gz)?");
+    /** pattern for single-file filename endings */
+    private static final Pattern FASTQ_PATTERN = Pattern.compile(".+\\.(?:fastq|fq)(?:\\.gz)?");
 
 
     /**
@@ -61,9 +60,13 @@ public class FastqDirSampleGroup extends FastqSampleGroup {
                 String name = file.getName();
                 retVal = name.endsWith(".fastq") || name.endsWith(".fastq.gz");
             } else {
-                // Here we have a directory with two fastq files in it.
+                // Here we have a directory with one to three fastq files in it.
                 File[] subFiles = file.listFiles(File::isFile);
                 retVal = Arrays.stream(subFiles).filter(x -> ENDING_PATTERN.matcher(x.getName()).matches()).findAny().isPresent();
+                if (! retVal) {
+                    // If it is a single-file sample, we look for the single file.
+                    retVal = (Arrays.stream(subFiles).filter(x -> FASTQ_PATTERN.matcher(x.getName()).matches()).count() == 1);
+                }
             }
             return retVal;
         }
@@ -101,24 +104,38 @@ public class FastqDirSampleGroup extends FastqSampleGroup {
                 // If this is a single-file sample, extract the sample ID.  Note that this will work
                 // even for a "fastq.gz" file.
                 sampleId = StringUtils.substringBeforeLast(sampleFileName, ".fastq");
-                desc = new FastqSampleDescriptor(sampleFile.getParentFile(), sampleId, sampleFileName, null);
+                desc = new FastqSampleDescriptor(sampleFile.getParentFile(), sampleId, sampleFileName, null, null);
             } else {
-                // Here we have paired files.  The sample ID is the base name.
+                // Here we have a directory of files.  The sample ID is the base name.
                 sampleId = sampleFileName;
                 // Find the files we need.
                 String leftFile = null;
                 String rightFile = null;
+                String singleFile = null;
                 File[] subFiles = sampleFile.listFiles(File::isFile);
                 for (File subFile : subFiles) {
                     Matcher m = ENDING_PATTERN.matcher(subFile.getName());
                     if (m.matches()) {
-                        if (m.group(1).contentEquals("1"))
+                        switch (m.group(1)) {
+                        case "1" :
                             leftFile = subFile.getName();
-                        else
+                            break;
+                        case "2" :
                             rightFile = subFile.getName();
+                            break;
+                        default :
+                            singleFile = subFile.getName();
+                        }
+                    } else {
+                        m = FASTQ_PATTERN.matcher(subFile.getName());
+                        if (m.matches()) {
+                            // Here we have a FASTQ file that does not match the standard ending pattern.
+                            // This is presumed to be a single-stream and added as the singleton overflow.
+                            singleFile = subFile.getName();
+                        }
                     }
                 }
-                desc = new FastqSampleDescriptor(sampleFile, sampleId, leftFile, rightFile);
+                desc = new FastqSampleDescriptor(sampleFile, sampleId, leftFile, rightFile, singleFile);
             }
             retVal.put(sampleId, desc);
         }

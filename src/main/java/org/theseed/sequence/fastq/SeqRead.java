@@ -299,6 +299,51 @@ public class SeqRead {
     }
 
     /**
+     * Create a singleton read part from the current input.
+     *
+     * @param reader	buffer reader stream for input
+     *
+     * @return the read found, or NULL if we are at end of file
+     */
+    protected static Part readSingle(BufferedReader reader) throws IOException {
+        Part retVal = null;
+        // We need to read four lines:  label 1, sequence, label 2, quality.
+        String line = reader.readLine();
+        if (line != null) {
+            // Here we have a record to read.
+            retVal = new Part();
+            // Get the FASTQ label.
+            Matcher m = ID_PATTERN.matcher(line);
+            if (! m.matches()) {
+                if (line.isEmpty())
+                    throw new IOException("Header record in FASTQ file is empty.");
+                else
+                    throw new IOException("Invalid header record in FASTQ file beginning with \"" + StringUtils.left(line, 15) + "\".");
+            } else {
+                // Get the FASTQ label.
+                String label = m.group(1);
+                retVal.label = label;
+                retVal.reverse = false;
+                // Now read the sequence.
+                retVal.seq = reader.readLine().toLowerCase();
+                if (retVal.seq == null)
+                    throw new IOException("No sequence record found for \"" + label + "\".");
+                // Verify that we have a quality string.
+                line = reader.readLine();
+                if (line.charAt(0) != '+')
+                    throw new IOException("Quality line marker not found for \"" + label + "\".");
+                // Read the quality string.
+                retVal.qual = reader.readLine();
+                if (retVal.qual == null)
+                    throw new IOException("Quality line not found for \"" + label + "\".");
+                if (retVal.qual.length() != retVal.seq.length())
+                    throw new IOException("Quality sequence length error for \"" + label + "\".");
+            }
+        }
+        return retVal;
+    }
+
+    /**
      * This class represents a partial read.  It contains the label, the sequence, the quality string, and the
      * read type.
      */

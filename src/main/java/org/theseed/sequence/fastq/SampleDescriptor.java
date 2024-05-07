@@ -19,10 +19,12 @@ import java.util.zip.GZIPInputStream;
 public abstract class SampleDescriptor implements Comparable<SampleDescriptor> {
 
     // FIELDS
-    /** name of forward stream */
+    /** name of forward stream, or NULL if there is none */
     private String forwardName;
     /** name of reverse stream, or NULL if there is none */
     private String reverseName;
+    /** name of singleton stream, or NULL if there is none */
+    private String singleName;
     /** ID of the sample */
     private String sampleId;
 
@@ -32,11 +34,13 @@ public abstract class SampleDescriptor implements Comparable<SampleDescriptor> {
      * @param id		ID of the sample
      * @param forward	file base name for forward sequences
      * @param reverse	file base name of reverse sequences (or NULL if none)
+     * @param single
      */
-    public SampleDescriptor(String id, String forward, String reverse) {
+    public SampleDescriptor(String id, String forward, String reverse, String single) {
         this.sampleId = id;
         this.forwardName = forward;
         this.reverseName = reverse;
+        this.singleName = single;
     }
 
     /**
@@ -46,18 +50,27 @@ public abstract class SampleDescriptor implements Comparable<SampleDescriptor> {
      */
     public ReadStream reader() throws IOException {
         ReadStream retVal;
-        if (this.forwardName == null && this.reverseName == null)
+        if (this.forwardName == null && this.reverseName == null && this.singleName == null)
             retVal = ReadStream.NULL;
         else if (this.reverseName == null) {
-            InputStream forwardStream = this.getFileStream(this.forwardName);
-            retVal = new ReadStream.Single(forwardStream);
+            InputStream singleStream;
+            if (this.forwardName == null)
+                singleStream = this.getFileStream(this.singleName);
+            else
+                singleStream = this.getFileStream(this.forwardName);
+            retVal = new ReadStream.Single(singleStream);
         } else if (this.forwardName == null) {
             InputStream reverseStream = this.getFileStream(this.reverseName);
             retVal = new ReadStream.Single(reverseStream);
         } else {
             InputStream forwardStream = this.getFileStream(this.forwardName);
             InputStream reverseStream = this.getFileStream(this.reverseName);
-            retVal = new ReadStream.Paired(forwardStream, reverseStream);
+            InputStream singleStream;
+            if (this.singleName == null)
+                singleStream = null;
+            else
+                singleStream = this.getFileStream(this.singleName);
+            retVal = new ReadStream.Paired(forwardStream, reverseStream, singleStream);
         }
         return retVal;
     }

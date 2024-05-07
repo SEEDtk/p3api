@@ -21,11 +21,11 @@ class TestSampleGroups {
     void testDirTypes() throws IOException {
         File testDir = new File("data", "fqTest");
         SeqRead.setMinOverlap(5);
-        // Check as a FASTQ directory.  Should be three samples.
+        // Check as a FASTQ directory.  Should be four samples.
         FastqSampleGroup group = FastqSampleGroup.Type.FASTQ.create(testDir);
         var sampleSet = group.getSampleIDs();
-        assertThat(sampleSet.size(), equalTo(3));
-        assertThat(sampleSet, containsInAnyOrder("SRR11321054", "SRR11321056", "sample.x"));
+        assertThat(sampleSet.size(), equalTo(4));
+        assertThat(sampleSet, containsInAnyOrder("SRR11321054", "SRR11321056", "sample.x", "SRR1212"));
         // Verify the sizes.
         SampleDescriptor desc = group.getDescriptor("SRR11321054");
         assertThat(desc.estimatedSize(), equalTo(5336L));
@@ -70,39 +70,35 @@ class TestSampleGroups {
         allQ = allPart.getQual();
         assertThat(allSeq.substring(0, 100), equalTo(read.getLseq().substring(0, 100)));
         assertThat(allQ.substring(0, 100), equalTo(read.getLQual().substring(0, 100)));
-        assertThat(rStream.hasNext(), equalTo(false));
+        assertThat(rStream.hasNext(), equalTo(true));
         rStream = group.sampleIter("sample.x");
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
-        assertThat(read.getLabel(), equalTo("ERR1912949.1"));
+        assertThat(read.getLabel(), equalTo("ERR1912949.1.1"));
         assertThat(read.getLseq(), equalTo("ctcaagtcctgacttacctcaacccttaccacggtgagcattttatcttttactcgcggatccttgagctcgcggataagcgcaactatttcg"));
-        assertThat(read.getRseq(), equalTo("aagcgctttaaggacgacgtaaaagaggttcagtccggctacgaatgcggaatcggtcttgagaaattcaacgacattaaagagggagacatc"));
+        assertThat(read.getRseq(), equalTo(""));
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
-        assertThat(read.getLabel(), equalTo("ERR1912949.2"));
+        assertThat(read.getLabel(), equalTo("ERR1912949.1.2"));
+        assertThat(read.getLseq(), equalTo("aagcgctttaaggacgacgtaaaagaggttcagtccggctacgaatgcggaatcggtcttgagaaattcaacgacattaaagagggagacatc"));
+        assertThat(read.getRseq(), equalTo(""));
+        assertThat(rStream.hasNext(), equalTo(true));
+        read = rStream.next();
+        assertThat(read.getLabel(), equalTo("ERR1912949.2.1"));
         assertThat(read.getLseq(), equalTo("catttggttttacctccataatttcgtataatcggttttcgtatcggtgatgccagtgtgcttgtcggtgaaaaatccgctgtgctgcaaatc"));
-        assertThat(read.getRseq(), equalTo("aaccggacttcaaaattgccgtacacgccgtacactctgtacggcatttttcaacttcatccgcaaaatacggttttgcttgtgcctttggtg"));
-        assertThat(rStream.hasNext(), equalTo(true));
-        read = rStream.next();
-        assertThat(read.getLabel(), equalTo("ERR1912949.3"));
-        assertThat(read.getLseq(), equalTo("cagcacagcaacttcccggtcattgatgcgctggaagagaacaagatgcttcaccagcaggtcaaggagctgaacggagaactgaaacgggcc"));
         assertThat(read.getRseq(), equalTo(""));
         assertThat(rStream.hasNext(), equalTo(true));
         read = rStream.next();
-        assertThat(read.getLabel(), equalTo("ERR1912949.4"));
-        assertThat(read.getLseq(), equalTo("tgtaatattaagcatcctgccccaactgtcataaaaatagtttactacagccgtgccattggcgtcaaccagtcctgtgatgcacatcagtcc"));
+        assertThat(read.getLabel(), equalTo("ERR1912949.2.2"));
+        assertThat(read.getLseq(), equalTo("aaccggacttcaaaattgccgtacacgccgtacactctgtacggcatttttcaacttcatccgcaaaatacggttttgcttgtgcctttggtg"));
         assertThat(read.getRseq(), equalTo(""));
         assertThat(rStream.hasNext(), equalTo(true));
+        rStream = group.sampleIter("SRR1212");
         read = rStream.next();
-        assertThat(read.getLabel(), equalTo("ERR1912949.5"));
-        assertThat(read.getLseq(), equalTo("cgcaccactctttattaactgcctgcaacattgcatatcacttatacgatagaaatcaatttgttttttatacgtataagcatacactattaa"));
+        assertThat(read.getLabel(), equalTo("SRR11321056.1.1"));
+        assertThat(read.getLseq(), equalTo("cctacgggcggcagcagtggggaatattgctcaatggaggcaactctgatgcagcgacgccgcgtgaatgatgaagtttttctgttttttaacttctttcttcctggtagtaaatttctttacctttctctttttccccttctttcttccttccagctgccgcggttaaacttatgttgcaagcgttctccggaattactgggttttatgcgagcttattcggtttcgccagtctgttgtgaattccctgggctcccccccggtccttcattgtttactgttcatcttgtgtgctggcgtg"));
         assertThat(read.getRseq(), equalTo(""));
-        assertThat(rStream.hasNext(), equalTo(true));
-        read = rStream.next();
-        assertThat(read.getLabel(), equalTo("ERR1912949.6"));
-        assertThat(read.getLseq(), equalTo("gaatattttattagcagggggagctggctacattggttctcatacagcagtggaattattaacagcaggacatgacgtagttatcgtagataa"));
-        assertThat(read.getRseq(), equalTo(""));
-        assertThat(rStream.hasNext(), equalTo(false));
+        assertThat(read.getLQual(), equalTo("8@C<A?,@=>9:)88-;<--@:7-;,<C,@-;--<C,,,6,-,:6:@,,9,9,,6++7++8+7+@+,+,,,9,,,,<,5<A4,,C,<,:+,,99A5@,<,,,,,,,4,,,,,,,8,,5,,<,55?,,85,,,,,,3,:,,,B3,,,7,3,8,88,,3,5,:8+**5**,,,,7,,,,3,3,,,1*6<*67<****4?,42,,*5*4*,+2+***1*5+++1++*3*+*/***32:++2+2*++**000++**..1**/1)2)*)))2*0*3<)*+*+20*220+2/9*)))0)06*(()))"));
         // Try as a FASTA group.
         group = FastqSampleGroup.Type.FASTA.create(testDir);
         sampleSet = group.getSampleIDs();
@@ -146,7 +142,6 @@ class TestSampleGroups {
         assertThat(read.getCoverage(), closeTo(50.0, 0.0001));
         assertThat(read.getSequence().getSequence(), equalTo("atggaagagaagatcaaggcactgaaagagcagatggaagccgctctcggcagtgtagag"));
         assertThat(rStream.hasNext(), equalTo(false));
-
     }
 
 }

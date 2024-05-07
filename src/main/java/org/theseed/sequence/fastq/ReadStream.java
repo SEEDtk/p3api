@@ -11,7 +11,9 @@ import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+
 /**
+ *
  * This object is used to manage the reading from FASTQ streams.  The client specifies the one or two input streams, handling the issues of
  * where they come from and whether or not they are compressed.  This object performs the nuts and bolts of reading and file closing.
  * Like many file-based objects, it is both an iterable and its own iterator.
@@ -110,16 +112,25 @@ public abstract class ReadStream implements Iterator<SeqRead>, Iterable<SeqRead>
         private InputStream forwardStream;
         /** reverse input stream */
         private InputStream reverseStream;
+        /** singleton input stream (or NULL) */
+        private InputStream singleStream;
         /** reader for forward stream */
         private BufferedReader forwardReader;
         /** reader for reverse stream */
         private BufferedReader reverseReader;
+        /** reader for singleton stream */
+        private BufferedReader singleReader;
 
-        public Paired(InputStream forwardStream, InputStream reverseStream) throws IOException {
+        public Paired(InputStream forwardStream, InputStream reverseStream, InputStream singleStream) throws IOException {
             this.forwardStream = forwardStream;
             this.reverseStream = reverseStream;
+            this.singleStream = singleStream;
             this.forwardReader = getReader(forwardStream);
             this.reverseReader = getReader(reverseStream);
+            if (this.singleStream == null)
+                this.singleReader = null;
+            else
+                this.singleReader = getReader(singleStream);
             this.setNext(this.readAhead());
         }
 
@@ -141,6 +152,13 @@ public abstract class ReadStream implements Iterator<SeqRead>, Iterable<SeqRead>
                     throw new IOException("Right sequence not paired with \"" + leftPart.getLabel() + ".");
                 // Here we have both parts.
                 retVal = new SeqRead(leftPart, rightPart);
+            } else {
+                // Here the left stream is empty.  Try the single stream.
+                if (this.singleReader != null) {
+                    leftPart = SeqRead.readSingle(this.singleReader);
+                    if (leftPart != null)
+                        retVal = new SeqRead(leftPart);
+                }
             }
             return retVal;
         }
@@ -166,13 +184,10 @@ public abstract class ReadStream implements Iterator<SeqRead>, Iterable<SeqRead>
         private InputStream forwardStream;
         /** reader for forward stream */
         private BufferedReader forwardReader;
-        /** saved left part for an unpaired read */
-        SeqRead.Part leftBuffer;
 
         public Single(InputStream forwardStream) throws IOException {
             this.forwardStream = forwardStream;
             this.forwardReader = getReader(forwardStream);
-            this.leftBuffer = null;
             this.setNext(this.readAhead());
         }
 
@@ -186,24 +201,11 @@ public abstract class ReadStream implements Iterator<SeqRead>, Iterable<SeqRead>
             SeqRead retVal = null;
             // Get the left read.  This may be saved in the buffer; if not, we read it from
             // the file.
-            SeqRead.Part leftPart = this.leftBuffer;
-            if (leftPart == null)
-                leftPart = SeqRead.read(this.forwardReader);
+            SeqRead.Part leftPart = SeqRead.readSingle(this.forwardReader);
             // Only proceed if we found a read part.  If we didn't, we will return NULL,
             // which the parent will interpret as end-of-file.
-            if (leftPart != null) {
-                // Check for a matching right sequence.
-                SeqRead.Part rightPart = SeqRead.read(this.forwardReader);
-                if (rightPart != null && rightPart.matches(leftPart)) {
-                    // Here we have an interlaced paired read.
-                    retVal = new SeqRead(leftPart, rightPart);
-                } else {
-                    // Here we have a singleton.  We return the left part and buffer the
-                    // right part as the next left part.
-                    this.leftBuffer = rightPart;
-                    retVal = new SeqRead(leftPart);
-                }
-            }
+            if (leftPart != null)
+                retVal = new SeqRead(leftPart);
             return retVal;
         }
 
