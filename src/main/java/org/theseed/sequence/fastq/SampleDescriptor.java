@@ -120,6 +120,20 @@ public abstract class SampleDescriptor implements Comparable<SampleDescriptor> {
     }
 
     /**
+     * @return the singleton-stream base name
+     */
+    protected String getSingleName() {
+        return this.singleName;
+    }
+
+    /**
+     * @return TRUE if this sample has a singleton stream
+     */
+    protected boolean hasSingleStream() {
+        return this.singleName != null;
+    }
+
+    /**
      * @return the sample ID
      */
     public String getId() {

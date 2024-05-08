@@ -53,7 +53,10 @@ public class FastqSampleDescriptor extends SampleDescriptor {
 
     @Override
     public long estimatedSize() {
-        return this.size(this.getForwardName()) + this.size(this.getReverseName());
+        long retVal = this.size(this.getForwardName()) + this.size(this.getReverseName());
+        if (this.hasSingleStream())
+            retVal += this.size(this.getSingleName());
+        return retVal;
     }
 
     /**
