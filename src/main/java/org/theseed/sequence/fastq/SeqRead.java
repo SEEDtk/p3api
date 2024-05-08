@@ -187,9 +187,9 @@ public class SeqRead {
     public double getExpectedErrors() {
         double retVal = 0.0;
         if (this.lqual != null)
-            retVal = IntStream.range(0, lqual.length()).mapToDouble(i -> baseError(this.lqual, i)).sum();
+            retVal = IntStream.range(0, this.lqual.length()).mapToDouble(i -> baseError(this.lqual, i)).sum();
         if (this.rqual != null)
-            retVal += IntStream.range(0, rqual.length()).mapToDouble(i -> baseError(this.rqual, i)).sum();
+            retVal += IntStream.range(0, this.rqual.length()).mapToDouble(i -> baseError(this.rqual, i)).sum();
         return retVal;
     }
 
@@ -235,7 +235,7 @@ public class SeqRead {
      */
     public static double baseError(String qual, int i) {
         int lvl = qual.charAt(i) - phredOffset;
-        if (lvl > 45) lvl = 45;
+        if (lvl > 44) lvl = 44;
         double retVal = phredFactors[lvl];
         return retVal;
     }
