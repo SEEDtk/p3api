@@ -189,7 +189,7 @@ public class SeqRead {
         if (this.lqual != null)
             retVal = IntStream.range(0, lqual.length()).mapToDouble(i -> baseError(this.lqual, i)).sum();
         if (this.rqual != null)
-            retVal += IntStream.range(0, lqual.length()).mapToDouble(i -> baseError(this.rqual, i)).sum();
+            retVal += IntStream.range(0, rqual.length()).mapToDouble(i -> baseError(this.rqual, i)).sum();
         return retVal;
     }
 
