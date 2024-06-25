@@ -127,4 +127,12 @@ public abstract class BaseGenomeProcessor extends BaseProcessor {
         return this.genomeIds.contains(genomeId);
     }
 
+    /**
+     * @return the actual genome source
+     */
+    protected GenomeSource getSource() {
+        return this.source;
+    }
+
+
 }
