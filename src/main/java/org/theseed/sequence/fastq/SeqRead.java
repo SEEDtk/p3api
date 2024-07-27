@@ -57,7 +57,7 @@ public class SeqRead {
     /** list of valid DNA characters */
     private static String VALID_NA = "acgt";
     /** default quality for contigs */
-    private static char DEFAULT_QUAL = 'F';
+    private static char DEFAULT_QUAL = 'z';
 
     /**
      * Set the phred offset.
