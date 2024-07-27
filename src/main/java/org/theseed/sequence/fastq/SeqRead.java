@@ -47,7 +47,7 @@ public class SeqRead {
     /** current phred offset, indicating the 0 value for quality */
     private static int phredOffset = 33;
     /** bad-result chance for each known quality code */
-    private static final double[] phredFactors = IntStream.range(0, 45).mapToDouble(i -> Math.pow(10.0, -i/10.0)).toArray();
+    private static final double[] phredFactors = IntStream.range(0, 100).mapToDouble(i -> Math.pow(10.0, -i/10.0)).toArray();
     /** minimum overlap score */
     private static int minOverlap = 5;
     /** match pattern for extracting sequence label and type */
@@ -57,7 +57,7 @@ public class SeqRead {
     /** list of valid DNA characters */
     private static String VALID_NA = "acgt";
     /** default quality for contigs */
-    private static char DEFAULT_QUAL = 'z';
+    private static char DEFAULT_QUAL = '~';
 
     /**
      * Set the phred offset.
@@ -235,7 +235,7 @@ public class SeqRead {
      */
     public static double baseError(String qual, int i) {
         int lvl = qual.charAt(i) - phredOffset;
-        if (lvl > 44) lvl = 44;
+        if (lvl > 99) lvl = 99;
         double retVal = phredFactors[lvl];
         return retVal;
     }
