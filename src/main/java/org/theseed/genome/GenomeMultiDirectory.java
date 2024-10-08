@@ -64,7 +64,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
     /** filename extension */
     protected static final String EXTENSION = ".gtoz";
     /** filename filter */
-    private static final FileFilter FILE_FILTER = new WildcardFileFilter("*.gtoz");
+    private static final FileFilter FILE_FILTER = new WildcardFileFilter.Builder().setWildcards("*.gtoz").get();
 
     /**
      * Create a new, empty master directory.
