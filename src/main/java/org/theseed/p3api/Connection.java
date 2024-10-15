@@ -53,7 +53,7 @@ public abstract class Connection {
     /** executor for cookie policy */
     private Executor executor;
     /** maximum retries */
-    protected static final int MAX_TRIES = 5;
+    public static final int MAX_TRIES = 5;
     /** maximum length of a key list (in characters) */
     protected static final int MAX_LEN = 50000;
     /** default timeout interval in milliseconds */
@@ -151,6 +151,15 @@ public abstract class Connection {
                 } else if (tries >= MAX_TRIES || code == 403) {
                     // Here we have tried too many times or it is an unrecoverable error.  Build a display string for the URL.
                     throwHttpError(retVal.getStatusLine().getReasonPhrase());
+                } else if (code == 429) {
+                    // Here we are being throttled. Sleep and try again.
+                    tries++;
+                    log.debug("Pausing for retry after error code 429.");
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        log.warn("Interrupting during throttle wait.");
+                    }
                 } else {
                     // We have a server error, try again.
                     tries++;

@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -69,7 +70,7 @@ public class XmlUtilsTest {
     }
 
     @Test
-    public void testCleaner() throws XmlException {
+    public void testCleaner() throws XmlException, FileNotFoundException {
         String xmlString = "<root>  <parent1>  <child1>   </child1>\n"
                 + "<child2>   </child2>  </parent1>  <parent2>This is real text</parent2> </root>";
         Element root = XmlUtils.parseXmlString(xmlString);

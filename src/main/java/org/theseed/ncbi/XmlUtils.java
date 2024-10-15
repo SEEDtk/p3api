@@ -4,6 +4,7 @@
 package org.theseed.ncbi;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayDeque;
@@ -170,10 +171,13 @@ public class XmlUtils {
      * @return the document element for the XML document described by the string
      *
      * @throws XmlException
+     * @throws FileNotFoundException
      */
-    public static Element parseXmlString(String xmlString) throws XmlException {
+    public static Element parseXmlString(String xmlString) throws XmlException, FileNotFoundException {
         Element retVal;
         try {
+            // To protect against security problems, we must remove the DOCTYPE.
+            xmlString = xmlString.replaceFirst("<!DOCTYPE[^>]+>", "");
             InputSource xmlSource = new InputSource(new StringReader(xmlString));
             DocumentBuilder builder = DOC_FACTORY.newDocumentBuilder();
             Document doc = builder.parse(xmlSource);
@@ -181,6 +185,8 @@ public class XmlUtils {
             Element error = XmlUtils.findFirstByTagName(retVal, "ERROR");
             if (error != null)
                 throw new XmlException("NCBI ERROR: " + error.getTextContent());
+        } catch (FileNotFoundException e) {
+            throw new FileNotFoundException(e.getMessage());
         } catch (UnsupportedOperationException | IOException | SAXException
                 | ParserConfigurationException e) {
             throw new XmlException("Error accessing XML response: " + e.getMessage());
