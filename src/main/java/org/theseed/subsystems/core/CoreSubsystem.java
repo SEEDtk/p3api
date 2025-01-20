@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,6 +64,8 @@ public class CoreSubsystem {
     private boolean good;
     /** auxiliary role list */
     private Set<String> auxRoles;
+    /** auxiliary role bit map */
+    private BitSet auxMap;
     /** associated role ID computation map */
     private RoleMap roleMap;
     /** list of roles, in order */
@@ -194,6 +197,13 @@ public class CoreSubsystem {
             return this.columns;
         }
 
+        /**
+         * @return the parent subsystem
+         */
+        public CoreSubsystem getParent() {
+            return CoreSubsystem.this;
+        }
+
     }
 
     /**
@@ -247,6 +257,7 @@ public class CoreSubsystem {
         this.name = "(none)";
         this.good = false;
         this.auxRoles = Collections.emptySet();
+        this.auxMap = new BitSet();
         this.badIds = Collections.emptySet();
         this.classes = Arrays.asList("", "", "");
         this.found = Collections.emptySet();
@@ -317,6 +328,7 @@ public class CoreSubsystem {
             }
             // The second section has the auxiliary roles.  These should be 1-based index numbers.
             this.auxRoles = new TreeSet<String>();
+            this.auxMap = new BitSet(roles.size());
             for (String[] line : reader.new Section(SECTION_MARKER)) {
                 if (line.length > 1 && line[0].toLowerCase().equals("aux")) {
                     // Here we have found the auxiliary roles definition.
@@ -328,8 +340,10 @@ public class CoreSubsystem {
                             int idx = Integer.parseInt(spec);
                             if (idx <= 0 || idx > this.roles.size())
                                 log.error("Invalid role index in aux role list.");
-                            else
+                            else {
                                 this.auxRoles.add(this.roles.get(idx - 1).getId());
+                                this.auxMap.set(idx - 1);
+                            }
                         } else
                             throw new ParseFailureException("Non-numeric auxiliary role spec \"" + spec + "\" in subsystem "
                                     + this.name + ".");
@@ -445,6 +459,13 @@ public class CoreSubsystem {
      */
     public String getRoleAbbr(int idx) {
         return this.roleAbbrs.get(idx);
+    }
+
+    /**
+     * @return the bit map for the auxiliary roles
+     */
+    public BitSet getAuxMap() {
+        return this.auxMap;
     }
 
     /**
@@ -1065,5 +1086,43 @@ public class CoreSubsystem {
                     .collect(Collectors.toList());
         }
         return retVal;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((this.name == null) ? 0 : this.name.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof CoreSubsystem)) {
+            return false;
+        }
+        CoreSubsystem other = (CoreSubsystem) obj;
+        if (this.name == null) {
+            if (other.name != null) {
+                return false;
+            }
+        } else if (!this.name.equals(other.name)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Find the row for a specified genome.
+     *
+     * @param genomeId	ID of genome whose row is desired
+     *
+     * @return the row for that genome, or NULL if none
+     */
+    public Row getRowOf(String genomeId) {
+        return this.spreadsheet.get(genomeId);
     }
 }

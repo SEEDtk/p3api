@@ -24,15 +24,17 @@ import org.theseed.proteins.RoleMap;
 class TestCoreSubsystem {
 
     protected static final String[] SUB_NAMES = new String[] { "Citrate_Metabolism", "Cluster_with_dapF",
-            "Histidine_Biosynthesis", "ZZ_gjo_need_homes_3", "2-oxoisovalerate_to_2-isopropyl-3-oxosuccinate_module" };
+            "Histidine_Biosynthesis", "ZZ_gjo_need_homes_3", "2-oxoisovalerate_to_2-isopropyl-3-oxosuccinate_module",
+            "Biosynthesis_of_Arabinogalactan_in_Mycobacteria"};
     protected static final String[] REAL_NAMES = new String[] { "Citrate Metabolism", "Cluster with dapF",
-            "Histidine Biosynthesis", "ZZ gjo need homes 3", "2-oxoisovalerate to 2-isopropyl-3-oxosuccinate module" };
+            "Histidine Biosynthesis", "ZZ gjo need homes 3", "2-oxoisovalerate to 2-isopropyl-3-oxosuccinate module",
+            "Biosynthesis of Arabinogalactan in Mycobacteria"};
 
     @Test
     void testCoreSubsystemLoad() throws IOException, ParseFailureException {
         RoleMap roleMap = RoleMap.load(new File("data/ss_test/Subsystems", "core.roles.in.subsystems"));
-        CoreSubsystem[] subs = new CoreSubsystem[5];
-        for (int subIdx = 0; subIdx < 4; subIdx++) {
+        CoreSubsystem[] subs = new CoreSubsystem[6];
+        for (int subIdx = 0; subIdx < 6; subIdx++) {
             File inDir = new File("data/ss_test/Subsystems", SUB_NAMES[subIdx]);
             subs[subIdx] = new CoreSubsystem(inDir, roleMap);
             assertThat(subs[subIdx].getName(), equalTo(REAL_NAMES[subIdx]));
@@ -95,8 +97,6 @@ class TestCoreSubsystem {
         assertThat(sub.getDescription(), equalTo(" Ubiquinone (Coenzyme Q) functions in the respiratory electron transport chain and serves as a lipophilic antioxidant. Ubiquinone is an acceptor of electrons from many cellular dehydrogenases involved in the oxidative metabolism of dihydroorotate, choline, fatty acyl-CoA, glycerolphosphate, sarcosine, and dimethylglycine .\n"
                 + " The UQ biosynthetic enzymes may constitute a complex that is tightly bound to the membrane.\n"
                 + "   In the biosythetic pathway the nucleus is derived from the shikimate pathway via chorismate in bacteria or tyrosin in higher eukaryotes. The prenyl side chain is derived from prenyl diphosphate (prenyl PPi) and the methyl groups are derived from S-adenosylmethionine.\n"
-                + "\n"
-                + "\n"
                 + ""));
         // Test the role helpers.
         assertThat(sub.getRoleId("Histidinol-phosphatase [alternative form] (EC 3.1.3.15)"), equalTo("HistPhosAlteForm"));
@@ -129,13 +129,41 @@ class TestCoreSubsystem {
                 assertThat(sub.getName(), sub.isGood(), equalTo(false));
             }
         }
+        // Now we check Cluster with dapF, that has no rules, to verify that.
+        sub = subs[1];
+        assertThat(sub.getName(), equalTo("Cluster with dapF"));
+        assertThat(sub.hasRules(), equalTo(false));
+        // We will use Biosynthesis of Arbainogalactan to test rulebits.
+        sub = subs[5];
+        CoreSubsystem.Row row = sub.getRowOf("83332.1");
+        assertThat(row, not(nullValue()));
+        RuleBits row83332_1 = new RuleBits(row);
+        assertThat(row83332_1.size(), equalTo(14));
+        RuleBits row362242_7 = new RuleBits(sub.getRowOf("362242.7"));
+        assertThat(row362242_7, equalTo(row83332_1));
+        assertThat(row83332_1.subsumeCompare(row362242_7), equalTo(-1));
+        assertThat(row83332_1.compareTo(row362242_7), equalTo(0));
+        assertThat(row362242_7.subsumeCompare(row83332_1), equalTo(-1));
+        assertThat(row362242_7.compareTo(row83332_1), equalTo(0));
+        RuleBits row350058_5 = new RuleBits(sub.getRowOf("350058.5"));
+        assertThat(row350058_5.size(), equalTo(13));
+        assertThat(row350058_5.subsumeCompare(row83332_1), equalTo(-1));
+        assertThat(row83332_1.subsumeCompare(row350058_5), equalTo(1));
+        assertThat(row350058_5.compareTo(row83332_1), greaterThan(0));
+        assertThat(row83332_1.compareTo(row350058_5), lessThan(0));
+        assertThat(row350058_5.compareTo(row362242_7), greaterThan(0));
+        assertThat(row362242_7.compareTo(row350058_5), lessThan(0));
+        RuleBits row257309_1 = new RuleBits(sub.getRowOf("257309.1"));
+        assertThat(row257309_1.size(), equalTo(10));
+        assertThat(row257309_1.subsumeCompare(row83332_1), equalTo(0));
+        assertThat(row83332_1.subsumeCompare(row257309_1), equalTo(0));
     }
 
     @Test
     void testSubsystemList() throws IOException {
         // Verify that we find four subsystems directories.
         List<File> subs = CoreSubsystem.getSubsystemDirectories(new File("data", "ss_test"));
-        assertThat(subs.size(), equalTo(5));
+        assertThat(subs.size(), equalTo(6));
         List<String> subNames = subs.stream().map(x -> x.getName()).collect(Collectors.toList());
         assertThat(subNames, containsInAnyOrder(SUB_NAMES));
         // Verify that all found directories have spreadsheets.
