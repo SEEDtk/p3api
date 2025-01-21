@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * This object contains the bitmap for a particular variant specification. It provides methods for translating
@@ -167,6 +169,32 @@ public class RuleBits implements Comparable<RuleBits> {
         return retVal;
     }
 
+    /**
+     * Determine if this rulebit set matches one of the sets in a list.
+     *
+     * @param ruleList	collection of rulebit sets
+     *
+     * @return TRUE if this set matches at least one item in the list, else FALSE
+     */
+    public boolean matches(Collection<RuleBits> ruleList) {
+        boolean retVal = ruleList.stream().anyMatch(x -> x.subsumeCompare(this) < 0);
+        return retVal;
+    }
+
+
+    /**
+     * Convert this role set into a string, omitting roles in a specified common set.
+     *
+     * @param common	rulebit set for the common roles to omit
+     */
+    public String ruleString(RuleBits common) {
+        final int width = this.parent.getRoleCount();
+        String retVal = IntStream.range(0, width)
+                .filter(i -> ! common.roleBits.get(i) && this.roleBits.get(i))
+                .mapToObj(i -> this.parent.getRoleAbbr(i)).collect(Collectors.joining(" and "));
+        return retVal;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -200,6 +228,13 @@ public class RuleBits implements Comparable<RuleBits> {
             return false;
         }
         return true;
+    }
+
+    /**
+     * @return TRUE if there are no bits set in this rule map
+     */
+    public boolean isEmpty() {
+        return this.size == 0;
     }
 
 }

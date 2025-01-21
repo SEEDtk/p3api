@@ -12767,3 +12767,6 @@ PiliNTermMethLead	x	Pilin N-terminal methyltransferase/leader peptidase (prepili
 ClosMutsRelaProt	x	Clostridial MutS2-related protein
 PutrEfflAbcTranPerm	x	Putrescine efflux ABC transporter, permease protein SapB
 AtpDepeEfflPumpEsse	x	ATP-dependent efflux pump essential for phthiocerol dimycocerosates translocation, ATP-binding protein DrrA-like
+DecaBetaDErytPent	x	Decaprenylphospho-beta-D-erythro-pentofuranosid-2-ulose 2-reductase DprE2 (EC 1.1.1.333)
+Gala5OArab	x	Galactan 5-O-arabinofuranosyltransferase (EC 2.4.2.46)
+DecaPhosPhos	x	Decaprenyl-phosphate phosphoribosyltransferase (EC 2.4.2.45)

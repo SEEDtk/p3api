@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -35,6 +36,7 @@ import org.theseed.io.MarkerFile;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.proteins.Role;
 import org.theseed.proteins.RoleMap;
+import org.theseed.subsystems.VariantId;
 
 import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -96,6 +98,8 @@ public class CoreSubsystem {
     private String note;
     /** variant description map */
     private Map<String, String> variantNotes;
+    /** original directory */
+    private File subDir;
     /** list of feature types used in subsystems */
     public static final String[] FID_TYPES = new String[] { "opr", "aSDomain", "pbs", "rna", "rsw", "sRNA", "peg" };
     /** common representation of an empty cell */
@@ -191,6 +195,13 @@ public class CoreSubsystem {
         }
 
         /**
+         * @return TRUE if this is an inactive variant, else FALSE
+         */
+        public boolean isInactive() {
+            return VariantId.computeActiveLevel(this.getVariantCode()).contentEquals("inactive");
+        }
+
+        /**
          * @return the list of columns
          */
         public List<Set<String>> getColumns() {
@@ -202,6 +213,21 @@ public class CoreSubsystem {
          */
         public CoreSubsystem getParent() {
             return CoreSubsystem.this;
+        }
+
+        /**
+         * @return the set of roles in this row
+         */
+        public Set<String> getRoles() {
+            Set<String> retVal = new TreeSet<String>();
+            for (int i = 0; i < this.columns.size(); i++) {
+                if (! this.columns.get(i).isEmpty()) {
+                    String roleId = CoreSubsystem.this.getRoleId(CoreSubsystem.this.getRole(i));
+                    if (roleId != null)
+                        retVal.add(roleId);
+                }
+            }
+            return retVal;
         }
 
     }
@@ -216,6 +242,7 @@ public class CoreSubsystem {
      * @throws ParseFailureException
      */
     public CoreSubsystem(File inDir, RoleMap roleDefs) throws IOException, ParseFailureException {
+        this.subDir = inDir;
         // Clear the error counters.
         this.badRoles = 0;
         this.badIds = new TreeSet<String>();
@@ -713,6 +740,36 @@ public class CoreSubsystem {
         retVal.addAll(this.variantRules.keySet());
         // Return the full set.
         return retVal;
+    }
+
+    /**
+     * Create the rule files for this subsystem and compile the rules into this object.
+     *
+     * @throws IOException
+     * @throws ParseFailureException
+     */
+    public void createRules() throws IOException, ParseFailureException {
+        if (this.hasRules())
+            throw new IOException("Cannot create rules for a subsystem with existing rules.");
+        // Create the rule generator.
+        log.info("Generating rules for {}.", this.name);
+        RuleGenerator ruleGen = new RuleGenerator(this);
+        List<String> variantRules = ruleGen.getVariantRules();
+        List<String> definitions = ruleGen.getGroupDefinitions();
+        log.info("Writing rules to {}.", this.subDir);
+        final File defFile = new File(this.subDir, "checkvariant_definitions");
+        try (PrintWriter defStream = new PrintWriter(defFile)) {
+            for (String definition : definitions)
+                defStream.println(definition);
+        }
+        final File ruleFile = new File(this.subDir, "checkvariant_rules");
+        try (PrintWriter ruleStream = new PrintWriter(ruleFile)) {
+            for (String rule : variantRules)
+                ruleStream.println(rule);
+        }
+        log.info("Compiling rules.");
+        this.readRules(this.subDir, "checkvariant_definitions", this.ruleMap);
+        this.readRules(this.subDir, "checkvariant_rules", this.variantRules);
     }
 
     /**
