@@ -4,8 +4,8 @@
 package org.theseed.ncbi;
 
 import java.io.IOException;
-import java.net.URL;
-
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.fluent.Request;
@@ -69,8 +69,12 @@ public class PaperConnection extends Connection {
                 this.throwHttpError("Too many redirects.");
             String newUrl = resp.getLastHeader("Location").getValue();
             if (! newUrl.startsWith("http")) {
-                URL parsedUrl = new URL(this.paperUrl);
-                this.paperUrl = parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + newUrl;
+            	try {
+	                URI parsedUrl = new URI(this.paperUrl);
+	                this.paperUrl = parsedUrl.getScheme() + "://" + parsedUrl.getHost() + newUrl;
+            	} catch (URISyntaxException e) {
+            		throw new ParseException(e.toString());
+            	}
             } else
                 this.paperUrl = newUrl;
             Request newReq = this.requestBuilder(this.paperUrl);
