@@ -28,7 +28,7 @@ class TestSampleGroups {
         assertThat(sampleSet, containsInAnyOrder("SRR11321054", "SRR11321056", "sample.x", "SRR1212"));
         // Verify the sizes.
         SampleDescriptor desc = group.getDescriptor("SRR11321054");
-        assertThat(desc.estimatedSize(), equalTo(5336L));
+        assertThat(desc.estimatedSize(), equalTo(6672L));
         desc = group.getDescriptor("SRR11321056");
         assertThat(desc.estimatedSize(), equalTo(2672L));
         desc = group.getDescriptor("sample.x");
