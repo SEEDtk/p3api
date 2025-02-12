@@ -4,7 +4,6 @@
 package org.theseed.p3api;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -15,16 +14,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
-import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +29,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
-import com.github.cliftonlabs.json_simple.JsonArray;
-import com.github.cliftonlabs.json_simple.JsonKey;
+
 import com.github.cliftonlabs.json_simple.JsonObject;
-import com.github.cliftonlabs.json_simple.Jsoner;
 
 
 
@@ -49,12 +42,19 @@ import com.github.cliftonlabs.json_simple.Jsoner;
  * @author Bruce Parrello
  *
  */
-public class P3Connection extends Connection {
+public class P3Connection extends SolrConnection {
 
     // FIELDS
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(Connection.class);
-
+    /** security token */
+    private String authToken;
+    /** default URL */
+    private static final String DATA_API_URL = "https://p3.theseed.org/services/data_api/";
+    /** taxonomy URL format */
+    private static final String NCBI_TAX_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=%d";
+    /** list of domains for prokaryotes */
+    public static final List<String> DOMAINS = Arrays.asList("Bacteria", "Archaea");
     /**
      * description of the major SOLR tables
      */
@@ -100,152 +100,6 @@ public class P3Connection extends Connection {
 
     }
 
-    /**
-     * Internal class for creating Json keys on the fly.
-     */
-    public static class KeyBuffer implements JsonKey {
-
-        String keyName;
-        Object defaultValue;
-
-        public KeyBuffer(String name, Object def) {
-            this.keyName = name;
-            this.defaultValue = def;
-        }
-
-        @Override
-        public String getKey() {
-            return this.keyName;
-        }
-
-        @Override
-        public Object getValue() {
-            return this.defaultValue;
-        }
-
-        /**
-         * Use this key object with the specified name.
-         *
-         * @param newName	new name to assign to the key
-         *
-         * @return the key object for use as a parameter to a typed get
-         */
-        public KeyBuffer use(String newName) {
-            this.keyName = newName;
-            return this;
-        }
-
-    }
-
-    // FIELDS
-    /** data API url */
-    protected String url;
-    /** security token */
-    private String authToken;
-    /** chunk size */
-    private int chunkSize;
-    /** name of the feature files */
-    public static final String JSON_FILE_NAME = "genome_feature.json";
-    /** default URL */
-    private static final String DATA_API_URL = "https://p3.theseed.org/services/data_api/";
-    /** taxonomy URL format */
-    private static final String NCBI_TAX_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=%d";
-    /** pattern for extracting return ranges */
-    private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
-    /** list of domains for prokaryotes */
-    public static final List<String> DOMAINS = Arrays.asList("Bacteria", "Archaea");
-    /** genome dump directory filter */
-    public static final FileFilter GENOME_FILTER = new FileFilter() {
-
-        @Override
-        public boolean accept(File pathname) {
-            File gFile = new File(pathname, JSON_FILE_NAME);
-            return gFile.canRead();
-        }
-
-    };
-    /** empty string list */
-    private static final JsonArray EMPTY_LIST = new JsonArray();
-
-    /**
-     * Extract a string from a record field.
-     *
-     * @param record	source record
-     * @param keyName	name of the field containing a string
-     *
-     * @return the string value of the field
-     */
-    public static String getString(JsonObject record, String keyName) {
-        KeyBuffer stringBuffer = new KeyBuffer(keyName, "");
-        String retVal = record.getStringOrDefault(stringBuffer);
-        return retVal;
-    }
-
-    /**
-     * Extract an integer from a record field.
-     *
-     * @param record	source record
-     * @param keyName	name of the field containing an integer number
-     *
-     * @return the integer value of the field
-     */
-    public static int getInt(JsonObject record, String keyName) {
-        KeyBuffer intBuffer = new KeyBuffer(keyName, 0);
-        int retVal = record.getIntegerOrDefault(intBuffer);
-        return retVal;
-    }
-
-    /**
-     * Extract a floating-point number from a record field.
-     *
-     * @param record	source record
-     * @param keyName	name of the field containing a floating-point number
-     *
-     * @return the floating-point value of the field
-     */
-    public static double getDouble(JsonObject record, String keyName) {
-        KeyBuffer doubleBuffer = new KeyBuffer(keyName, 0.0);
-        double retVal = record.getDoubleOrDefault(doubleBuffer);
-        return retVal;
-    }
-
-    /**
-     * Extract a list of strings from a record field.
-     *
-     * @param record	source record
-     * @param keyName	name of the field containing the strings
-     *
-     * @return an array of the strings in the field
-     */
-    public static String[] getStringList(JsonObject record, String keyName) {
-        KeyBuffer listBuffer = new KeyBuffer(keyName, EMPTY_LIST);
-        JsonArray list = record.getCollectionOrDefault(listBuffer);
-        int length = list.size();
-        String[] retVal = new String[length];
-        for (int i = 0; i < length; i++) {
-            retVal[i] = list.getString(i);
-        }
-        return retVal;
-    }
-
-    /**
-     * Extract a list of integers from a record field.
-     *
-     * @param record	record containing the field
-     * @param keyName		name of the field containing the numbers
-     *
-     * @return an array of the integers in the field
-     */
-    public static int[] getIntegerList(JsonObject record, String keyName) {
-        KeyBuffer listBuffer = new KeyBuffer(keyName, EMPTY_LIST);
-        JsonArray list = record.getCollectionOrDefault(listBuffer);
-        int length = list.size();
-        int[] retVal = new int[length];
-        for (int i = 0; i < length; i++) {
-            retVal[i] = list.getInteger(i);
-        }
-        return retVal;
-    }
 
     /**
      * Initialize a connection for the currently-logged-in user and the default URL.
@@ -296,11 +150,8 @@ public class P3Connection extends Connection {
      * @param token		an authorization token, or NULL if the connection is to be unauthorized.
      */
     protected void setup(String token, String url) {
-        this.url = url;
-        // Insure that it ends in a slash.
-        if (! StringUtils.endsWith(this.url, "/")) this.url += "/";
-        // Set the default chunk size and build the parm buffer.
-        this.chunkSize = 25000;
+    	// Set up the URL and the chunk size.
+        this.apiSetup(url);
         // If the user is not logged in, this will be null and we won't be able to access
         // private genomes.
         this.authToken = token;
@@ -316,6 +167,7 @@ public class P3Connection extends Connection {
      * @return a JsonArray of the desired results
      */
     public List<JsonObject> query(Table table, String fields, String... criteria) {
+    	this.clearBuffer();
         this.bufferAppend("select(", fields, ")");
         this.addParameters(criteria);
         Request request = this.requestBuilder(table.getName());
@@ -371,7 +223,7 @@ public class P3Connection extends Connection {
         List<JsonObject> records = getRecords(table, keyName, keys, allFields);
         Map<String, JsonObject> retVal = new HashMap<String, JsonObject>(records.size());
         for (JsonObject record : records) {
-            retVal.put(P3Connection.getString(record, keyName), record);
+            retVal.put(KeyBuffer.getString(record, keyName), record);
         }
         return retVal;
     }
@@ -443,67 +295,6 @@ public class P3Connection extends Connection {
     }
 
     /**
-     * Extract the response for a request.
-     *
-     * @param request	request to send to PATRIC
-     *
-     * @return a JSON object containing the results of the request
-     */
-    private List<JsonObject> getResponse(Request request) {
-        List<JsonObject> retVal = new ArrayList<JsonObject>();
-        // Set up to loop through the chunks of response.
-        this.setChunkPosition(0);
-        boolean done = false;
-        while (! done) {
-            request.bodyString(String.format("%s&limit(%d,%d)", this.getBasicParms(), this.chunkSize, this.getChunkPosition()),
-                    ContentType.APPLICATION_FORM_URLENCODED);
-            this.clearBuffer();
-            long start = System.currentTimeMillis();
-            HttpResponse resp = this.submitRequest(request);
-            // We have a good response. Check the result range.
-            Header range = resp.getFirstHeader("content-range");
-            if (range == null) {
-                // If there is no range data, we are done.
-                done = true;
-            } else {
-                // Parse out the range of values returned.
-                String value = range.getValue();
-                Matcher rMatcher = RANGE_INFO.matcher(value);
-                if (rMatcher.matches()) {
-                    this.setChunkPosition(Integer.valueOf(rMatcher.group(1)));
-                    int total = Integer.valueOf(rMatcher.group(2));
-                    done = (this.getChunkPosition() >= total);
-                } else {
-                    log.debug("Range string did not match: \"{}\".", value);
-                    done = true;
-                }
-            }
-            String jsonString;
-            try {
-                jsonString = EntityUtils.toString(resp.getEntity());
-            } catch (IOException e) {
-                throw new RuntimeException("HTTP conversion error: " + e.toString());
-            }
-            JsonArray data = Jsoner.deserialize(jsonString, (JsonArray) null);
-            if (data == null) {
-                throw new RuntimeException("Unexpected JSON response: " + StringUtils.substring(jsonString, 0, 50));
-            } else {
-                int count = 0;
-                for (Object record : data) {
-                    retVal.add((JsonObject) record);
-                    count++;
-                }
-                if (log.isDebugEnabled()) {
-                    String flag = (done ? "" : " (partial result)");
-                    log.debug(String.format("%d records returned after %2.3f seconds%s.", count,
-                            (System.currentTimeMillis() - start) / 1000.0, flag));
-                }
-            }
-        }
-        return retVal;
-    }
-
-    /**
      * Create a request to get data from the specified table.
      *
      * @param table		name of the target table
@@ -511,7 +302,7 @@ public class P3Connection extends Connection {
      * @return a request for the specified table
      */
     protected Request createRequest(String table) {
-        Request retVal = Request.Post(this.url + table);
+        Request retVal = Request.Post(this.getUrl() + table);
         // Denote we want a json response.
         retVal.addHeader("Accept", "application/json");
         // Attach authorization if we have a token.
@@ -662,23 +453,6 @@ public class P3Connection extends Connection {
     public void addAllProkaryotes(Collection<JsonObject> genomes) {
         genomes.addAll(this.getRecords(Table.GENOME, "superkingdom", DOMAINS, "genome_id,genome_name", Criterion.EQ("public", "1"),
                 Criterion.IN("genome_status", "Complete", "WGS")));
-    }
-
-    /**
-     * Clean a string for use in a SOLR query.
-     *
-     * @param string		string to clear
-     *
-     * @return a version of the string with special characters removed
-     */
-    public static String clean(String string) {
-        // Remove quotes and change parens to spaces.
-        String retVal = StringUtils.replaceChars(string, "()'\"", "  ");
-        // Trim spaces on the edge.
-        retVal = StringUtils.trimToEmpty(retVal);
-        // Collapse spaces in the middle.
-        retVal = retVal.replaceAll("\\s+", " ");
-        return retVal;
     }
 
 }

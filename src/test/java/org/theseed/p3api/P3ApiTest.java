@@ -77,47 +77,47 @@ public class P3ApiTest
     public void testConnection() {
         P3Connection p3 = new P3Connection();
         JsonObject genome = p3.getRecord(Table.GENOME, "1798516.3", "genome_id,genome_name,genome_length,gc_content,taxon_lineage_names");
-        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1798516.3"));
-        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
-        assertThat(P3Connection.getInt(genome, "genome_length"), equalTo(426361));
-        assertThat(P3Connection.getDouble(genome, "gc_content"), closeTo(55.05, 0.005));
-        String[] taxonomy = P3Connection.getStringList(genome, "taxon_lineage_names");
+        assertThat(KeyBuffer.getString(genome, "genome_id"), equalTo("1798516.3"));
+        assertThat(KeyBuffer.getString(genome, "genome_name"), equalTo("Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
+        assertThat(KeyBuffer.getInt(genome, "genome_length"), equalTo(426361));
+        assertThat(KeyBuffer.getDouble(genome, "gc_content"), closeTo(55.05, 0.005));
+        String[] taxonomy = KeyBuffer.getStringList(genome, "taxon_lineage_names");
         assertThat(taxonomy, arrayContaining("cellular organisms", "Bacteria", "Bacteria incertae sedis", "Bacteria candidate phyla",
                 "Patescibacteria group", "Parcubacteria group", "Candidatus Kaiserbacteria",
                 "Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
         List<JsonObject> genomes = p3.query(Table.GENOME, "genome_id,genome_name,contigs", Criterion.IN("genome_id", "1803813.4", "1803814.4"));
         assertThat(genomes.size(), equalTo(2));
         genome = genomes.get(0);
-        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
-        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
-        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(177));
+        assertThat(KeyBuffer.getString(genome, "genome_id"), equalTo("1803813.4"));
+        assertThat(KeyBuffer.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
+        assertThat(KeyBuffer.getInt(genome, "contigs"), equalTo(177));
         genome = genomes.get(1);
-        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
-        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
-        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(194));
+        assertThat(KeyBuffer.getString(genome, "genome_id"), equalTo("1803814.4"));
+        assertThat(KeyBuffer.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
+        assertThat(KeyBuffer.getInt(genome, "contigs"), equalTo(194));
         Collection<String> idList = new ArrayList<String>();
         idList.add("1803813.4");
         idList.add("1803814.4");
         Map<String, JsonObject> genomeMap = p3.getRecords(Table.GENOME, idList, "genome_id,genome_name,contigs");
         genome = genomeMap.get("1803813.4");
-        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803813.4"));
-        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
-        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(177));
+        assertThat(KeyBuffer.getString(genome, "genome_id"), equalTo("1803813.4"));
+        assertThat(KeyBuffer.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70"));
+        assertThat(KeyBuffer.getInt(genome, "contigs"), equalTo(177));
         genome = genomeMap.get("1803814.4");
-        assertThat(P3Connection.getString(genome, "genome_id"), equalTo("1803814.4"));
-        assertThat(P3Connection.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
-        assertThat(P3Connection.getInt(genome, "contigs"), equalTo(194));
+        assertThat(KeyBuffer.getString(genome, "genome_id"), equalTo("1803814.4"));
+        assertThat(KeyBuffer.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
+        assertThat(KeyBuffer.getInt(genome, "contigs"), equalTo(194));
         List<JsonObject> features = p3.query(Table.FEATURE, "patric_id,product", Criterion.EQ("product",
                 "LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"),
                 Criterion.EQ("genome_id", "1798516.3"));
         assertThat(features.size(), equalTo(1));
         JsonObject feature = features.get(0);
-        assertThat(P3Connection.getString(feature, "patric_id"), equalTo("fig|1798516.3.peg.45"));
-        assertThat(P3Connection.getString(feature, "product"),
+        assertThat(KeyBuffer.getString(feature, "patric_id"), equalTo("fig|1798516.3.peg.45"));
+        assertThat(KeyBuffer.getString(feature, "product"),
                 equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
         JsonObject feature2 = p3.getRecord(Table.FEATURE, "fig|1798516.3.peg.45", "patric_id,product");
-        assertThat(P3Connection.getString(feature2, "patric_id"), equalTo("fig|1798516.3.peg.45"));
-        assertThat(P3Connection.getString(feature2, "product"),
+        assertThat(KeyBuffer.getString(feature2, "patric_id"), equalTo("fig|1798516.3.peg.45"));
+        assertThat(KeyBuffer.getString(feature2, "product"),
                 equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
         Collection<String> genomeList = new ArrayList<String>();
         genomeList.add("226186.12");
@@ -125,9 +125,9 @@ public class P3ApiTest
         List<JsonObject> contigs = p3.getRecords(Table.CONTIG, "genome_id", genomeList, "sequence_id,length");
         assertThat(contigs.size(), equalTo(5));
         for (JsonObject contig : contigs) {
-            String genomeId = P3Connection.getString(contig, "genome_id");
-            String seqId = P3Connection.getString(contig, "sequence_id");
-            int len = P3Connection.getInt(contig, "length");
+            String genomeId = KeyBuffer.getString(contig, "genome_id");
+            String seqId = KeyBuffer.getString(contig, "sequence_id");
+            int len = KeyBuffer.getInt(contig, "length");
             switch (genomeId) {
             case "226186.12" :
                 switch (seqId) {
@@ -164,8 +164,8 @@ public class P3ApiTest
                     Criterion.EQ("product", "Phenylalanyl-tRNA synthetase alpha chain"));
             assertThat(features.size(), equalTo(13));
             for (JsonObject feat : features) {
-                String fid = P3Connection.getString(feat, "patric_id");
-                String fam = P3Connection.getString(feat, "pgfam_id");
+                String fid = KeyBuffer.getString(feat, "patric_id");
+                String fam = KeyBuffer.getString(feat, "pgfam_id");
                 switch (fid) {
                 case "fig|84725.3.peg.3359" :
                 case "fig|86473.136.peg.768" :
@@ -320,12 +320,12 @@ public class P3ApiTest
         P3Connection p3 = new P3Connection();
         List<JsonObject> records = p3.query(Table.GENOME, "genome_id,genome_length", Criterion.GE("genome_length",10000000));
         for (JsonObject record : records)
-            assertThat(P3Connection.getInt(record, "genome_length"), greaterThanOrEqualTo(10000000));
+            assertThat(KeyBuffer.getInt(record, "genome_length"), greaterThanOrEqualTo(10000000));
         assertThat(records.size(), greaterThan(100));
         records = p3.query(Table.GENOME, "genome_id,genome_length",
                 Criterion.EQ("superkingdom", "Bacteria"), Criterion.LE("genome_length",100000));
         for (JsonObject record : records)
-            assertThat(P3Connection.getInt(record, "genome_length"), lessThanOrEqualTo(100000));
+            assertThat(KeyBuffer.getInt(record, "genome_length"), lessThanOrEqualTo(100000));
         assertThat(records.size(), greaterThan(100));
     }
 

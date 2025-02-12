@@ -22,6 +22,7 @@ import org.theseed.io.TabbedLineReader;
 import org.theseed.io.TabbedLineReader.Line;
 import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.IdClearinghouse;
+import org.theseed.p3api.KeyBuffer;
 import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
@@ -270,14 +271,14 @@ public class ViprGenome extends Genome {
                 gc = 1;
             } else {
                 // Build the taxonomic lineage.
-                int[] ids = P3Connection.getIntegerList(taxonRecord, "lineage_ids");
-                String[] names = P3Connection.getStringList(taxonRecord, "lineage_names");
-                String[] ranks = P3Connection.getStringList(taxonRecord, "lineage_ranks");
+                int[] ids = KeyBuffer.getIntegerList(taxonRecord, "lineage_ids");
+                String[] names = KeyBuffer.getStringList(taxonRecord, "lineage_names");
+                String[] ranks = KeyBuffer.getStringList(taxonRecord, "lineage_ranks");
                 retVal = new TaxItem[ids.length];
                 for (int i = 0; i < retVal.length; i++)
                     retVal[i] = new TaxItem(ids[i], names[i], ranks[i]);
                 // Compute the genetic code.
-                gc = P3Connection.getInt(taxonRecord, "genetic_code");
+                gc = KeyBuffer.getInt(taxonRecord, "genetic_code");
             }
             this.xlateMap.put(taxId, new DnaTranslator(gc));
             return retVal;

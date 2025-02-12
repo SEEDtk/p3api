@@ -45,8 +45,8 @@ public class P3TaxData {
                 "taxon_id,genetic_code", "eq(taxon_rank,species)");
         this.species = new HashMap<String, Integer>(taxonList.size());
         for (JsonObject taxonData : taxonList) {
-            String speciesId = P3Connection.getString(taxonData, "taxon_id");
-            int gc = P3Connection.getInt(taxonData, "genetic_code");
+            String speciesId = KeyBuffer.getString(taxonData, "taxon_id");
+            int gc = KeyBuffer.getInt(taxonData, "genetic_code");
             this.species.put(speciesId, gc);
         }
         log.info("{} species tabulated.", this.species.size());
@@ -66,7 +66,7 @@ public class P3TaxData {
     public static Set<String> getRankSet(P3Connection p3, String rank) {
         List<JsonObject> taxonList;
         taxonList = p3.query(Table.TAXONOMY, "taxon_id", "eq(taxon_rank," + rank + ")");
-        Set<String> retVal = taxonList.stream().map(x -> P3Connection.getString(x, "taxon_id")).collect(Collectors.toSet());
+        Set<String> retVal = taxonList.stream().map(x -> KeyBuffer.getString(x, "taxon_id")).collect(Collectors.toSet());
         log.info("{} {} taxons tabulated.", retVal.size(), rank);
         return retVal;
     }

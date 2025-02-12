@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.genome.TaxItem;
-import org.theseed.p3api.P3Connection.KeyBuffer;
 import org.theseed.p3api.P3Connection.Table;
 import org.theseed.roles.RoleUtilities;
 
@@ -160,7 +159,7 @@ public class P3Genome extends Genome {
             if (lineages.length > 0) {
                 JsonObject taxData = p3.getRecord(Table.TAXONOMY, Integer.toString(lineages[lineages.length - 1]), "genetic_code");
                 // Some of the genomes have invalid taxonomy data, so we have to check here.
-                if (taxData != null) code = P3Connection.getInt(taxData, "genetic_code");
+                if (taxData != null) code = org.theseed.p3api.KeyBuffer.getInt(taxData, "genetic_code");
             }
             retVal.setGeneticCode(code);
             // Process the contigs.  If the detail level is FULL or CONTIGS, we get the DNA, too.
@@ -183,22 +182,22 @@ public class P3Genome extends Genome {
                 String ssuRRna = "";
                 // Store the features.  Note we skip the ones with empty IDs.
                 for (JsonObject fid : fidList) {
-                    String id = P3Connection.getString(fid, "patric_id");
+                    String id = org.theseed.p3api.KeyBuffer.getString(fid, "patric_id");
                     if (id != null && id.length() > 0) {
-                        Feature feat = new Feature(P3Connection.getString(fid, "patric_id"), P3Connection.getString(fid, "product"),
-                                P3Connection.getString(fid, "sequence_id"), P3Connection.getString(fid, "strand"),
-                                P3Connection.getInt(fid, "start"), P3Connection.getInt(fid, "end"));
-                        feat.setPlfam(P3Connection.getString(fid, "plfam_id"));
-                        feat.setPgfam(P3Connection.getString(fid, "pgfam_id"));
-                        feat.setFigfam(P3Connection.getString(fid, "figfam_id"));
-                        feat.formAlias("gi|", P3Connection.getString(fid, "gi"));
-                        feat.formAlias("", P3Connection.getString(fid, "gene"));
-                        feat.formAlias("", P3Connection.getString(fid, "refseq_locus_tag"));
-                        String geneId = P3Connection.getString(fid, "gene_id");
+                        Feature feat = new Feature(org.theseed.p3api.KeyBuffer.getString(fid, "patric_id"), org.theseed.p3api.KeyBuffer.getString(fid, "product"),
+                                org.theseed.p3api.KeyBuffer.getString(fid, "sequence_id"), org.theseed.p3api.KeyBuffer.getString(fid, "strand"),
+                                org.theseed.p3api.KeyBuffer.getInt(fid, "start"), org.theseed.p3api.KeyBuffer.getInt(fid, "end"));
+                        feat.setPlfam(org.theseed.p3api.KeyBuffer.getString(fid, "plfam_id"));
+                        feat.setPgfam(org.theseed.p3api.KeyBuffer.getString(fid, "pgfam_id"));
+                        feat.setFigfam(org.theseed.p3api.KeyBuffer.getString(fid, "figfam_id"));
+                        feat.formAlias("gi|", org.theseed.p3api.KeyBuffer.getString(fid, "gi"));
+                        feat.formAlias("", org.theseed.p3api.KeyBuffer.getString(fid, "gene"));
+                        feat.formAlias("", org.theseed.p3api.KeyBuffer.getString(fid, "refseq_locus_tag"));
+                        String geneId = org.theseed.p3api.KeyBuffer.getString(fid, "gene_id");
                         if (geneId.length() > 0 && ! geneId.contentEquals("0"))
                             feat.formAlias("GeneID:", geneId);
                         // Add in the GO terms.
-                        String[] goTermList = P3Connection.getStringList(fid, "go");
+                        String[] goTermList = org.theseed.p3api.KeyBuffer.getStringList(fid, "go");
                         for (String goString : goTermList)
                             feat.addGoTerm(goString);
                         // Process the translation according to the feature type.

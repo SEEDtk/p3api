@@ -73,7 +73,7 @@ public class P3MD5Hex extends MD5Hex {
         log.debug("Processing {} contigs.", contigObjects.size());
         for (JsonObject contigObject : contigObjects) {
             Contig contig = new Contig(contigObject, 11);
-            String genomeId = P3Connection.getString(contigObject, "genome_id");
+            String genomeId = KeyBuffer.getString(contigObject, "genome_id");
             genomeMap.get(genomeId).add(contig);
         }
         // Process each genome that had contigs.
