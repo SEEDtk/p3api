@@ -14,7 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 /**
  * A FASTA sample group contains a file or subdirectory for each sample.  For a subdirectory, the subdirectory name
- * is the sample name, and the sample itself is in a file named "contig.fasta" in that directory.  For a file,
+ * is the sample name, and the sample itself is in a file named "contigs.fasta" in that directory.  For a file,
  * the file name must end in ".fna", ".fa", or ".fasta", and the sample ID is the base name of the file name
  * (without the suffix).
  *
