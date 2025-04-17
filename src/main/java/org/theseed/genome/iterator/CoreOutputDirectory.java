@@ -7,17 +7,16 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.genome.Annotation;
@@ -170,10 +169,17 @@ public class CoreOutputDirectory implements IGenomeTarget {
                         protStream.write(seq);
                     }
                     // Now write the TBL record.
-                    Collection<String> aliasList = feat.getAliases();
+                    Map<String, NavigableSet<String>> aliasMap = feat.getAliasMap();
                     String aliases = "";
-                    if (aliasList != null && aliasList.size() > 1)
-                        aliases = StringUtils.join(aliasList, "\t");
+                    if (aliasMap != null && aliasMap.size() > 0) {
+                        List<String> aliasList = new ArrayList<String>(aliasMap.size());
+                        for (var aliasEntry : aliasMap.entrySet()) {
+                            String aliasType = aliasEntry.getKey();
+                            String prefix = (aliasType.equals("misc") ? "" : aliasType + "|");
+                            for (String alias : aliasEntry.getValue())
+                                aliasList.add(prefix + alias);
+                        }
+                    }
                     Location loc = feat.getLocation();
                     tblStream.println(fid + "\t" + loc.toSeedString() + "\t" + aliases);
                 }
