@@ -217,6 +217,13 @@ public abstract class GenomeSource implements Iterable<Genome> {
             public GenomeSource create(File inFile) throws IOException, ParseFailureException {
                 return this.setup(new CoreInputDirectory(), inFile);
             }
+        },
+        /** load from a BV-BRC genome JSON dump master directory */
+        DUMP {
+            @Override
+            public GenomeSource create(File inFile) throws IOException, ParseFailureException {
+                return this.setup(new JsonDumpDirectory(), inFile);
+            }
         };
 
         /**

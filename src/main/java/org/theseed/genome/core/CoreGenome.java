@@ -294,10 +294,15 @@ public class CoreGenome extends Genome {
                     String function = functionMap.getOrDefault(fid, "");
                     Feature feat = new Feature(fid, function, loc);
                     this.addFeature(feat);
-                    // Check for aliases.
+                    // Check for aliases. Each alias is of the form type|value.
                     Collection<String> aliases = aliasMap.get(fid);
-                    for (String alias : aliases)
-                        feat.addAlias(alias);
+                    for (String alias : aliases) {
+                        String[] parts = StringUtils.split(alias, "|", 2);
+                        if (parts.length == 1)
+                            feat.addAlias("misc", alias);
+                        else
+                            feat.addAlias(parts[0], parts[1]);
+                    }
                     // Check for a protein translation.
                     if (proteinMap.containsKey(fid))
                         feat.setProteinTranslation(proteinMap.get(fid));

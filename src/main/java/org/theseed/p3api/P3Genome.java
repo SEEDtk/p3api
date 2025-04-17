@@ -143,15 +143,7 @@ public class P3Genome extends Genome {
             retVal = new P3Genome(genome_id);
             // Load the taxonomy data.
             Collection<String> taxIDs = genomeData.getCollectionOrDefault(GenomeKeys.TAXON_LINEAGE_IDS);
-            Map<String, JsonObject> taxRecords = p3.getRecords(Table.TAXONOMY, taxIDs, "taxon_id,taxon_name,taxon_rank");
-            List<TaxItem> taxItems = new ArrayList<TaxItem>(taxRecords.size());
-            for (String taxID : taxIDs) {
-                JsonObject taxRecord = taxRecords.get(taxID);
-                // Note that if the taxonomic ID is invalid, we will get NULL from the above query.
-                if (taxRecord != null) {
-                    taxItems.add(new TaxItem(taxRecord));
-                }
-            }
+            List<TaxItem> taxItems = computeTaxItems(p3, taxIDs);
             retVal.p3Store(genomeData, taxItems);
             // Get the genetic code.  It only works if we have a lineage.  We default to 11.
             int code = 11;
@@ -159,7 +151,7 @@ public class P3Genome extends Genome {
             if (lineages.length > 0) {
                 JsonObject taxData = p3.getRecord(Table.TAXONOMY, Integer.toString(lineages[lineages.length - 1]), "genetic_code");
                 // Some of the genomes have invalid taxonomy data, so we have to check here.
-                if (taxData != null) code = org.theseed.p3api.KeyBuffer.getInt(taxData, "genetic_code");
+                if (taxData != null) code = KeyBuffer.getInt(taxData, "genetic_code");
             }
             retVal.setGeneticCode(code);
             // Process the contigs.  If the detail level is FULL or CONTIGS, we get the DNA, too.
@@ -171,78 +163,109 @@ public class P3Genome extends Genome {
                 Collection<JsonObject> fidList = p3.query(Table.FEATURE,
                         "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,na_sequence_md5,plfam_id,pgfam_id,figfam_id,gi,gene,gene_id,refseq_locus_tag,go",
                         Criterion.EQ("genome_id", genome_id), Criterion.EQ("annotation", "PATRIC"));
-                // Set up for protein sequences if we want them.
-                boolean wantSequences = detail.includesProteins();
-                Map<String, JsonObject> proteins = null;
-                if (wantSequences) {
-                    Collection<String> md5Keys = fidList.stream().map(x -> x.getStringOrDefault(AA_MD5)).filter(x -> ! x.isEmpty()).collect(Collectors.toList());
-                    proteins = p3.getRecords(Table.SEQUENCE, md5Keys, "sequence");
-                }
-                // Assume until we prove otherwise that we don't have an SSU rRNA in this genome.
-                String ssuRRna = "";
-                // Store the features.  Note we skip the ones with empty IDs.
-                for (JsonObject fid : fidList) {
-                    String id = org.theseed.p3api.KeyBuffer.getString(fid, "patric_id");
-                    if (id != null && id.length() > 0) {
-                        Feature feat = new Feature(org.theseed.p3api.KeyBuffer.getString(fid, "patric_id"), org.theseed.p3api.KeyBuffer.getString(fid, "product"),
-                                org.theseed.p3api.KeyBuffer.getString(fid, "sequence_id"), org.theseed.p3api.KeyBuffer.getString(fid, "strand"),
-                                org.theseed.p3api.KeyBuffer.getInt(fid, "start"), org.theseed.p3api.KeyBuffer.getInt(fid, "end"));
-                        feat.setPlfam(org.theseed.p3api.KeyBuffer.getString(fid, "plfam_id"));
-                        feat.setPgfam(org.theseed.p3api.KeyBuffer.getString(fid, "pgfam_id"));
-                        feat.setFigfam(org.theseed.p3api.KeyBuffer.getString(fid, "figfam_id"));
-                        feat.formAlias("gi|", org.theseed.p3api.KeyBuffer.getString(fid, "gi"));
-                        feat.formAlias("", org.theseed.p3api.KeyBuffer.getString(fid, "gene"));
-                        feat.formAlias("", org.theseed.p3api.KeyBuffer.getString(fid, "refseq_locus_tag"));
-                        String geneId = org.theseed.p3api.KeyBuffer.getString(fid, "gene_id");
-                        if (geneId.length() > 0 && ! geneId.contentEquals("0"))
-                            feat.formAlias("GeneID:", geneId);
-                        // Add in the GO terms.
-                        String[] goTermList = org.theseed.p3api.KeyBuffer.getStringList(fid, "go");
-                        for (String goString : goTermList)
-                            feat.addGoTerm(goString);
-                        // Process the translation according to the feature type.
-                        switch (feat.getType()) {
-                        case "CDS" :
-                            // This is a protein. Check to see if we are storing the protein translation.
-                            JsonObject protein = null;
-                            if (wantSequences) {
-                                // Here we are storing protein translations for all the features that have them.
-                                protein = proteins.get(fid.getStringOrDefault(AA_MD5));
-                            } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
-                                // We always store the PheS protein.
-                                protein = p3.getRecord(Table.SEQUENCE, fid.getString(AA_MD5), "sequence");
-                            }
-                            if (protein != null)
-                                feat.setProteinTranslation(protein.getStringOrDefault(AA_SEQUENCE));
-                            break;
-                        case "rna" :
-                            // This is an RNA.  Check for the SSU rRNA.
-                            if (feat.getLocation().getLength() > ssuRRna.length() &&
-                                    RoleUtilities.SSU_R_RNA.matcher(feat.getPegFunction()).find()) {
-                                // We need the nucleotide sequence of this RNA feature.
-                                String na_md5 = fid.getString(NA_MD5);
-                                if (na_md5 != null && ! na_md5.isEmpty()) {
-                                    JsonObject dnaSeq = p3.getRecord(Table.SEQUENCE, fid.getString(NA_MD5), "sequence");
-                                    if (dnaSeq != null) {
-                                        // If this SSU is well-formed, we save it.
-                                        String checkSeq = dnaSeq.getStringOrDefault(NA_SEQUENCE);
-                                        if (Genome.isValidSsuRRna(checkSeq))
-                                            ssuRRna = checkSeq;
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                        // Store the feature.
-                        retVal.addFeature(feat);
-                    }
-                    // Store the SSU rRNA.
-                    retVal.setSsuRRna(ssuRRna);
-                }
+                storeFeatures(p3, detail, retVal, fidList);
             }
             if (P3Connection.log.isInfoEnabled()) {
                 long duration = System.currentTimeMillis() - start;
                 P3Connection.log.info("{} seconds to load {}.", String.format("%4.3f", duration / 1000.0), genome_id);
+            }
+        }
+        return retVal;
+    }
+
+    /**
+     * Store the features for a genome. We take as input a collection of JSON objects representing feature records.
+     *
+     * @param p3		PATRIC connection for retrieving protein sequences
+     * @param detail	desired detail level
+     * @param genome	genome being built
+     * @param fidList	list of feature records
+     */
+    public static void storeFeatures(P3Connection p3, Details detail, Genome genome, Collection<JsonObject> fidList) {
+        // Set up for protein sequences if we want them.
+        boolean wantSequences = detail.includesProteins();
+        Map<String, JsonObject> proteins = null;
+        if (wantSequences) {
+            Collection<String> md5Keys = fidList.stream().map(x -> x.getStringOrDefault(AA_MD5)).filter(x -> ! x.isEmpty()).collect(Collectors.toList());
+            proteins = p3.getRecords(Table.SEQUENCE, md5Keys, "sequence");
+        }
+        // Assume until we prove otherwise that we don't have an SSU rRNA in this genome.
+        genome.setSsuRRna("");
+        // Store the features.  Note we skip the ones with empty IDs.
+        for (JsonObject fid : fidList) {
+            String id = KeyBuffer.getString(fid, "patric_id");
+            if (id != null && id.length() > 0) {
+                Feature feat = new Feature(KeyBuffer.getString(fid, "patric_id"), KeyBuffer.getString(fid, "product"),
+                        KeyBuffer.getString(fid, "sequence_id"), KeyBuffer.getString(fid, "strand"),
+                        KeyBuffer.getInt(fid, "start"), KeyBuffer.getInt(fid, "end"));
+                feat.setPlfam(KeyBuffer.getString(fid, "plfam_id"));
+                feat.setPgfam(KeyBuffer.getString(fid, "pgfam_id"));
+                feat.setFigfam(KeyBuffer.getString(fid, "figfam_id"));
+                feat.addAlias("gi", KeyBuffer.getString(fid, "gi"));
+                feat.addAlias("gene_name", KeyBuffer.getString(fid, "gene"));
+                feat.addAlias("locus_tag", KeyBuffer.getString(fid, "refseq_locus_tag"));
+                String geneId = KeyBuffer.getString(fid, "gene_id");
+                if (geneId.length() > 0 && ! geneId.contentEquals("0"))
+                    feat.addAlias("gene_id", geneId);
+                // Add in the GO terms.
+                String[] goTermList = KeyBuffer.getStringList(fid, "go");
+                for (String goString : goTermList)
+                    feat.addGoTerm(goString);
+                // Process the translation according to the feature type.
+                switch (feat.getType()) {
+                case "CDS" :
+                    // This is a protein. Check to see if we are storing the protein translation.
+                    JsonObject protein = null;
+                    if (wantSequences) {
+                        // Here we are storing protein translations for all the features that have them.
+                        protein = proteins.get(fid.getStringOrDefault(AA_MD5));
+                    } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
+                        // We always store the PheS protein.
+                        protein = p3.getRecord(Table.SEQUENCE, fid.getString(AA_MD5), "sequence");
+                    }
+                    if (protein != null)
+                        feat.setProteinTranslation(protein.getStringOrDefault(AA_SEQUENCE));
+                    break;
+                case "rna" :
+                    // This is an RNA.  Check for the SSU rRNA.
+                    if (feat.getLocation().getLength() > genome.getSsuRRna().length() &&
+                            RoleUtilities.SSU_R_RNA.matcher(feat.getPegFunction()).find()) {
+                        // We need the nucleotide sequence of this RNA feature.
+                        String na_md5 = fid.getString(NA_MD5);
+                        if (na_md5 != null && ! na_md5.isEmpty()) {
+                            JsonObject dnaSeq = p3.getRecord(Table.SEQUENCE, fid.getString(NA_MD5), "sequence");
+                            if (dnaSeq != null) {
+                                // If this SSU is well-formed, we save it.
+                                String checkSeq = dnaSeq.getStringOrDefault(NA_SEQUENCE);
+                                if (Genome.isValidSsuRRna(checkSeq))
+                                    genome.setSsuRRna(checkSeq);
+                            }
+                        }
+                    }
+                    break;
+                }
+                // Store the feature.
+                genome.addFeature(feat);
+            }
+        }
+    }
+
+    /**
+     * Create a list of taxonomy items to correspond to a taxonomy ID list.
+     *
+     * @param p3		connection to PATRIC
+     * @param taxIDs	list of taxonomy IDs
+     *
+     * @return a list of taxonomic descriptors (taxItems) for the indicated lineage
+     */
+    public static List<TaxItem> computeTaxItems(P3Connection p3, Collection<String> taxIDs) {
+        Map<String, JsonObject> taxRecords = p3.getRecords(Table.TAXONOMY, taxIDs, "taxon_id,taxon_name,taxon_rank");
+        List<TaxItem> retVal = new ArrayList<TaxItem>(taxRecords.size());
+        for (String taxID : taxIDs) {
+            JsonObject taxRecord = taxRecords.get(taxID);
+            // Note that if the taxonomic ID is invalid, we will get NULL from the above query.
+            if (taxRecord != null) {
+                retVal.add(new TaxItem(taxRecord));
             }
         }
         return retVal;

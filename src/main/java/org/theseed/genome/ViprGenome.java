@@ -311,9 +311,9 @@ public class ViprGenome extends Genome {
                 keywordString = line.get(i);
             Map<String, String> keywords = ViprKeywords.gffParse(keywordString);
             String viprId = keywords.get("ID");
-            retVal.formAlias("vipr:", viprId);
+            retVal.addAlias("vipr", viprId);
             String swissprot = keywords.get("swissprot");
-            retVal.formAlias("swissprot:", swissprot);
+            retVal.addAlias("swissprot", swissprot);
             // Extract the GO terms.
             String goTermString = keywords.get("Ontology_term");
             if (goTermString != null && goTermString.startsWith("GO:")) {

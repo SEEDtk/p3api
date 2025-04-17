@@ -86,9 +86,9 @@ public class GffGenome extends NewGenome {
                             line.getLeft(), line.getRight());
                     // Check for aliases.
                     String fName = line.getAttributeOrEmpty("Name");
-                    if (! fName.isEmpty()) feat.addAlias(fName);
+                    if (! fName.isEmpty()) feat.addAlias("gene_name", fName);
                     for (String aliasType : ALIASES)
-                        feat.formAlias(aliasType, line.getAttributeOrEmpty(aliasType));
+                        feat.addAlias(aliasType, line.getAttributeOrEmpty(aliasType));
                     // Add the feature to the genome.
                     this.addFeature(feat);
                 }
