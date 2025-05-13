@@ -55,6 +55,24 @@ public class CoreTest {
             assertThat(taxMarkerEnd, equalTo(taxStringEnd));
             String name = MarkerFile.read(new File(orgDir, "GENOME"));
             assertThat(name, equalTo(testGto.getName()));
+            // We test aliases here.
+            if (genomeId.contentEquals("757424.7")) {
+            	Feature feat = testGto.getFeature("fig|757424.7.peg.501");
+            	var aliasMap = feat.getAliasMap();
+            	assertThat(aliasMap.size(), equalTo(4));
+            	assertThat(aliasMap.get("LocusTag"), contains("Hsero_0495"));
+            	assertThat(aliasMap.get("protein_id"), contains("YP_003773923.1"));
+            	assertThat(aliasMap.get("gi"), contains("300309831"));
+            	assertThat(aliasMap.get("GeneID"), contains("9401096"));
+            } else if (genomeId.contentEquals("83333.1")) {
+            	Feature feat = testGto.getFeature("fig|83333.1.peg.13");
+            	var aliasMap = feat.getAliasMap();
+            	assertThat(aliasMap.size(), equalTo(4));
+            	assertThat(aliasMap.get("gene_name"), contains("yaaI"));
+            	assertThat(aliasMap.get("LocusTag"), containsInAnyOrder("b0013", "NP_414554.1"));
+            	assertThat(aliasMap.get("gi"), contains("16128007"));
+            	assertThat(aliasMap.get("GeneID"), contains("944751"));
+            }
         }
     }
 

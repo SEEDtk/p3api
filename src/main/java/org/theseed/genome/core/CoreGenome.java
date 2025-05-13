@@ -228,8 +228,9 @@ public class CoreGenome extends Genome {
                 log.debug("Processing feature directory {}.", typeDir);
                 // Get the set of deleted features.
                 Set<String> deleted = this.readSet(new File(typeDir, "deleted.features"));
-                // Determine if this is an aSDomain.
+                // Determine if this is an aSDomain or RNA.
                 boolean asFlag = typeDir.getName().contentEquals("aSDomain");
+                boolean rnaFlag = typeDir.getName().contentEquals("rna");
                 // If this is a protein type, get the protein translations.  If it's an aSDomain, we need a blank map.
                 Map<String, String> proteinMap = EMPTY_MAP;
                 if (PROTEINS.contains(typeDir.getName()))
@@ -268,13 +269,14 @@ public class CoreGenome extends Genome {
                                         loc.add(locI);
                                     }
                                     locationMap.put(fid, loc);
-                                    // If this is aSDomain, the alias is a protein translation. Otherwise,
-                                    // we need to collect the aliases.
+                                    // If this is aSDomain, the alias is a protein translation. If this is
+                                    // RNA, the alias is an alternate product. Otherwise, we need to collect
+                                    // the aliases.
                                     Collection<String> aliases = Collections.emptyList();
                                     if (asFlag) {
                                         proteinMap.put(fid, fields[2]);
-                                    } else if (fields.length >= 3) {
-                                        // Otherwise we do the aliases.
+                                    } else if (fields.length >= 3 && ! rnaFlag) {
+                                        // Here we have aliases.
                                         aliases = new ArrayList<String>(fields.length - 2);
                                         for (int i = 2; i < fields.length; i++) {
                                             if (! fields[i].isEmpty())
@@ -297,11 +299,9 @@ public class CoreGenome extends Genome {
                     // Check for aliases. Each alias is of the form type|value.
                     Collection<String> aliases = aliasMap.get(fid);
                     for (String alias : aliases) {
-                        String[] parts = StringUtils.split(alias, "|", 2);
-                        if (parts.length == 1)
-                            feat.addAlias("misc", alias);
-                        else
-                            feat.addAlias(parts[0], parts[1]);
+                    	var parts = Feature.analyzeAlias(alias);
+                    	for (var part : parts)
+                    		feat.addAlias(part.getKey(), part.getValue());
                     }
                     // Check for a protein translation.
                     if (proteinMap.containsKey(fid))

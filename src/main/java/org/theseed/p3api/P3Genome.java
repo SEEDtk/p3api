@@ -161,7 +161,7 @@ public class P3Genome extends Genome {
             // Process the features if we want them.
             if (detail.includesFeatures()) {
                 Collection<JsonObject> fidList = p3.query(Table.FEATURE,
-                        "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,na_sequence_md5,plfam_id,pgfam_id,figfam_id,gi,gene,gene_id,refseq_locus_tag,go",
+                        "patric_id,sequence_id,start,end,strand,product,aa_sequence_md5,na_sequence_md5,plfam_id,pgfam_id,figfam_id,gi,gene,gene_id,refseq_locus_tag,go,uniprotkb_accession,protein_id",
                         Criterion.EQ("genome_id", genome_id), Criterion.EQ("annotation", "PATRIC"));
                 storeFeatures(p3, detail, retVal, fidList);
             }
@@ -203,10 +203,12 @@ public class P3Genome extends Genome {
                 feat.setFigfam(KeyBuffer.getString(fid, "figfam_id"));
                 feat.addAlias("gi", KeyBuffer.getString(fid, "gi"));
                 feat.addAlias("gene_name", KeyBuffer.getString(fid, "gene"));
-                feat.addAlias("locus_tag", KeyBuffer.getString(fid, "refseq_locus_tag"));
+                feat.addAlias("LocusTag", KeyBuffer.getString(fid, "refseq_locus_tag"));
+                feat.addAlias("Uniprot", KeyBuffer.getString(fid, "uniprotkb_accession"));
+                feat.addAlias("protein_id", KeyBuffer.getString(fid, "protein_id"));
                 String geneId = KeyBuffer.getString(fid, "gene_id");
                 if (geneId.length() > 0 && ! geneId.contentEquals("0"))
-                    feat.addAlias("gene_id", geneId);
+                    feat.addAlias("GeneID", geneId);
                 // Add in the GO terms.
                 String[] goTermList = KeyBuffer.getStringList(fid, "go");
                 for (String goString : goTermList)

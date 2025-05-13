@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.theseed.genome.Contig;
@@ -242,10 +244,14 @@ public class P3ApiTest
             assertThat("Global family error in " + p3fid, p3fid.getPgfam(), equalTo(fid.getPgfam()));
             assertThat("FIG family error in " + p3fid, p3fid.getFigfam(), equalTo(fid.getFigfam()));
             assertThat("Type error in " + p3fid, p3fid.getType(), equalTo(fid.getType()));
-            Collection<String> fidAliases = fid.getAliases();
-            assertThat("Alias error in " + p3fid, p3fid.getAliases().size(), equalTo(fidAliases.size()));
-            for (String p3Alias : p3fid.getAliases()) {
-                assertThat("Alias " + p3Alias + " not found in " + fid, fidAliases, hasItem(p3Alias));
+            var fidAliasMap = fid.getAliasMap();
+            var p3AliasMap = p3fid.getAliasMap();
+            assertThat("Alias count error in " + p3fid, fidAliasMap.size(), equalTo(p3AliasMap.size()));
+            for (var aliasEntry : fidAliasMap.entrySet()) {
+            	String aliasType = aliasEntry.getKey();
+            	Set<String> aliasNames = aliasEntry.getValue();
+            	assertThat("Error in alias type " + aliasType + " of " + p3fid,
+            			p3AliasMap.get(aliasType), equalTo(aliasNames));
             }
             Collection<GoTerm> fidGoTerms = fid.getGoTerms();
             assertThat("Go term error in " + p3fid, p3fid.getGoTerms().size(), equalTo(fidGoTerms.size()));
