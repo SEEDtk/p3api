@@ -4,7 +4,6 @@
 package org.theseed.gff;
 
 import java.io.BufferedReader;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -24,7 +23,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Bruce Parrello
  */
-public class GffReader implements Iterable<GffReader.Line>, Iterator<GffReader.Line>, Closeable, AutoCloseable {
+public class GffReader implements Iterable<GffReader.Line>, Iterator<GffReader.Line>, AutoCloseable {
 
     // FIELDS
     /** buffered line reader */
