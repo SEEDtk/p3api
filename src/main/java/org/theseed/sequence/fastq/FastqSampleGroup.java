@@ -95,7 +95,7 @@ public abstract class FastqSampleGroup implements AutoCloseable {
     }
 
     /**
-     * A two-tiered group is a directory of directories files and directories.  A sample can be stored
+     * A two-tiered group is a directory of files and directories.  A sample can be stored
      * as a single file (interlaced or singleton), or as a directory containing both paired-end read files.
      * If it is a single file, the base file name is the sample ID.  Otherwise, the directory name is the
      * sample ID.  This method provides the basic pattern for all filters used to find two-tiered groups.

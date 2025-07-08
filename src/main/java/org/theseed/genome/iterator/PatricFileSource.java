@@ -99,7 +99,7 @@ public class PatricFileSource extends GenomeSource {
     }
 
     @Override
-    protected Genome getGenome(String genomeId, Details level) {
+    public Genome getGenome(String genomeId, Details level) {
         P3Genome retVal = P3Genome.load(this.p3, genomeId, P3Genome.Details.FULL);
         return retVal;
     }

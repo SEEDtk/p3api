@@ -92,7 +92,7 @@ public abstract class GenomeSource implements Iterable<Genome> {
      *
      * @throws IOException
      */
-    protected abstract Genome getGenome(String genomeId, P3Genome.Details level);
+    public abstract Genome getGenome(String genomeId, P3Genome.Details level);
 
     /**
      * @return the genome with the specified ID, or NULL if it is not available

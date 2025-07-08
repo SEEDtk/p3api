@@ -47,7 +47,7 @@ public class MasterDirectorySource extends GenomeSource {
     }
 
     @Override
-    protected Genome getGenome(String genomeId, Details level) {
+    public Genome getGenome(String genomeId, Details level) {
         return this.source.get(genomeId);
     }
 

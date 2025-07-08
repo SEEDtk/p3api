@@ -87,7 +87,7 @@ public class JsonDumpDirectory extends GenomeSource {
     }
 
     @Override
-    protected Genome getGenome(String genomeId, Details level) {
+    public Genome getGenome(String genomeId, Details level) {
         Genome retVal = null;
         // Try to find the genome.
         try {

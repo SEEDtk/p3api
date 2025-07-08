@@ -200,7 +200,7 @@ public class SeqRead {
      * @param pos		start position
      * @param len		length to check
      *
-     * @return the chance of an correct in the specified region of the sequence
+     * @return the chance of a correct kmer in the specified region of the sequence
      */
     public static double qualChance(String qual, int pos, int len) {
         double retVal = 1.0;
