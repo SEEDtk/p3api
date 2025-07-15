@@ -137,6 +137,7 @@ public abstract class Connection {
             Response resp = null;
             try {
                 // Submit the request.
+                log.debug("Submitting request {}.", request.toString());
                 resp = this.executor.execute(request);
                 // Check the response.
                 retVal = resp.returnResponse();

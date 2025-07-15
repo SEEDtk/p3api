@@ -50,7 +50,7 @@ public class P3Connection extends SolrConnection {
     /** security token */
     private String authToken;
     /** default URL */
-    private static final String DATA_API_URL = "https://p3.theseed.org/services/data_api/";
+    private static final String DATA_API_URL = "https://www.bv-brc.org/api/";
     /** taxonomy URL format */
     private static final String NCBI_TAX_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=%d";
     /** list of domains for prokaryotes */
@@ -132,6 +132,7 @@ public class P3Connection extends SolrConnection {
         // No luck, use the default.
         if (StringUtils.isBlank(retVal))
             retVal = DATA_API_URL;
+        log.info("P3 URL is {}.", retVal);
         return retVal;
     }
 

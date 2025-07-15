@@ -73,7 +73,7 @@ public abstract class BaseGenomeProcessor extends BaseProcessor {
     protected abstract void setSourceDefaults();
 
     @Override
-    protected final boolean validateParms() throws IOException, ParseFailureException {
+    protected final void validateParms() throws IOException, ParseFailureException {
         // Verify that the source exists.
         if (! this.inDir.exists())
             throw new FileNotFoundException("Input genome source " + this.inDir + " does not exist.");
@@ -84,7 +84,6 @@ public abstract class BaseGenomeProcessor extends BaseProcessor {
         this.genomeIds = this.source.getIDs();
         // Validate the other parameters.
         this.validateSourceParms();
-        return true;
     }
 
     /**
