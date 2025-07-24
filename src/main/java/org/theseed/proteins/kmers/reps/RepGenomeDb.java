@@ -569,4 +569,13 @@ public class RepGenomeDb implements Iterable<RepGenome> {
         return String.format("rep%d.list.tbl", this.threshold);
     }
 
+    /**
+     * @return TRUE if the specified genome is a representative in this set, else FALSE
+     * 
+     * @param genomeId  ID of the genome to check
+     */
+    public boolean contains(String genomeId) {
+        return (this.genomeMap.containsKey(genomeId));
+    }
+
 }
