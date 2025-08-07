@@ -2,6 +2,9 @@ package org.theseed.p3api;
 
 
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static org.junit.jupiter.api.Assertions.fail;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,6 +36,10 @@ import com.github.cliftonlabs.json_simple.JsonObject;
  */
 public class P3ApiTest
 {
+
+    /** logging facility */
+    protected static Logger log = LoggerFactory.getLogger(P3ApiTest.class);
+    
     /**
      * test detail levels
      */
@@ -362,6 +369,27 @@ public class P3ApiTest
         }
         File gFile = new File(gCache, "324602.8.gto");
         assertThat(gFile.exists(), equalTo(true));
+    }
+
+    /**
+     * Test the chunking.
+     */
+    @Test
+    public void testChunking() {
+        P3Connection p3 = new P3Connection();
+        p3.setChunkSize(1000);
+        List<JsonObject> genomes = p3.query(Table.GENOME, "genome_id,genome_name,genus", Criterion.EQ("genus", "Streptococcus"));
+        assertThat(genomes.size(), greaterThan(40000));
+        log.info("Found {} Streptococcus genomes.", genomes.size());
+        // Verify that the genomes are all Streptococcus.
+        for (JsonObject genome : genomes) {
+            String id = KeyBuffer.getString(genome, "genome_id");
+            String name = KeyBuffer.getString(genome, "genome_name");
+            String genus = KeyBuffer.getString(genome, "genus");
+            assertThat(id, not(emptyString()));
+            assertThat(id, name, not(emptyString()));
+            assertThat(id, genus, equalTo("Streptococcus"));
+        }
     }
 
     /**

@@ -15,6 +15,7 @@ import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.client.fluent.Response;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,7 +165,9 @@ public abstract class Connection {
                 } else {
                     // We have a server error, try again.
                     tries++;
-                    log.debug("Retrying after error code {}.", code);
+                    // Get the response text for debugging.
+                    String responseText = EntityUtils.toString(retVal.getEntity());
+                    log.debug("Retrying after error code {}: {}", code, responseText);
                 }
             } catch (IOException e) {
                 // This is almost certainly a timeout error.  We either retry or percolate.

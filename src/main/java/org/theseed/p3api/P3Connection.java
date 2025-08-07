@@ -36,7 +36,7 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 
 /**
  * This object represents a connection to PATRIC and provides methods for retrieving genome and feature data.
- * The default API is at https://patric.theseed.org/services/data_api, but this can be overridden using the
+ * The default API is at https://www.bv-brc.org/api, but this can be overridden using the
  * P3API_URL environment variable.
  *
  * @author Bruce Parrello
@@ -296,16 +296,17 @@ public class P3Connection extends SolrConnection {
     }
 
     /**
-     * Create a request to get data from the specified table.
+     * Create a request to get data from the specified table. This differs from the
+     * default SOLR request in that it attaches the authorization token if it exists.
      *
      * @param table		name of the target table
      *
      * @return a request for the specified table
      */
+    @Override
     protected Request createRequest(String table) {
-        Request retVal = Request.Post(this.getUrl() + table);
-        // Denote we want a json response.
-        retVal.addHeader("Accept", "application/json");
+        // Get a basic SOLR request.
+        Request retVal = super.createRequest(table);
         // Attach authorization if we have a token.
         if (this.authToken != null) {
             retVal.addHeader("Authorization", this.authToken);

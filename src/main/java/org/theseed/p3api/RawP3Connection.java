@@ -13,7 +13,7 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 
 /**
  * This is a connection for PATRIC requests to dump the SOLR cores. It is much less sophisticated
- * than the full P3Connection, since it does not allow field selection and does not defined any
+ * than the full P3Connection, since it does not allow field selection and does not define any
  * logical tables.  You just specify the name of a SOLR core and the criteria. There is also no
  * bothering with authentication.
  *
@@ -56,15 +56,6 @@ public class RawP3Connection extends SolrConnection {
         // Get the desired records.
 		List<JsonObject> retVal = this.getResponse(request);
 		return retVal;
-	}
-
-	@Override
-	protected Request createRequest(String tableName) {
-        Request retVal = Request.Post(this.getUrl() + tableName);
-        // Denote we want a json response.
-        retVal.addHeader("Accept", "application/json");
-        // Return the request.
-        return retVal;
 	}
 
 }
