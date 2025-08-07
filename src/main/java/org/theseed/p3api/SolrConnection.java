@@ -8,6 +8,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,6 +55,51 @@ public abstract class SolrConnection extends Connection {
 	};
 	/** pattern for extracting return ranges */
 	private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
+	/** map of table names to sort fields (may be needed for cursors) */
+	@SuppressWarnings("unused")
+	private static final Map<String, String> KEY_MAP;
+	static {
+		Map<String, String> map = new java.util.HashMap<>();
+		map.put("antibiotics", "antibiotic_name+asc");
+		map.put("bioset", "bioset_id+asc");
+		map.put("bioset_result", "id+asc");
+		map.put("enzyme_class_ref", "ec_number+asc");
+		map.put("epitope", "epitope_id+asc");
+		map.put("epitope_assay", "assay_id+asc");
+		map.put("experiment", "exp_id+asc");
+		map.put("feature_sequence", "md5+asc");
+		map.put("gene_ontology_ref", "go_id+asc");
+		map.put("genome", "genome_id+asc");
+		map.put("genome_amr", "id+asc");
+		map.put("genome_feature", "patric_id+asc");
+		map.put("genome_sequence", "sequence_id+asc");
+		map.put("id_ref", "id+asc");
+		map.put("misc_niaid_sgc", "target_id+asc");
+		map.put("pathway", "id+asc");
+		map.put("pathway_ref", "id+asc");
+		map.put("ppi", "id+asc");
+		map.put("protein_family_ref", "family_id+asc");
+		map.put("protein_feature", "id+asc");
+		map.put("protein_structure", "pdb_id+asc");
+		map.put("sequence_feature", "id+asc");
+		map.put("sequence_feature_vt", "id+asc");
+		map.put("serology", "id+asc");
+		map.put("sp_gene", "id+asc");
+		map.put("sp_gene_evidence", "id+asc");
+		map.put("sp_gene_ref", "id+asc");
+		map.put("spike_lineage", "id+asc");
+		map.put("spike_variant", "id+asc");
+		map.put("strain", "id+asc");
+		map.put("structured_assertion", "id+asc");
+		map.put("subsystem", "id+asc");
+		map.put("subsystem_ref", "subsystem_name+asc");
+		map.put("surveillance", "id+asc");
+		map.put("taxonomy", "taxon_id+asc");
+		map.put("transcriptomics_experiment", "e_id+asc");
+		map.put("transcriptomics_gene", "id+asc");
+		map.put("transcriptomics_sample", "pid+asc");
+		KEY_MAP = java.util.Collections.unmodifiableMap(map);
+	}
 
 	/**
 	 * Construct a new SolrConnection.
