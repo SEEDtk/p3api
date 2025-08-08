@@ -1,0 +1,70 @@
+{
+	"genome": { 
+		"name": "genome",
+		"key": "genome_id",
+		"sort": "genome_id",
+		"map": {
+			"completeness": "checkm_completeness",
+			"contamination": "checkm_contamination"
+		}
+	},
+	"genome_amr": {
+		"name": "genome_amr",
+		"key": "id",
+		"sort": "id",
+		"map": {}
+	},
+	"feature": {
+		"name": "genome_feature",
+		"key": "patric_id",
+		"sort": "feature_id",
+		"map": {
+			"feature_id":"patric_id",
+			"annotation_source":"annotation",
+			"annotation":"product",
+			"gene_name":"gene"
+		}
+	},
+	"taxon": {
+		"name": "taxonomy",
+		"key": "taxon_id",
+		"sort": "taxon_id",
+		"map": {}
+	},
+	"contig": {
+		"name": "genome_sequence",
+		"key": "sequence_id",
+		"sort": "sequence_id",
+		"map": {}
+	},
+	"sequence": {
+		"name": "feature_sequence",
+		"key": "md5",
+		"sort": "md5",
+		"map": {}
+	},
+	"subsystem_item": {
+		"name": "subsystem",
+		"key": "id",
+		"sort": "id",
+		"map": {}
+	},
+	"family": {
+		"name": "protein_family_ref",
+		"key": "family_id",
+		"sort": "family_id",
+		"map": {}
+	},
+	"subsystem": {
+		"name": "subsystem_ref",
+		"key": "subsystem_name",
+		"sort": "subsystem_name",
+		"map": {}
+	},
+	"special_gene": {
+		"name": "sp_gene",
+		"key": "id",
+		"sort": "id",
+		"map": {}
+	}
+}

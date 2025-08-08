@@ -56,8 +56,7 @@ public abstract class SolrConnection extends Connection {
 	/** pattern for extracting return ranges */
 	private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
 	/** map of table names to sort fields (may be needed for cursors) */
-	@SuppressWarnings("unused")
-	private static final Map<String, String> KEY_MAP;
+	protected static final Map<String, String> KEY_MAP;
 	static {
 		Map<String, String> map = new java.util.HashMap<>();
 		map.put("antibiotics", "antibiotic_name+asc");
