@@ -50,9 +50,9 @@ public class P3Connection extends SolrConnection {
     /** security token */
     private String authToken;
     /** default URL */
-    private static final String DATA_API_URL = "https://www.bv-brc.org/api/";
+    protected static final String DATA_API_URL = "https://www.bv-brc.org/api/";
     /** taxonomy URL format */
-    private static final String NCBI_TAX_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=%d";
+    protected static final String NCBI_TAX_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=%d";
     /** list of domains for prokaryotes */
     public static final List<String> DOMAINS = Arrays.asList("Bacteria", "Archaea");
     /**
@@ -302,6 +302,7 @@ public class P3Connection extends SolrConnection {
      *
      * @return a request for the specified table
      */
+    @Override
     protected Request createRequest(String table) {
         Request retVal = Request.Post(this.getUrl() + table);
         // Denote we want a json response.
