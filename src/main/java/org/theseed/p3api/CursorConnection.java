@@ -2,7 +2,7 @@ package org.theseed.p3api;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -133,7 +133,8 @@ public class CursorConnection extends SolrConnection {
         for (String field : StringUtils.split(fields, ',')) {
             String internalName = solrTable.getInternalFieldName(field);
             fieldSet.add(internalName);
-            reverseMap.put(internalName, field);
+            if (! field.equals(internalName))
+                reverseMap.put(internalName, field);
         }
         String allFields = StringUtils.join(fieldSet, ',');
         // Set up the constant parameters. These are used on every query, even after we find the cursor mark.
@@ -147,14 +148,17 @@ public class CursorConnection extends SolrConnection {
         Request request = this.requestBuilder(solrTable.getInternalName());
         // Get the results.
         List<JsonObject> retVal = this.getResponse(request);
-        // Now we fix the field names in the returned records.
-        for (JsonObject record : retVal) {
-            for (String key : record.keySet()) {
-                String userKey = reverseMap.get(key);
-                if (! userKey.equals(key)) {
-                    Object value = record.remove(key);
-                    if (userKey != null)
-                        record.put(userKey, value);
+        // Now we fix the field names in the returned records. Note that if a field is not in the reverse
+        // map, it will remain under its internal name. This will only happen for the key field. If a
+        // user-friendly name equals the key field name, then the key field will be overwritten.
+        // We only need to do this if the reverse map is nonempty.
+        if (! reverseMap.isEmpty()) {
+            for (JsonObject record : retVal) {
+                for (var reverseMapEntry : reverseMap.entrySet()) {
+                    String internalName = reverseMapEntry.getKey();
+                    String userFriendlyName = reverseMapEntry.getValue();
+                    if (record.containsKey(internalName))
+                        record.put(userFriendlyName, record.remove(internalName));
                 }
             }
         }

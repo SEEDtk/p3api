@@ -89,12 +89,12 @@ public class CursorTest {
             assertThat(record.get("checkm_contamination"), nullValue());
             assertThat(record.get("checkm_completeness"), nullValue());
             // Save a particular genome ID for the field-mapping test.
-            if (KeyBuffer.getString(record, "genome_id").contentEquals("1008298.3"))
+            if (KeyBuffer.getString(record, "genome_id").contentEquals("1001714.6"))
                 saved = record;
         }
         assertThat(saved, not(nullValue()));
-        assertThat(KeyBuffer.getDouble(saved, "completeness"), closeTo(87.8, 0.1));
-        assertThat(KeyBuffer.getDouble(saved, "contamination"), closeTo(9.8, 0.1));
+        assertThat(KeyBuffer.getDouble(saved, "completeness"), closeTo(100.0, 0.1));
+        assertThat(KeyBuffer.getDouble(saved, "contamination"), closeTo(5.1, 0.1));
     }
 }
 

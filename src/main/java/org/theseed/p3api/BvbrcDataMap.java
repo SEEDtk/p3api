@@ -29,6 +29,19 @@ public class BvbrcDataMap {
     private Map<String, Table> tableMap;
     /** empty mapping object */
     private static final JsonObject EMPTY_MAP = new JsonObject();
+    /** default data map */
+    public static final BvbrcDataMap DEFAULT_DATA_MAP = new BvbrcDataMap(Map.of(
+        "genome", new Table("genome", "genome_id", "genome_id"),
+        "genome_amr", new Table("genome_amr", "id", "id"),
+        "feature", new Table("feature", "feature_id", "patric_id"),
+        "taxon", new Table("taxonomy", "taxon_id", "taxon_id"),
+        "contig", new Table("genome_sequence", "sequence_id", "sequence_id"),
+        "sequence", new Table("genome_sequence", "md5", "md5"),
+        "subsystem_item", new Table("subsystem", "id", "id"),
+        "family", new Table("protein_family_ref", "family_id", "family_id"),
+        "subsystem", new Table("subsystem_ref", "subsystem_name", "subsystem_name"),
+        "special_gene", new Table("sp_gene", "id", "id")
+    ));
 
     /**
      * This enum defines the keys used in the table objects.
@@ -69,7 +82,7 @@ public class BvbrcDataMap {
     public static class Table {
 
         // FIELDS
-        /** user-friendly table name */
+        /** internal table name */
         private String name;
         /** map of user-friendly field names to internal field names */
         private Map<String, String> fieldMap;
@@ -95,6 +108,22 @@ public class BvbrcDataMap {
             this.sortField = json.getString(DataKey.SORT);
             if (this.sortField.isEmpty())
                 this.sortField = this.keyField;
+        }
+
+        /**
+         * Construct a table descriptor with no field mapping.
+         * 
+         * @param internalName  the internal name of the table
+         * @param sortField     the sort field for the table
+         * @param keyField      the key field for the table
+         * 
+         * @return the specified table descriptor
+         */
+        public Table(String internalName, String sortField, String keyField) {
+            this.name = internalName;
+            this.fieldMap = new HashMap<>();
+            this.sortField = sortField;
+            this.keyField = keyField;
         }
 
         /**
@@ -134,6 +163,20 @@ public class BvbrcDataMap {
      */
     public BvbrcDataMap() {
         this.tableMap = new HashMap<>();
+    }
+
+    /**
+     * Construct a BV-BRC data map from a map of table descriptors.
+     * 
+     * @param tables  a map of friendly tab le names to table descriptors
+     * 
+     * @return the constructed BV-BRC data map
+     */
+    public BvbrcDataMap(Map<String, BvbrcDataMap.Table> tables) {
+        this();
+        for (var tableEntry : tables.entrySet()) {
+            this.tableMap.put(tableEntry.getKey(), tableEntry.getValue());
+        }
     }
 
     /**
