@@ -22,7 +22,9 @@
 			"feature_id":"patric_id",
 			"annotation_source":"annotation",
 			"annotation":"product",
-			"gene_name":"gene"
+			"gene_name":"gene",
+			"protein_sequence": { "table":"sequence", "source":"aa_sequence_md5", "value":"sequence" },
+			"dna_sequence": { "table":"sequence", "source":"na_sequence_md5", "value":"sequence" }
 		}
 	},
 	"taxon": {

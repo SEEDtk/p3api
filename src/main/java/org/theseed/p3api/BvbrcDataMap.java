@@ -4,8 +4,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +37,12 @@ public class BvbrcDataMap {
     public static final BvbrcDataMap DEFAULT_DATA_MAP = new BvbrcDataMap(Map.of(
         "genome", new Table("genome", "genome_id", "genome_id"),
         "genome_amr", new Table("genome_amr", "id", "id"),
-        "feature", new Table("feature", "feature_id", "patric_id"),
+        "feature", new Table("feature", "feature_id", "patric_id",
+                "aa_sequence,sequence,aa_sequence_md5,sequence",
+                "na_sequence,sequence,na_sequence_md5,sequence"),
         "taxon", new Table("taxonomy", "taxon_id", "taxon_id"),
         "contig", new Table("genome_sequence", "sequence_id", "sequence_id"),
-        "sequence", new Table("genome_sequence", "md5", "md5"),
+        "sequence", new Table("feature_sequence", "md5", "md5"),
         "subsystem_item", new Table("subsystem", "id", "id"),
         "family", new Table("protein_family_ref", "family_id", "family_id"),
         "subsystem", new Table("subsystem_ref", "subsystem_name", "subsystem_name"),
@@ -47,12 +53,17 @@ public class BvbrcDataMap {
      * This enum defines the keys used in the table objects.
      */
     private static enum DataKey implements JsonKey {
+        /** table object keys */
         MAP(EMPTY_MAP),
         KEY("id"),
         SORT(""),
-        NAME("");
+        NAME(""),
+        /** derived-field keys */
+        TABLE(""),
+        SOURCE(""),
+        VALUE("");
 
-
+        /** default value */
         private final Object m_value;
 
         DataKey(final Object value) {
@@ -76,6 +87,111 @@ public class BvbrcDataMap {
     }
 
     /**
+     * This interface must be supported by a field descriptor.
+     */
+
+    public static interface IField { 
+
+        /**
+         * @rturn the internal name needed to process this field mapping.
+         */
+        public String getInternalName();
+    }
+
+    /**
+     * This object specifies instructions for a derived field. A derived field exists in another record, and
+     * to retrieve it, we need to know the user-friendly name of the target table, the field in the current
+     * record that identifies the target record, and the internal name of the field in the target record
+     * containing the desired value. So, in the feature table, the protein sequence is found in the
+     * "sequence" table, it is identified by the "aa_sequence_md5" value in the feature record, and
+     * retrieved from the "sequence" field.
+     */
+    public static class DerivedField implements IField{
+        
+        /** target table user-friendly name */
+        private String targetTable;
+        /** source field internal name */
+        private String sourceField;
+        /** target field user-friendly name */
+        private String targetField;
+
+        /**
+         * Construct a derived field descriptor from a JSON object
+         * 
+         * @param json      JSON object containing the derived field description
+         */
+        public DerivedField(JsonObject json) {
+            this.targetTable = json.getString(DataKey.TABLE);
+            this.sourceField = json.getString(DataKey.SOURCE);
+            this.targetField = json.getString(DataKey.VALUE);
+        }
+
+        /**
+         * Construct a derived field descriptor from a table name, a source field name, and a target field
+         * name.
+         * 
+         * @param targetTableName   user-friendly name of the target table
+         * @param sourceFieldName   internal name of the source field
+         * @param targetFieldName   user-friendly name of the target field
+         */
+        public DerivedField(String targetTableName, String sourceFieldName, String targetFieldName) {
+            this.targetTable = targetTableName;
+            this.sourceField = sourceFieldName;
+            this.targetField = targetFieldName;
+        }
+
+        /**
+         * @return the user-friendly name of the target table
+         */
+        public String getTargetTable() {
+            return targetTable;
+        }
+
+        /**
+         * @return the user-friendly name of the source field
+         */
+        @Override
+        public String getInternalName() {
+            return sourceField;
+        }
+
+        /**
+         * @return the user-friendly name of the target field
+         */
+        public String getTargetField() {
+            return targetField;
+        }
+
+    }
+
+    /**
+     * This is the most basic type of mapped field: one that has a user-friendly name.
+     */
+    public static class MappedField implements IField{
+
+        /** internal field name */
+        private String internalName;
+
+        /**
+         * Construct a mapped field descriptor.
+         * 
+         * @param name      internal name for the field
+         */
+        public MappedField(String name) {
+            this.internalName = name;
+        }
+
+        /**
+         * @return the internal name
+         */
+        @Override
+        public String getInternalName() {
+            return this.internalName;
+        }
+
+    }
+
+    /**
      * This object describes the mapping data for a single table. Note that if
      * a field is not listed, its name is unchanged.
      */
@@ -85,10 +201,12 @@ public class BvbrcDataMap {
         /** internal table name */
         private String name;
         /** map of user-friendly field names to internal field names */
-        private Map<String, String> fieldMap;
-        /** key field */
+        private Map<String, IField> fieldMap;
+        /** internal name of key field */
         private String keyField;
-        /** sort field */
+        /** user-friendly name of key field */
+        private String keyFieldName;
+        /** internal name of sort field */
         private String sortField;
 
         /**
@@ -103,27 +221,51 @@ public class BvbrcDataMap {
             this.name = json.getString(DataKey.NAME);
             if (this.name.isEmpty())
                 this.name = friendlyName;
-            this.fieldMap = json.getMap(DataKey.MAP);
             this.keyField = json.getString(DataKey.KEY);
             this.sortField = json.getString(DataKey.SORT);
             if (this.sortField.isEmpty())
                 this.sortField = this.keyField;
+            this.fieldMap = new TreeMap<String, IField>();
+            // Default the user-friendly key name to the internal name.
+            this.keyFieldName = this.keyField;
+            // Now process the mapping. We save the user-friendly key name here.
+            JsonObject jsonMap = json.getMap(DataKey.MAP);
+            for (var mapEntry : jsonMap.entrySet()) {
+                String fieldName = mapEntry.getKey();
+                Object fieldValue = mapEntry.getValue();
+                if (fieldValue instanceof String) {
+                    this.fieldMap.put(fieldName, new MappedField((String) fieldValue));
+                    if (this.keyField.equals((String) fieldValue))
+                        this.keyFieldName = fieldName;
+                } else if (fieldValue instanceof JsonObject) {
+                    this.fieldMap.put(fieldName, new DerivedField((JsonObject) fieldValue));
+                }
+            }
         }
 
         /**
-         * Construct a table descriptor with no field mapping.
+         * Construct a table descriptor with derived fields but no mappings.
          * 
          * @param internalName  the internal name of the table
          * @param sortField     the sort field for the table
          * @param keyField      the key field for the table
+         * @param derivations   an array of derived-field strings, each containing a user-friendly
+         *                      derived field name, the target table name, the source field name, 
+         *                      and the target field name, comma-delimited
          * 
          * @return the specified table descriptor
          */
-        public Table(String internalName, String sortField, String keyField) {
+        public Table(String internalName, String sortField, String keyField, String... derivations) {
             this.name = internalName;
-            this.fieldMap = new HashMap<>();
+            this.fieldMap = new ConcurrentHashMap<>();
             this.sortField = sortField;
             this.keyField = keyField;
+            for (String derivation : derivations) {
+                String[] parts = StringUtils.split(derivation, ',');
+                if (parts.length != 4)
+                    throw new IllegalArgumentException("Derived field specification must have four parts: " + derivation);
+                this.fieldMap.put(parts[0], new DerivedField(parts[1], parts[2], parts[3]));
+            }
         }
 
         /**
@@ -134,12 +276,25 @@ public class BvbrcDataMap {
         }
 
         /**
-         * @return the internal name of a field
+         * @return the descriptor of a field, or NULL if the field is unmapped
          * 
          * @param friendlyName  the user-friendly name for the field
          */
+        public IField getInternalFieldData(String friendlyName) {
+            return this.fieldMap.getOrDefault(friendlyName, null);
+        }
+
+        /**
+         * @return the internal name of a field, or NULL if it is a complex field
+         */
         public String getInternalFieldName(String friendlyName) {
-            return this.fieldMap.getOrDefault(friendlyName, friendlyName);
+            String retVal = null;
+            IField fieldData = this.fieldMap.get(friendlyName);
+            if (fieldData instanceof MappedField)
+                retVal = ((MappedField) fieldData).getInternalName();
+            else if (fieldData == null)
+                retVal = friendlyName;
+            return retVal;
         }
 
         /**
@@ -154,6 +309,31 @@ public class BvbrcDataMap {
          */
         public String getInternalKeyField() {
             return this.keyField;
+        }
+
+        /**
+         * @return the external name of the key field
+         */
+        public String getKeyField() {
+            return this.keyFieldName;
+        }
+
+        public String getUserFieldName(String linkField) {
+            // The default user field name is the internal name. This will be our output
+            // most of the time.
+            String retVal = linkField;
+            // Check for a mapping in the table map that leads to the link field.
+            Iterator<Map.Entry<String, IField>> iter = this.fieldMap.entrySet().iterator();
+            boolean done = ! (this.fieldMap.isEmpty());
+            while (iter.hasNext() && !done) {
+                Map.Entry<String, IField> entry = iter.next();
+                IField field = entry.getValue();
+                if (field instanceof MappedField && field.getInternalName().equals(linkField)) {
+                    retVal = entry.getKey();
+                    done = true;
+                }
+            }
+            return retVal;
         }
 
     }

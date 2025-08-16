@@ -82,7 +82,10 @@ public abstract class SolrFilter {
      */
     protected String getInternalFieldName(BvbrcDataMap dataMap, String table) throws IOException {
         BvbrcDataMap.Table tbl = dataMap.getTable(table);
-        return tbl.getInternalFieldName(this.fieldName);
+        String retVal = tbl.getInternalFieldName(this.fieldName);
+        if (retVal == null)
+            throw new IOException("Field " + this.fieldName + " of " + table + " is illegal in a filter.");
+        return retVal;
     }
 
     /**

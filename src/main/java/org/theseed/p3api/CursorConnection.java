@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,114 @@ public class CursorConnection extends SolrConnection {
         @Override
         public Object getValue() {
             return this.m_value;
+        }
+
+    }
+
+    /**
+     * This object describes a derived-field action. The information in here is used to
+     * build the target-table query for the derived field and to perform the field value
+     * mapping. To build the query, we need the user-friendly names for the target table's
+     * key field, the relevant data field, and the set of target table key values to use.
+     * To perform the mapping, we need the internal name of the source record field and
+     * the user-friendly name for the target record field, and a map from the target key
+     * values to the target field values. We will build the set of key values as a null-target
+     * map and fill in the values after the query is executed.
+     */
+    protected class DerivedFieldAction {
+
+        /* field list for the derivation query (comma-delimited) */
+        private String fieldList;
+        /** user-friendly name of the target table's data field */
+        private String targetField;
+        /** internal name of the source table's linking field */
+        private String linkField;
+        /** user-friendly name of the source table's linking field */
+        private String linkFieldName;
+        /** user-friendly name of the target table */
+        private String targetTableName;
+        /** user-friendly name of the target table's key */
+        private String targetKeyField;
+
+        /**
+         * Construct a derived field action from the component data items.
+         * @param dataMap       BV-BRC data map for queries
+         * @param descriptor    derived field descriptor
+         * 
+         * @throws IOException 
+         */
+        public DerivedFieldAction(BvbrcDataMap dataMap, BvbrcDataMap.DerivedField descriptor) throws IOException {
+            this.targetTableName = descriptor.getTargetTable();
+            // Get the table descriptor from the data map.
+            BvbrcDataMap.Table table = dataMap.getTable(this.targetTableName);
+            // The target key field is the user-friendly key name.
+            this.targetKeyField = table.getKeyField();
+            // We need the field containing the derived value here. Again, it is user-friendly.
+            this.targetField = descriptor.getTargetField();
+            // The link field is the source field name.
+            this.linkField = descriptor.getInternalName();
+            // Build the field list for the target table query.
+            this.fieldList = this.targetKeyField + "," + this.targetField;
+            // Find the user-friendly link field name (if any).
+            this.linkFieldName = table.getUserFieldName(this.linkField);
+        }
+
+        /**
+         * Process this derived field for a query and update the output records. This must be done BEFORE
+         * doing the 
+         * 
+         * @param sourceName    user-friendly name of this field
+         * @param records       list of output records to update
+         * 
+         * @throws IOException 
+         */
+        public void updateDerivedField(String sourceName, List<JsonObject> records) throws IOException {
+            // We will begin by building a map of all the required key values. These are the values found in the
+            // linking field.
+            Map<String, String> keyValues = new HashMap<>(records.size() * 4 / 3 + 1);
+            // We'll track the maximum key length here.
+            int maxKeyLength = 0;
+            for (JsonObject record : records) {
+                String key = KeyBuffer.getString(record, this.linkFieldName);
+                if (! key.isEmpty()) {
+                    keyValues.put(key, null);
+                    if (key.length() > maxKeyLength)
+                        maxKeyLength = key.length();
+                }
+            }
+            // Now we execute the linking query. We compute the batch size from the maximum key length.
+            int batchSize = 20000 / (maxKeyLength + 6);
+            this.updateKeyValues(keyValues, records.size(), batchSize);
+            // Now use the key-value map to update the records.
+            for (JsonObject record : records) {
+                String key = KeyBuffer.getString(record, this.linkFieldName);
+                if (! key.isEmpty()) {
+                    String value = keyValues.get(key);
+                    if (value != null)
+                        record.put(sourceName, value);
+                }
+            }
+        }
+
+        /**
+         * Execute the linking query and update the key-value map.
+         * 
+         * @param keyValues     key-value map to update
+         * @param size          number of records expected
+         * @param batchSize     optimized batch size to use
+         * 
+         * @throws IOException 
+         */
+        private void updateKeyValues(Map<String, String> keyValues, int size, int batchSize) throws IOException {
+            // Execute the linking query.
+            List<JsonObject> linkRecords = CursorConnection.this.getRecords(this.targetTableName, size, batchSize, this.targetKeyField, keyValues.keySet(),
+                this.fieldList);
+            // Run through the records, filling in values.
+            for (JsonObject linkRecord : linkRecords) {
+                String key = KeyBuffer.getString(linkRecord, this.targetKeyField);
+                String value = KeyBuffer.getString(linkRecord, this.targetField);
+                keyValues.put(key, value);
+            }
         }
 
     }
@@ -259,15 +368,31 @@ public class CursorConnection extends SolrConnection {
         // Convert the user-friendly table name to its SOLR name and build the request.
         BvbrcDataMap.Table solrTable = this.dataMap.getTable(table);
         // Create the field list. We also translate to internal names here, and we require that the main key be included.
-        // Finally, we also create a map for reversing the translations.
+        // Here is where we also set up the reverse map for undoing field-name translations, and the derived-value action
+        // tables.
         Map<String, String> reverseMap = new TreeMap<String, String>();
+        Map<String, DerivedFieldAction> derivedMap = new HashMap<String, DerivedFieldAction>();
         Set<String> fieldSet = new TreeSet<String>();
         fieldSet.add(solrTable.getInternalKeyField());
         for (String field : StringUtils.split(fields, ',')) {
-            String internalName = solrTable.getInternalFieldName(field);
-            fieldSet.add(internalName);
-            if (! field.equals(internalName))
-                reverseMap.put(internalName, field);
+            BvbrcDataMap.IField fieldInfo = solrTable.getInternalFieldData(field);
+            if (fieldInfo == null)
+                fieldSet.add(field);
+            else {
+                // Here we have a mapped field of some sort. Store the necessary internal field
+                // name in the output field list.
+                String internalName = fieldInfo.getInternalName();
+                fieldSet.add(internalName);
+                // If the field is an ordinary mapped field, save the reversing mapping.
+                if (fieldInfo instanceof BvbrcDataMap.MappedField)
+                    reverseMap.put(internalName, field);
+                else if (fieldInfo instanceof BvbrcDataMap.DerivedField) {
+                    // Here we have a derived field, so we need to set up a derived field action.
+                    DerivedFieldAction action = new DerivedFieldAction(this.dataMap, (BvbrcDataMap.DerivedField) fieldInfo);
+                    derivedMap.put(field, action);
+                } else
+                    throw new IllegalStateException("Unknown field type for field " + field + " in table " + table + ".");
+            }
         }
         String allFields = StringUtils.join(fieldSet, ',');
         // Set up the constant parameters. These are used on every query, even after we find the cursor mark.
@@ -282,10 +407,14 @@ public class CursorConnection extends SolrConnection {
         Request request = this.requestBuilder(solrTable.getInternalName());
         // Get the results.
         List<JsonObject> retVal = this.getResponse(request);
+        // Next we need to update the derived fields.
+        for (var actionEntry : derivedMap.entrySet()) {
+            String sourceName = actionEntry.getKey();
+            DerivedFieldAction action = actionEntry.getValue();
+            action.updateDerivedField(sourceName, retVal);
+        }
         // Now we fix the field names in the returned records. Note that if a field is not in the reverse
-        // map, it will remain under its internal name. This will only happen for the key field. If a
-        // user-friendly name equals the key field name, then the key field will be overwritten.
-        // We only need to do this if the reverse map is nonempty.
+        // map, it will remain under its internal name. We only do this if the reverse map is nonempty.
         if (! reverseMap.isEmpty()) {
             for (JsonObject record : retVal) {
                 for (var reverseMapEntry : reverseMap.entrySet()) {
