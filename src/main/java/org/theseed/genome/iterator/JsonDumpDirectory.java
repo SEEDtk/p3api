@@ -23,8 +23,7 @@ import org.theseed.genome.TaxItem;
 import org.theseed.io.MasterGenomeDir;
 import org.theseed.json.JsonFileDir;
 import org.theseed.p3api.KeyBuffer;
-import org.theseed.p3api.P3Connection;
-import org.theseed.p3api.P3Connection.Table;
+import org.theseed.p3api.P3CursorConnection;
 import org.theseed.p3api.P3Genome;
 import org.theseed.p3api.P3Genome.Details;
 
@@ -50,7 +49,7 @@ public class JsonDumpDirectory extends GenomeSource {
     /** map of genome IDs to dump directories */
     private Map<String, File> gMap;
     /** connection to PATRIC for taxon data */
-    private P3Connection p3;
+    private P3CursorConnection p3;
     /** key buffer for taxonomic lineage */
     private static final JsonKey LINEAGE_KEY = new KeyBuffer("taxon_lineage_ids", new ArrayList<String>());
 
@@ -60,7 +59,7 @@ public class JsonDumpDirectory extends GenomeSource {
         MasterGenomeDir masterDir = new MasterGenomeDir(inFile);
         this.gMap = masterDir.stream().collect(Collectors.toMap(x -> x.getName(), x -> x));
         // Connect to PATRIC.
-        this.p3 = new P3Connection();
+        this.p3 = new P3CursorConnection();
         // Return the genome count.
         return this.gMap.size();
     }
@@ -128,7 +127,7 @@ public class JsonDumpDirectory extends GenomeSource {
         // Get the taxonomy ID.
         int taxId = KeyBuffer.getInt(genomeJson, "taxon_id");
         // Use the tax ID to compute the genetic code.
-        JsonObject taxData = this.p3.getRecord(Table.TAXONOMY, Integer.toString(taxId), "genetic_code");
+        JsonObject taxData = this.p3.getRecord("taxon", Integer.toString(taxId), "genetic_code");
         int gc = (taxData != null ? KeyBuffer.getInt(taxData, "genetic_code") : 11);
         // Finally, get the domain and name.
         String domain = KeyBuffer.getString(genomeJson, "superkingdom");

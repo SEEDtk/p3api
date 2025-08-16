@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
@@ -50,6 +49,8 @@ public class CursorConnection extends SolrConnection {
     private String constantParms;
     /** default filter string */
     private static final String[] DEFAULT_FILTER = { "*:*" };
+    /** maximum number of records to retrieve */
+    public static final int MAX_LIMIT = 1000000000;
 
     /**
      * This enum defines the keys used and their default values.

@@ -53,8 +53,6 @@ public class P3Connection extends SolrConnection {
     protected static final String DATA_API_URL = "https://www.bv-brc.org/api/";
     /** taxonomy URL format */
     protected static final String NCBI_TAX_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=taxonomy&id=%d";
-    /** list of domains for prokaryotes */
-    public static final List<String> DOMAINS = Arrays.asList("Bacteria", "Archaea");
     /**
      * description of the major SOLR tables
      */
@@ -445,16 +443,6 @@ public class P3Connection extends SolrConnection {
             retVal = true;
         }
         return retVal;
-    }
-
-    /**
-     * Put the ID and name of every public, prokaryotic genomes in PATRIC into the specified collection.
-     *
-     * @param genomes	collection to contain the genome list.
-     */
-    public void addAllProkaryotes(Collection<JsonObject> genomes) {
-        genomes.addAll(this.getRecords(Table.GENOME, "superkingdom", DOMAINS, "genome_id,genome_name", Criterion.EQ("public", "1"),
-                Criterion.IN("genome_status", "Complete", "WGS")));
     }
 
 }

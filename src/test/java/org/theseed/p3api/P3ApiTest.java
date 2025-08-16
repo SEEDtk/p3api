@@ -218,7 +218,7 @@ public class P3ApiTest
      */
     @Test
     public void testP3Genome() throws NumberFormatException, IOException {
-        P3Connection p3 = new P3Connection();
+        P3CursorConnection p3 = new P3CursorConnection();
         // Verify we get null for nonexistent genomes.  2157 is a kingdom taxon, so it will never be on a genome ID.
         P3Genome p3genome = P3Genome.load(p3, "2157.4", P3Genome.Details.FULL);
         assertThat(p3genome, nullValue());
@@ -310,10 +310,12 @@ public class P3ApiTest
 
     /***
      * test special SSU RRNA situations
+     * 
+     * @throws IOException 
      */
     @Test
-    public void testSsuMissing() {
-        P3Connection p3 = new P3Connection();
+    public void testSsuMissing() throws IOException {
+        P3CursorConnection p3 = new P3CursorConnection();
         P3Genome p3Genome = P3Genome.load(p3, "1262806.3", P3Genome.Details.STRUCTURE_ONLY);
         assertThat(p3Genome.getSsuRRna(), emptyString());
     }
@@ -348,7 +350,7 @@ public class P3ApiTest
             if (StringUtils.endsWith(file.getName(), ".gto"))
                     file.delete();
         // Read in a random genome.
-        P3Connection p3 = new P3Connection();
+        P3CursorConnection p3 = new P3CursorConnection();
         Genome g1 = P3Genome.load(p3, "324602.8", Details.FULL, gCache);
         assertThat(g1, not(nullValue()));
         assertThat(g1 instanceof P3Genome, equalTo(true));
