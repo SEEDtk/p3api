@@ -189,19 +189,30 @@ public class CursorTest {
             assertThat(contigCount, lessThanOrEqualTo(5));
             contigCounts.put(genomeId, contigCount);
         }
-        List<JsonObject> results = p3.getRecords("contig", 20000, 95, "genome_id", contigCounts.keySet(), "genome_id,length");
+        List<JsonObject> results = p3.getRecords("contig", 20000, 95, "genome_id", contigCounts.keySet(), "sequence_id,genome_id,length");
         assertThat(results.size(), lessThan(20000));
         // We will count contigs in here.
         CountMap<String> contigVerify = new CountMap<String>();
+        // We will save contig IDs in here.
+        Set<String> contigIds = new HashSet<String>();
         for (JsonObject record : results) {
             String genomeId = KeyBuffer.getString(record, "genome_id");
             contigVerify.count(genomeId);
             assertThat(genomeId, in(contigCounts.keySet()));
+            contigIds.add(KeyBuffer.getString(record, "sequence_id"));
         }
         for (String genomeId : contigCounts.keySet()) {
             int expected = contigCounts.get(genomeId);
             int found = contigVerify.getCount(genomeId);
             assertThat("Contig count for " + genomeId + " incorrect.", found, equalTo(expected));
+        }
+        // Now we're going to do this query again using the map feature.
+        Map<String, JsonObject> resultMap = p3.getRecordMap("contig", 20000, 2000, contigIds, "sequence_id,genome_id,length");
+        assertThat(resultMap.size(), equalTo(results.size()));
+        for (JsonObject record : results) {
+            String seqId = KeyBuffer.getString(record, "sequence_id");
+            assertThat(resultMap, hasKey(seqId));
+            assertThat(resultMap.get(seqId), equalTo(record));
         }
         // Get a bunch of genome IDs for Mycobacteria with between 3000 and 4000 CDS features.
         genomeList = p3.getRecords("genome", 5000, "genome_id,genus,patric_cds",

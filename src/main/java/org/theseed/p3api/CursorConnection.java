@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
@@ -330,6 +331,38 @@ public class CursorConnection extends SolrConnection {
     public List<JsonObject> getRecords(String table, int limit, int batchSize, String keyField, Collection<String> keyValues, 
             String fields, SolrFilter... criteria) throws IOException {
         return this.getRecords(table, limit, batchSize, keyField, keyValues, fields, Arrays.asList(criteria));
+    }
+
+    /**
+     * Get a map of records from a table using a key field. This is essentially a relationship
+     * crossing. We take as input a list of key values and the name of a key field, then run the
+     * query for each key value. A batch size is specified that limits the number of key values in
+     * each query. The batch size is responsible for preventing parameter buffer overrun and
+     * ensuring that the queries can be processed efficiently. Thus, the larger the key size, and
+     * the larger the number of expected records per key, the smaller the batch size should be.
+     * 
+     * @param table         user-friendly table name
+     * @param limit         maximum number of rows to return
+     * @param batchSize     maximum number of key values to include in each query
+     * @param keyField      name of the key field
+     * @param keyValues     list of key values
+     * @param fields        comma-delimited list of fields to return
+     * @param criteria      array of filters to apply
+     * 
+     * @return a map from the record keys to the records themselves
+     * 
+     * @throws IOException
+     */
+    public Map<String, JsonObject> getRecordMap(String table, int limit, int batchSize, Collection<String> keyValues, 
+            String fields, SolrFilter... criteria) throws IOException {
+        String keyField = this.dataMap.getTable(table).getKeyField();
+        List<JsonObject> records = this.getRecords(table, limit, batchSize, keyField, keyValues, fields, criteria);
+        Map<String, JsonObject> retVal = new HashMap<String, JsonObject>(records.size() * 4 / 3 + 1);
+        for (JsonObject record : records) {
+            String key = KeyBuffer.getString(record, keyField);
+            retVal.put(key, record);
+        }
+        return retVal;
     }
 
     /**
