@@ -1,6 +1,7 @@
 package org.theseed.p3api;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -97,14 +98,16 @@ public abstract class SolrFilter {
      * 
      * @param dataMap   the data map to use for fixing up the field names
      * @param table     the name of the table containing the fields
-     * @param criteria  the array of criteria to convert
+     * @param criteria  the collection of criteria to convert
      * 
      * @throws IOException 
      */
-    public static String[] toStrings(BvbrcDataMap dataMap, String table, SolrFilter[] criteria) throws IOException {
-        String[] retVal = new String[criteria.length];
-        for (int i = 0; i < criteria.length; i++) {
-            retVal[i] = criteria[i].toString(dataMap, table);
+    public static String[] toStrings(BvbrcDataMap dataMap, String table, Collection<SolrFilter> criteria) throws IOException {
+        String[] retVal = new String[criteria.size()];
+        int i = 0;
+        for (SolrFilter filter : criteria) {
+            retVal[i] = filter.toString(dataMap, table);
+            i++;
         }
         return retVal;
     }
@@ -147,6 +150,33 @@ public abstract class SolrFilter {
         @Override
         public String toString(BvbrcDataMap dataMap, String table) throws IOException {            
             return this.getInternalFieldName(dataMap, table) + ":" + this.getValue();
+        }
+
+    }
+
+    /**
+     * This is a one-of-a-set filter.
+     */
+    protected static class In extends SolrFilter {
+
+        /** array of values for the filter */
+        private String[] values;
+
+        public In(String field, String[] values) {
+            super(field);
+            this.values = values;
+        }
+
+        @Override
+        public String toString(BvbrcDataMap dataMap, String table) throws IOException {
+            StringBuilder retVal = new StringBuilder();
+            retVal.append(this.getInternalFieldName(dataMap, table)).append(":(");
+            for (int i = 0; i < values.length; i++) {
+                if (i > 0) retVal.append(" OR ");
+                retVal.append(quote(values[i]));
+            }
+            retVal.append(")");
+            return retVal.toString();
         }
 
     }
@@ -232,6 +262,18 @@ public abstract class SolrFilter {
     }
 
     /**
+     * Filter on a field having one of a particular set of values.
+     * 
+     * @param field     user-friendly field name
+     * @param values    the array of values to filter on
+     * 
+     * @return a new one-of-a-set filter
+     */
+    public static SolrFilter IN(String field, String... values) {
+        return new In(field, values);
+    }
+
+    /**
      * Filter on a numeric field having a particular value.
      * 
      * @param field     user-friendly field name
@@ -252,6 +294,30 @@ public abstract class SolrFilter {
      * @return a new non-equality filter
      */
     public static SolrFilter NE(String field, double value) {
+        return new Ne(field, String.valueOf(value));
+    }
+
+    /**
+     * Filter on an integer field having a particular value.
+     * 
+     * @param field     user-friendly field name
+     * @param value     the value to filter on
+     * 
+     * @return a new equality filter
+     */
+    public static SolrFilter EQ(String field, int value) {
+        return new Eq(field, String.valueOf(value));
+    }
+
+    /**
+     * Filter on an integer field not having a particular value.
+     * 
+     * @param field     user-friendly field name
+     * @param value     the value to filter on
+     * 
+     * @return a new non-equality filter
+     */
+    public static SolrFilter NE(String field, int value) {
         return new Ne(field, String.valueOf(value));
     }
 

@@ -2,6 +2,8 @@ package org.theseed.p3api;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import com.github.cliftonlabs.json_simple.Jsoner;
  * This is a subclass of SolrConnection that uses cursor-based paging, which is more efficient
  * for large result sets. The drawback is that the user cannot control the sort order, and
  * the query does not use the standard query format, but rather the raw SOLR format.
+ * This class is not even remotely thread-safe, so code accordingly.
  * 
  * @author Bruce Parrello
  */
@@ -109,6 +112,136 @@ public class CursorConnection extends SolrConnection {
     }
 
     /**
+     * Get a bunch of records from a table using a key field. This is essentially a relationship
+     * crossing. We take as input a list of key values and the name of a key field, then run the
+     * query for each key value. A batch size is specified that limits the number of key values in
+     * each query. The batch size is responsible for preventing parameter buffer overrun and
+     * ensuring that the queries can be processed efficiently. Thus, the larger the key size, and
+     * the larger the number of expected records per key, the smaller the batch size should be.
+     * 
+     * @param table         user-friendly table name
+     * @param limit         maximum number of rows to return
+     * @param batchSize     maximum number of key values to include in each query
+     * @param keyField      user-friendly name of the key field
+     * @param keyValues     list of key values
+     * @param fields        comma-delimited list of fields to return
+     * @param criteria      collection of filters to apply
+     * 
+     * @return the desired list of records
+     * 
+     * @throws IOException
+     */
+    public List<JsonObject> getRecords(String table, int limit, int batchSize, String keyField, Collection<String> keyValues,
+            String fields, Collection<SolrFilter> criteria) throws IOException {
+        // Copy the filter list. This list is usually small, and copying it allows us to modify it when processing
+        // a query batch. Our modification will be to add the IN clause and then remove it.
+        List<SolrFilter> filterList = new ArrayList<SolrFilter>(criteria.size() + 1);
+        filterList.addAll(criteria);
+        // We store the resulting records in here. We initialize it to the smaller of the limit and twice the batch
+        // size, which is a compromise between memory usage and performance.
+        int arraySize = Math.min(batchSize * 2, limit);
+        List<JsonObject> retVal = new ArrayList<JsonObject>(arraySize);
+        // Each batch query will return a number of records less than or equal to the limit. The remaining
+        // limit is tracked in here, and is used to limit the next batch query.
+        int remaining = limit;
+        // The current batch of key values is built in here. If we have fewer keys, we will shorten the array,
+        // but that will only happen during the last loop iteration.
+        String[] keys = new String[batchSize];
+        int numKeys = 0;
+        // Now we are ready.
+        Iterator<String> iter = keyValues.iterator();
+        while (iter.hasNext() && remaining > 0) {
+            String key = iter.next();
+            // Insure there is room for this key.
+            if (numKeys >= batchSize) {
+                // We have filled the batch, so we can process it.
+                this.processBatch(retVal, table, remaining, keyField, keys, fields, filterList);
+                remaining = limit - retVal.size();
+                // Reset for the next batch.
+                numKeys = 0;
+            }
+            // We have room, so add the key.
+            keys[numKeys] = key;
+            numKeys++;
+        }
+        // If there are any remaining keys, process them as well.
+        if (numKeys > 0 && remaining > 0) {
+            keys = Arrays.copyOf(keys, numKeys);
+            this.processBatch(retVal, table, remaining, keyField, keys, fields, filterList);
+        }
+        // Return the records found.
+        return retVal;
+    }
+
+    /**
+     * Process a batch of queries.
+     * 
+     * @param resultList    accumulating list of query results
+     * @param table         user-friendly name of the target table for the query
+     * @param limit         maximum number of records to return
+     * @param keyField      user-friendly name of the key field
+     * @param keys          array of desired key values
+     * @param fields        comma-delimited list of fields to return
+     * @param criteria      list of filters to apply; this is modified and restored by the method
+     * 
+     * @throws IOException 
+     */
+    private void processBatch(List<JsonObject> resultList, String table, int remaining, String keyField, String[] keys,
+            String fields, List<SolrFilter> criteria) throws IOException {
+        // We need to add an "IN" clause to the query to specify the keys.
+        criteria.add(SolrFilter.IN(keyField, keys));
+        // Now we execute the query.
+        List<JsonObject> batchResults = this.getRecords(table, remaining, fields, criteria);
+        // Add the results to the result list.
+        resultList.addAll(batchResults);
+        // Restore the criteria list.
+        criteria.removeLast();
+    }
+
+    /**
+     * Get a bunch of records from a table using a key field. This is essentially a relationship
+     * crossing. We take as input a list of key values and the name of a key field, then run the
+     * query for each key value. A batch size is specified that limits the number of key values in
+     * each query. The batch size is responsible for preventing parameter buffer overrun and
+     * ensuring that the queries can be processed efficiently. Thus, the larger the key size, and
+     * the larger the number of expected records per key, the smaller the batch size should be.
+     * 
+     * @param table         user-friendly table name
+     * @param limit         maximum number of rows to return
+     * @param batchSize     maximum number of key values to include in each query
+     * @param keyField      name of the key field
+     * @param keyValues     list of key values
+     * @param fields        comma-delimited list of fields to return
+     * @param criteria      array of filters to apply
+     * 
+     * @return the desired list of records
+     * 
+     * @throws IOException
+     */
+    public List<JsonObject> getRecords(String table, int limit, int batchSize, String keyField, Collection<String> keyValues, 
+            String fields, SolrFilter... criteria) throws IOException {
+        return this.getRecords(table, limit, batchSize, keyField, keyValues, fields, Arrays.asList(criteria));
+    }
+
+    /**
+     * Get a list of records from a table using the BVBRC data map. The client specifies the user-friendly
+     * table name, a list of fields (also using user-friendly names), a limit, and one or more filters
+     * (again, using user-friendly names). An error will occur if the filters overflow the parameter buffer.
+     * Note that this is a convenience method that just converts the criterion array to a collection and calls
+     * the main method.
+     * 
+     * @param table     user-friendly table name
+     * @param limit     maximum number of rows to return
+     * @param fields    comma-delimiter list of user-friendly field names
+     * @param criteria  collection of user-friendly criteria
+     * 
+     * @throws IOException
+     */
+    public List<JsonObject> getRecords(String table, int limit, String fields, SolrFilter... criteria) throws IOException {
+        return this.getRecords(table, limit, fields, Arrays.asList(criteria));
+    }
+
+    /**
      * Get a list of records from a table using the BVBRC data map. The client specifies the user-friendly
      * table name, a list of fields (also using user-friendly names), a limit, and one or more filters
      * (again, using user-friendly names). An error will occur if the filters overflow the parameter buffer.
@@ -116,11 +249,11 @@ public class CursorConnection extends SolrConnection {
      * @param table     user-friendly table name
      * @param limit     maximum number of rows to return
      * @param fields    comma-delimiter list of user-friendly field names
-     * @param criteria  array of user-friendly criteria
+     * @param criteria  collection of user-friendly criteria
      * 
      * @throws IOException
      */
-    public List<JsonObject> getRecords(String table, int limit, String fields, SolrFilter... criteria) throws IOException {
+    public List<JsonObject> getRecords(String table, int limit, String fields, Collection<SolrFilter> criteria) throws IOException {
         // Save the row limit.
         this.rowLimit = limit;
         // Convert the user-friendly table name to its SOLR name and build the request.
@@ -139,7 +272,8 @@ public class CursorConnection extends SolrConnection {
         String allFields = StringUtils.join(fieldSet, ',');
         // Set up the constant parameters. These are used on every query, even after we find the cursor mark.
         this.constantParms = "fl=" + allFields + "&sort=" + solrTable.getInternalSortField() + "+asc";
-        // Now we need to set up the filters.
+        // Now we need to set up the filters. The filters all go in the "q" parameter, which
+        // is what we store in the parameter buffer.
         String[] filterStrings = SolrFilter.toStrings(this.dataMap, table, criteria);
         if (filterStrings.length == 0)
             filterStrings = DEFAULT_FILTER;
@@ -221,11 +355,15 @@ public class CursorConnection extends SolrConnection {
             log.debug("Chunk at position {} returned {} of {} records.", this.getChunkPosition(), docs.size(), numFound);
             // Update the cursor mark for next time.
             cursorMark = (String) results.getStringOrDefault(SpecialKeys.NEXT_CURSOR_MARK);
+            // Here we check to see if we are done. We are done if there is no cursor, if the number of
+            // documents is equal to (or greater than) the number of rows left, or the number of
+            // documents returned is equal to or greater than the total number of documents to find.
+            int numReturned = this.getChunkPosition() + docs.size();
             // If the number of documents is more than the rows left or there is no cursor, we are done.
-            if (docs.size() >= rowsLeft || cursorMark == null)
+            if (docs.size() >= rowsLeft || numReturned >= numFound || cursorMark == null)
                 done = true;
             // Update the chunk position.
-            this.setChunkPosition(this.getChunkPosition() + docs.size());
+            this.setChunkPosition(numReturned);
             // Save the actual records.
             for (Object doc : docs)
                 retVal.add((JsonObject) doc);
