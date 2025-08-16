@@ -344,10 +344,37 @@ public class CursorConnection extends SolrConnection {
      * @param fields    comma-delimiter list of user-friendly field names
      * @param criteria  collection of user-friendly criteria
      * 
+     * @return a list of the matching records
+     * 
      * @throws IOException
      */
     public List<JsonObject> getRecords(String table, int limit, String fields, SolrFilter... criteria) throws IOException {
         return this.getRecords(table, limit, fields, Arrays.asList(criteria));
+    }
+
+    /**
+     * Get a single record from a table using the primary key. The client specifies the user-friendly
+     * table name, the key value, and a list of fields (also using user-friendly names).
+     * 
+     * @param table     user-friendly table name
+     * @param keyValue  primary key value
+     * @param fields    comma-delimiter list of user-friendly field names
+     * 
+     * @return the matching record, or NULL if it was not found
+     * 
+     * @throws IOException
+     */
+    public JsonObject getRecord(String table, String keyValue, String fields) throws IOException {
+        JsonObject retVal;
+        BvbrcDataMap.Table tbl = this.dataMap.getTable(table);
+        // Get the user-friendly key field name.
+        String keyName = tbl.getKeyField();
+        List<JsonObject> records = this.getRecords(table, 1, fields, SolrFilter.EQ(keyName, keyValue));
+        if (records.isEmpty())
+            retVal = null;
+        else
+            retVal = records.get(0);
+        return retVal;
     }
 
     /**
@@ -359,6 +386,8 @@ public class CursorConnection extends SolrConnection {
      * @param limit     maximum number of rows to return
      * @param fields    comma-delimiter list of user-friendly field names
      * @param criteria  collection of user-friendly criteria
+     * 
+     * @return a list of the matching records
      * 
      * @throws IOException
      */

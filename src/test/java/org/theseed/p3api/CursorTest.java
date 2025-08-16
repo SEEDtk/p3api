@@ -235,6 +235,23 @@ public class CursorTest {
     }
 
     @Test
+    public void testSingleRecord() throws IOException, JsonException {
+        File testFile = new File("data", "patric.json");
+        BvbrcDataMap dataMap = BvbrcDataMap.load(testFile);
+        assertThat(dataMap, is(notNullValue()));
+        CursorConnection p3 = new CursorConnection(dataMap);
+        assertThat(p3, is(notNullValue()));
+        JsonObject featObject = p3.getRecord("feature", "fig|83332.12.peg.2481", "genome_name,annotation,protein_sequence,patric_id");
+        assertThat(featObject, not(nullValue()));
+        assertThat(KeyBuffer.getString(featObject, "patric_id"), equalTo("fig|83332.12.peg.2481"));
+        assertThat(KeyBuffer.getString(featObject, "genome_name"), equalTo("Mycobacterium tuberculosis H37Rv"));
+        assertThat(KeyBuffer.getString(featObject, "annotation"), equalTo("hypothetical protein"));
+        assertThat(KeyBuffer.getString(featObject, "protein_sequence"), equalTo("MTRWDKRVDSGDWDAIAAEVSEYGGALLPRLITPGEAARLRKLYADDGLFRSTVDMASKRYGAGQYRYFHAPYPE"));
+        featObject = p3.getRecord("feature", "fig|83332.12.frog.2481", "genome_name,annotation,protein_sequence,patric_id");
+        assertThat(featObject, nullValue());
+    }
+
+    @Test
     public void testDerivedFields() throws IOException, JsonException {
         File testFile = new File("data", "patric.json");
         BvbrcDataMap dataMap = BvbrcDataMap.load(testFile);
