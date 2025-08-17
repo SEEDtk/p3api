@@ -286,8 +286,9 @@ public class P3ApiTest
         p3genome = P3Genome.load(p3, gto.getId(), P3Genome.Details.PROTEINS);
         Collection<Feature> pegs = gto.getPegs();
         for (Feature fid : pegs) {
-            Feature p3fid = p3genome.getFeature(fid.getId());
-            assertThat(p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
+            String p3Id = fid.getId();
+            Feature p3fid = p3genome.getFeature(p3Id);
+            assertThat(p3Id, p3fid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
         }
         assertThat(p3genome.hasContigs(), equalTo(false));
         // Now, FULL level.

@@ -560,7 +560,7 @@ public class CursorConnection extends SolrConnection {
             for (Object doc : docs)
                 retVal.add((JsonObject) doc);
         }
-        log.info("Fetched {} records in {}ms.", retVal.size(), System.currentTimeMillis() - start);
+        log.debug("Fetched {} records in {}ms.", retVal.size(), System.currentTimeMillis() - start);
         return retVal;
     }
 

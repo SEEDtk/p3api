@@ -158,7 +158,7 @@ public class P3Genome extends Genome {
                 String featureFields = "patric_id,sequence_id,start,end,strand,product,plfam_id,pgfam_id,figfam_id" +
                         ",gi,gene,gene_id,refseq_locus_tag,go,uniprotkb_accession,protein_id,na_sequence_md5,aa_sequence_md5";
                 if (detail.includesProteins())
-                    featureFields += ",protein_sequence";
+                    featureFields += ",aa_sequence";
                 Collection<JsonObject> fidList = p3.getRecords("feature", CursorConnection.MAX_LIMIT, featureFields,
                         SolrFilter.EQ("genome_id", genome_id), SolrFilter.EQ("annotation", "PATRIC"));
                 storeFeatures(p3, detail, retVal, fidList);
@@ -215,7 +215,7 @@ public class P3Genome extends Genome {
                     String protein = "";
                     if (wantSequences) {
                         // Here we are storing protein translations for all the features that have them.
-                        protein = KeyBuffer.getString(fid, "protein_sequence");
+                        protein = KeyBuffer.getString(fid, "aa_sequence");
                     } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
                         // We always store the PheS protein.
                         JsonObject pRecord = p3.getRecord("sequence", KeyBuffer.getString(fid, "aa_sequence_md5"), "sequence");

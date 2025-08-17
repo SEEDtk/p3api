@@ -37,7 +37,7 @@ public class BvbrcDataMap {
     public static final BvbrcDataMap DEFAULT_DATA_MAP = new BvbrcDataMap(Map.of(
         "genome", new Table("genome", "genome_id", "genome_id"),
         "genome_amr", new Table("genome_amr", "id", "id"),
-        "feature", new Table("feature", "feature_id", "patric_id",
+        "feature", new Table("genome_feature", "feature_id", "patric_id",
                 "aa_sequence,sequence,aa_sequence_md5,sequence",
                 "na_sequence,sequence,na_sequence_md5,sequence"),
         "taxon", new Table("taxonomy", "taxon_id", "taxon_id"),
@@ -260,6 +260,7 @@ public class BvbrcDataMap {
             this.fieldMap = new ConcurrentHashMap<>();
             this.sortField = sortField;
             this.keyField = keyField;
+            this.keyFieldName = keyField;
             for (String derivation : derivations) {
                 String[] parts = StringUtils.split(derivation, ',');
                 if (parts.length != 4)
