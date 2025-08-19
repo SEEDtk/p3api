@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,16 +21,13 @@ import org.theseed.genome.Genome;
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonObject;
 
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-
 public class CursorTest {
 
     /** tables in the test file */
-    private static Set<String> TABLE_SET = Set.of("genome", "genome_amr", "feature", "taxon", "contig", "sequence",
+    private static final Set<String> TABLE_SET = Set.of("genome", "genome_amr", "feature", "taxon", "contig", "sequence",
             "subsystem_item", "family", "subsystem", "special_gene");
     /** logging facility */
-    private static Logger log = LoggerFactory.getLogger(CursorTest.class);
+    private static final Logger log = LoggerFactory.getLogger(CursorTest.class);
 
     @Test
     public void testDataMap() throws IOException, JsonException {
@@ -182,7 +181,7 @@ public class CursorTest {
         List<JsonObject> genomeList = p3.getRecords("genome", 2000, "genome_id,contigs",
                 SolrFilter.LT("contigs", 5));
         assertThat(genomeList.size(), lessThanOrEqualTo(2000));
-        Map<String, Integer> contigCounts = new HashMap<String, Integer>();
+        Map<String, Integer> contigCounts = new HashMap<>();
         for (JsonObject genome : genomeList) {
             String genomeId = KeyBuffer.getString(genome, "genome_id");
             int contigCount = KeyBuffer.getInt(genome, "contigs");
@@ -192,9 +191,9 @@ public class CursorTest {
         List<JsonObject> results = p3.getRecords("contig", 20000, 95, "genome_id", contigCounts.keySet(), "sequence_id,genome_id,length");
         assertThat(results.size(), lessThan(20000));
         // We will count contigs in here.
-        CountMap<String> contigVerify = new CountMap<String>();
+        CountMap<String> contigVerify = new CountMap<>();
         // We will save contig IDs in here.
-        Set<String> contigIds = new HashSet<String>();
+        Set<String> contigIds = new HashSet<>();
         for (JsonObject record : results) {
             String genomeId = KeyBuffer.getString(record, "genome_id");
             contigVerify.count(genomeId);

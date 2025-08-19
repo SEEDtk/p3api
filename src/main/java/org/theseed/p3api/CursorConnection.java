@@ -42,7 +42,7 @@ public class CursorConnection extends SolrConnection {
     /** authorization token */
     protected String authToken;
     /** bv-brc data map */
-    private BvbrcDataMap dataMap;
+    private final BvbrcDataMap dataMap;
     /** remaining row limit */
     private int rowLimit;
     /** constant parameters */
@@ -59,7 +59,9 @@ public class CursorConnection extends SolrConnection {
         RESPONSE("response", new JsonObject().putChain("numFound", 0).putChain("docs", new JsonArray())),
         NUMFOUND("numFound", 0),
         NEXT_CURSOR_MARK("nextCursorMark", null),
-        DOCS("docs", new JsonArray());
+        DOCS("docs", new JsonArray()),
+        SCHEMA("schema", new JsonObject()),
+        FIELDS("fields", new JsonArray());
 
         private final String m_key;
         private final Object m_value;
@@ -100,17 +102,17 @@ public class CursorConnection extends SolrConnection {
     protected class DerivedFieldAction {
 
         /* field list for the derivation query (comma-delimited) */
-        private String fieldList;
+        private final String fieldList;
         /** user-friendly name of the target table's data field */
-        private String targetField;
+        private final String targetField;
         /** internal name of the source table's linking field */
-        private String linkField;
+        private final String linkField;
         /** user-friendly name of the source table's linking field */
-        private String linkFieldName;
+        private final String linkFieldName;
         /** user-friendly name of the target table */
-        private String targetTableName;
+        private final String targetTableName;
         /** user-friendly name of the target table's key */
-        private String targetKeyField;
+        private final String targetKeyField;
 
         /**
          * Construct a derived field action from the component data items.
@@ -214,7 +216,7 @@ public class CursorConnection extends SolrConnection {
      *
      * @param token		an authorization token, or NULL if the connection is to be unauthorized.
      */
-    protected void setup(String token, String url) {
+    final protected void setup(String token, String url) {
     	// Set up the URL and the chunk size.
         this.apiSetup(url);
         // If the user is not logged in, this will be null and we won't be able to access
@@ -246,12 +248,12 @@ public class CursorConnection extends SolrConnection {
             String fields, Collection<SolrFilter> criteria) throws IOException {
         // Copy the filter list. This list is usually small, and copying it allows us to modify it when processing
         // a query batch. Our modification will be to add the IN clause and then remove it.
-        List<SolrFilter> filterList = new ArrayList<SolrFilter>(criteria.size() + 1);
+        List<SolrFilter> filterList = new ArrayList<>(criteria.size() + 1);
         filterList.addAll(criteria);
         // We store the resulting records in here. We initialize it to the smaller of the limit and twice the batch
         // size, which is a compromise between memory usage and performance.
         int arraySize = Math.min(batchSize * 2, limit);
-        List<JsonObject> retVal = new ArrayList<JsonObject>(arraySize);
+        List<JsonObject> retVal = new ArrayList<>(arraySize);
         // Each batch query will return a number of records less than or equal to the limit. The remaining
         // limit is tracked in here, and is used to limit the next batch query.
         int remaining = limit;
@@ -358,7 +360,7 @@ public class CursorConnection extends SolrConnection {
             String fields, SolrFilter... criteria) throws IOException {
         String keyField = this.dataMap.getTable(table).getKeyField();
         List<JsonObject> records = this.getRecords(table, limit, batchSize, keyField, keyValues, fields, criteria);
-        Map<String, JsonObject> retVal = new HashMap<String, JsonObject>(records.size() * 4 / 3 + 1);
+        Map<String, JsonObject> retVal = new HashMap<>(records.size() * 4 / 3 + 1);
         for (JsonObject record : records) {
             String key = KeyBuffer.getString(record, keyField);
             retVal.put(key, record);
@@ -412,6 +414,30 @@ public class CursorConnection extends SolrConnection {
     }
 
     /**
+     * Get a list of allowable internal field names for a specified table.
+     * 
+     * @param table     table whose field list is desired
+     * 
+     * @return a JSON array containing the schema's field list
+     * 
+     * @throws IOException
+     */
+    public JsonArray getFieldList(String table) throws IOException {
+        // Get the table descriptor and the internal table name
+        BvbrcDataMap.Table tbl = this.dataMap.getTable(table);
+        String schemaTable = tbl.getInternalName() + "/schema";
+        // Create a request for the schema.
+        Request request = Request.Get(this.getUrl() + schemaTable + "?http_content-type=application/solrquery+x-www-form-urlencoded&http_accept=application/solr+json");
+        // Get the field list from the schema response.
+        JsonObject response = this.getResults(request);
+        JsonObject schema = response.getMapOrDefault(SpecialKeys.SCHEMA);
+        JsonArray retVal = schema.getCollectionOrDefault(SpecialKeys.FIELDS);
+        if (retVal.isEmpty())
+            throw new IOException("No fields found for table " + table + ".");
+        return retVal;
+    }
+
+    /**
      * Get a list of records from a table using the BVBRC data map. The client specifies the user-friendly
      * table name, a list of fields (also using user-friendly names), a limit, and one or more filters
      * (again, using user-friendly names). An error will occur if the filters overflow the parameter buffer.
@@ -433,9 +459,9 @@ public class CursorConnection extends SolrConnection {
         // Create the field list. We also translate to internal names here, and we require that the main key be included.
         // Here is where we also set up the reverse map for undoing field-name translations, and the derived-value action
         // tables.
-        Map<String, String> reverseMap = new TreeMap<String, String>();
-        Map<String, DerivedFieldAction> derivedMap = new HashMap<String, DerivedFieldAction>();
-        Set<String> fieldSet = new TreeSet<String>();
+        Map<String, String> reverseMap = new TreeMap<>();
+        Map<String, DerivedFieldAction> derivedMap = new HashMap<>();
+        Set<String> fieldSet = new TreeSet<>();
         fieldSet.add(solrTable.getInternalKeyField());
         for (String field : StringUtils.split(fields, ',')) {
             BvbrcDataMap.IField fieldInfo = solrTable.getInternalFieldData(field);
@@ -449,9 +475,9 @@ public class CursorConnection extends SolrConnection {
                 // If the field is an ordinary mapped field, save the reversing mapping.
                 if (fieldInfo instanceof BvbrcDataMap.MappedField)
                     reverseMap.put(internalName, field);
-                else if (fieldInfo instanceof BvbrcDataMap.DerivedField) {
+                else if (fieldInfo instanceof BvbrcDataMap.DerivedField derivedFieldInfo) {
                     // Here we have a derived field, so we need to set up a derived field action.
-                    DerivedFieldAction action = new DerivedFieldAction(this.dataMap, (BvbrcDataMap.DerivedField) fieldInfo);
+                    DerivedFieldAction action = new DerivedFieldAction(this.dataMap, derivedFieldInfo);
                     derivedMap.put(field, action);
                 } else
                     throw new IllegalStateException("Unknown field type for field " + field + " in table " + table + ".");
@@ -507,9 +533,11 @@ public class CursorConnection extends SolrConnection {
 
     @Override
 	protected List<JsonObject> getResponse(Request request) {
-	    List<JsonObject> retVal = new ArrayList<JsonObject>();
+	    List<JsonObject> retVal = new ArrayList<>();
 	    // Set up to loop through the chunks of response.
 	    this.setChunkPosition(0);
+        // Set up for progress messages if we go long.
+        long lastMsg = System.currentTimeMillis();
         // Note that we assume the parmString is nonempty, because a default filter is passed in if it is empty.
         String parmString = this.getBasicParms() + "&" + this.constantParms;
         // Start with an unknown cursor mark.
@@ -527,24 +555,18 @@ public class CursorConnection extends SolrConnection {
             // Build the full request.
             String body = parmString + "&cursorMark=" + cursorMark + "&rows=" + rowMax;
             request.bodyString(body, ContentType.APPLICATION_FORM_URLENCODED);
-            HttpResponse resp = this.submitRequest(request);
-            // Get the response JSON.
-            JsonObject results;
-            try {
-                String jsonString = EntityUtils.toString(resp.getEntity());
-                results = (JsonObject)Jsoner.deserialize(jsonString);
-                if (results == null)
-                    throw new RuntimeException("No results from BV-BRC.");
-            } catch (IOException e) {
-                throw new RuntimeException("HTTP conversion error: " + e.toString());
-            } catch (JsonException e) {
-                throw new RuntimeException("JSON parsing error: " + e.toString());
-            }
+            JsonObject results = this.getResults(request);
             // Here we have a response. We need the number found and the actual records.
             JsonObject response = (JsonObject) results.get("response");
             long numFound = (long) response.getLong(SpecialKeys.NUMFOUND);
             JsonArray docs = response.getCollectionOrDefault(SpecialKeys.DOCS);
             log.debug("Chunk at position {} returned {} of {} records.", this.getChunkPosition(), docs.size(), numFound);
+            long now = System.currentTimeMillis();
+            if (now - lastMsg > 5000) {
+                // If we are taking too long, log a message.
+                log.info("Found {} records so far in {} query.", retVal.size(), this.getTable());
+                lastMsg = now;
+            }
             // Update the cursor mark for next time.
             cursorMark = (String) results.getStringOrDefault(SpecialKeys.NEXT_CURSOR_MARK);
             // Here we check to see if we are done. We are done if there is no cursor, if the number of
@@ -562,6 +584,30 @@ public class CursorConnection extends SolrConnection {
         }
         log.debug("Fetched {} records in {}ms.", retVal.size(), System.currentTimeMillis() - start);
         return retVal;
+    }
+
+    /**
+     * Get the results from a proposed request. The results include the response and various headers.
+     * 
+     * @param request   request to send to the server
+     * 
+     * @return a result object for the request
+     */
+    private JsonObject getResults(Request request) {
+        HttpResponse resp = this.submitRequest(request);
+        // Get the result JSON.
+        JsonObject results;
+        try {
+            String jsonString = EntityUtils.toString(resp.getEntity());
+            results = (JsonObject)Jsoner.deserialize(jsonString);
+            if (results == null)
+                throw new RuntimeException("No results from BV-BRC.");
+        } catch (IOException e) {
+            throw new RuntimeException("HTTP conversion error: " + e.toString());
+        } catch (JsonException e) {
+            throw new RuntimeException("JSON parsing error: " + e.toString());
+        }
+        return results;
     }
 
 }

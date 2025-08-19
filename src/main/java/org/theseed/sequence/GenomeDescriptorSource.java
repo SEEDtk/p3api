@@ -21,7 +21,7 @@ public class GenomeDescriptorSource implements Iterable<GenomeDescriptor> {
 
     // FIELDS
     /** genome source */
-    private GenomeSource genomes;
+    private final GenomeSource genomes;
 
     /**
      * Create a genome descriptor iterator from the specified genome source.
@@ -48,7 +48,7 @@ public class GenomeDescriptorSource implements Iterable<GenomeDescriptor> {
     public class Iter implements Iterator<GenomeDescriptor> {
 
         /** iterator for the underlying genome source */
-        private Iterator<Genome> genomeIter;
+        private final Iterator<Genome> genomeIter;
 
         /**
          * Create the iterator.

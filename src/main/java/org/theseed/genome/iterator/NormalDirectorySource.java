@@ -121,7 +121,7 @@ public class NormalDirectorySource extends GenomeSource implements IGenomeTarget
 
     @Override
     public Set<String> getGenomeIDs() {
-        return new TreeSet<String>(this.source.getGenomeIDs());
+        return new TreeSet<>(this.source.getGenomeIDs());
     }
 
 

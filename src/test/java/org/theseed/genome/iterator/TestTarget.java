@@ -3,15 +3,14 @@
  */
 package org.theseed.genome.iterator;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import org.junit.jupiter.api.Test;
 import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
@@ -66,7 +65,7 @@ public class TestTarget {
     public void resetTarget(File tDir) throws IOException {
         GenomeDirectory targetDir = new GenomeDirectory(tDir);
         // Note we copy the set so that it is not a problem if it gets modified.
-        Set<String> targetIds = new TreeSet<String>(targetDir.getGenomeIDs());
+        Set<String> targetIds = new TreeSet<>(targetDir.getGenomeIDs());
         for (String genomeId : targetIds) {
             if (! genomeId.contentEquals("1079.16") && ! genomeId.contentEquals("1121447.3")) {
                 File gFile = new File(tDir, genomeId + ".gto");

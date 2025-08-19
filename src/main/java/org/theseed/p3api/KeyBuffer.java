@@ -19,7 +19,7 @@ public class KeyBuffer implements JsonKey {
 	/** name of the key */
     private String keyName;
     /** value to use when the key is not present */
-    private Object defaultValue;
+    private final Object defaultValue;
 	/** empty string list */
 	public static final JsonArray EMPTY_LIST = new JsonArray();
 
@@ -113,6 +113,20 @@ public class KeyBuffer implements JsonKey {
 	public static int getInt(JsonObject record, String keyName) {
 	    KeyBuffer intBuffer = new KeyBuffer(keyName, 0);
 	    int retVal = record.getIntegerOrDefault(intBuffer);
+	    return retVal;
+	}
+
+	/**
+	 * Extract a boolean from a record field.
+	 *
+	 * @param record	source record
+	 * @param keyName	name of the field containing an boolean value
+	 *
+	 * @return the boolean value of the field
+	 */
+	public static boolean getFlag(JsonObject record, String keyName) {
+	    KeyBuffer intBuffer = new KeyBuffer(keyName, false);
+	    boolean retVal = record.getBooleanOrDefault(intBuffer);
 	    return retVal;
 	}
 

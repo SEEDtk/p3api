@@ -6,16 +6,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonKey;
+import com.github.cliftonlabs.json_simple.JsonObject;
 import com.github.cliftonlabs.json_simple.Jsoner;
 
 /**
@@ -93,9 +95,15 @@ public class BvbrcDataMap {
     public static interface IField { 
 
         /**
-         * @rturn the internal name needed to process this field mapping.
+         * @return the internal name needed to process this field mapping.
          */
         public String getInternalName();
+
+        /**
+         * @return a descriptive string for the field mapping
+         */
+        public String getDescription();
+        
     }
 
     /**
@@ -162,6 +170,11 @@ public class BvbrcDataMap {
             return targetField;
         }
 
+        @Override
+        public String getDescription() {
+            return targetTable + "(" + sourceField + " -> " + targetField + ")";
+        }
+
     }
 
     /**
@@ -189,6 +202,11 @@ public class BvbrcDataMap {
             return this.internalName;
         }
 
+        @Override
+        public String getDescription() {
+            return this.internalName;
+        }
+
     }
 
     /**
@@ -201,9 +219,9 @@ public class BvbrcDataMap {
         /** internal table name */
         private String name;
         /** map of user-friendly field names to internal field names */
-        private Map<String, IField> fieldMap;
+        private final Map<String, IField> fieldMap;
         /** internal name of key field */
-        private String keyField;
+        private final String keyField;
         /** user-friendly name of key field */
         private String keyFieldName;
         /** internal name of sort field */
@@ -225,7 +243,7 @@ public class BvbrcDataMap {
             this.sortField = json.getString(DataKey.SORT);
             if (this.sortField.isEmpty())
                 this.sortField = this.keyField;
-            this.fieldMap = new TreeMap<String, IField>();
+            this.fieldMap = new TreeMap<>();
             // Default the user-friendly key name to the internal name.
             this.keyFieldName = this.keyField;
             // Now process the mapping. We save the user-friendly key name here.
@@ -233,12 +251,15 @@ public class BvbrcDataMap {
             for (var mapEntry : jsonMap.entrySet()) {
                 String fieldName = mapEntry.getKey();
                 Object fieldValue = mapEntry.getValue();
-                if (fieldValue instanceof String) {
-                    this.fieldMap.put(fieldName, new MappedField((String) fieldValue));
-                    if (this.keyField.equals((String) fieldValue))
-                        this.keyFieldName = fieldName;
-                } else if (fieldValue instanceof JsonObject) {
-                    this.fieldMap.put(fieldName, new DerivedField((JsonObject) fieldValue));
+                switch (fieldValue) {
+                    case String string -> {
+                        this.fieldMap.put(fieldName, new MappedField(string));
+                        if (this.keyField.equals(string))
+                            this.keyFieldName = fieldName;
+                    }
+                    case JsonObject jsonObject -> this.fieldMap.put(fieldName, new DerivedField(jsonObject));
+                    default -> {
+                    }
                 }
             }
         }
@@ -291,8 +312,8 @@ public class BvbrcDataMap {
         public String getInternalFieldName(String friendlyName) {
             String retVal = null;
             IField fieldData = this.fieldMap.get(friendlyName);
-            if (fieldData instanceof MappedField)
-                retVal = ((MappedField) fieldData).getInternalName();
+            if (fieldData instanceof MappedField mappedField)
+                retVal = mappedField.getInternalName();
             else if (fieldData == null)
                 retVal = friendlyName;
             return retVal;
@@ -319,19 +340,52 @@ public class BvbrcDataMap {
             return this.keyFieldName;
         }
 
-        public String getUserFieldName(String linkField) {
+        /**
+         * @return the user-friendly name of a field
+         * 
+         * @param internalName  internal name of the field
+         */
+        public String getUserFieldName(String internalName) {
             // The default user field name is the internal name. This will be our output
             // most of the time.
-            String retVal = linkField;
+            String retVal = internalName;
             // Check for a mapping in the table map that leads to the link field.
             Iterator<Map.Entry<String, IField>> iter = this.fieldMap.entrySet().iterator();
             boolean done = ! (this.fieldMap.isEmpty());
             while (iter.hasNext() && !done) {
                 Map.Entry<String, IField> entry = iter.next();
                 IField field = entry.getValue();
-                if (field instanceof MappedField && field.getInternalName().equals(linkField)) {
+                if (field instanceof MappedField && field.getInternalName().equals(internalName)) {
                     retVal = entry.getKey();
                     done = true;
+                }
+            }
+            return retVal;
+        }
+
+        /**
+         * @return a map of all internal names to their user-friendly field names
+         */
+        public Map<String, String> getReverseMap() {
+            Map<String, String> retVal = new TreeMap<>();
+            for (var entry : this.fieldMap.entrySet()) {
+                IField field = entry.getValue();
+                if (field instanceof MappedField) {
+                    retVal.put(field.getInternalName(), entry.getKey());
+                }
+            }
+            return retVal;
+        }
+
+        /**
+         * @return the names of the derived fields
+         */
+        public Set<String> getDerivedFieldNames() {
+            Set<String> retVal = new TreeSet<>();
+            for (var entry : this.fieldMap.entrySet()) {
+                IField field = entry.getValue();
+                if (field instanceof DerivedField) {
+                    retVal.add(entry.getKey());
                 }
             }
             return retVal;

@@ -11,6 +11,16 @@ import java.util.Iterator;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.Test;
 import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Annotation;
 import org.theseed.genome.Contig;
@@ -23,11 +33,6 @@ import org.theseed.genome.iterator.IGenomeTarget;
 import org.theseed.io.MarkerFile;
 import org.theseed.p3api.P3Connection;
 import org.theseed.sequence.Sequence;
-import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Bruce Parrello
@@ -104,14 +109,9 @@ public class CoreTest {
             assertThat(coreSource.size(), equalTo(2));
             for (Genome genome : coreSource) {
                 switch (genome.getId()) {
-                case "1123388.3" :
-                    test(test1gto, genome, false);
-                    break;
-                case "1121911.3" :
-                    test(test2gto, genome, false);
-                    break;
-                default:
-                    fail("Invalid genome ID.");
+                case "1123388.3" -> test(test1gto, genome, false);
+                case "1121911.3" -> test(test2gto, genome, false);
+                default -> fail("Invalid genome ID.");
                 }
             }
         } finally {
@@ -150,7 +150,7 @@ public class CoreTest {
         Sequence found2 = testList.get("fig|1538.8.peg.2");
         Sequence found3 = testList.get("fig|1538.8.peg.3");
         Sequence found10 = testList.get("fig|1538.8.peg.10");
-        ArrayList<Sequence> buffer = new ArrayList<Sequence>();
+        ArrayList<Sequence> buffer = new ArrayList<>();
         testList.findClose(found, 1, buffer);
         assertThat(buffer, contains(found2));
         testList.suppress(found2);
