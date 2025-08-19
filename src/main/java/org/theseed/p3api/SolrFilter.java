@@ -204,7 +204,7 @@ public abstract class SolrFilter {
     /**
      * This is a relational-operator filter. It is always created by one of the static methods.
      */
-    protected static class Rel extends SolrFilter {
+    public static class Rel extends SolrFilter {
 
         /** low-limit bracket */
         private String lowBracket;
@@ -215,7 +215,7 @@ public abstract class SolrFilter {
         /** high value for filtering */
         private String highValue;
 
-        protected Rel(String field, boolean inclusive, String low, String high) {
+        public Rel(String field, boolean inclusive, String low, String high) {
             super(field);
             // There is no quoting, because one string will be numeric and the other will 
             // be a wildcard. We are always exclusive on the wildcard side.
