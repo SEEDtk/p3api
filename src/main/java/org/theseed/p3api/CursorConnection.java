@@ -44,13 +44,13 @@ public class CursorConnection extends SolrConnection {
     /** bv-brc data map */
     private final BvbrcDataMap dataMap;
     /** remaining row limit */
-    private int rowLimit;
+    private long rowLimit;
     /** constant parameters */
     private String constantParms;
     /** default filter string */
     private static final String[] DEFAULT_FILTER = { "*:*" };
     /** maximum number of records to retrieve */
-    public static final int MAX_LIMIT = 1000000000;
+    public static final long MAX_LIMIT = 4000000000L;
 
     /**
      * This enum defines the keys used and their default values.
@@ -244,7 +244,7 @@ public class CursorConnection extends SolrConnection {
      * 
      * @throws IOException
      */
-    public List<JsonObject> getRecords(String table, int limit, int batchSize, String keyField, Collection<String> keyValues,
+    public List<JsonObject> getRecords(String table, long limit, int batchSize, String keyField, Collection<String> keyValues,
             String fields, Collection<SolrFilter> criteria) throws IOException {
         // Copy the filter list. This list is usually small, and copying it allows us to modify it when processing
         // a query batch. Our modification will be to add the IN clause and then remove it.
@@ -252,11 +252,13 @@ public class CursorConnection extends SolrConnection {
         filterList.addAll(criteria);
         // We store the resulting records in here. We initialize it to the smaller of the limit and twice the batch
         // size, which is a compromise between memory usage and performance.
-        int arraySize = Math.min(batchSize * 2, limit);
+        int arraySize = batchSize * 2;
+        if (batchSize * 2 > limit)
+            arraySize = (int) limit;
         List<JsonObject> retVal = new ArrayList<>(arraySize);
         // Each batch query will return a number of records less than or equal to the limit. The remaining
         // limit is tracked in here, and is used to limit the next batch query.
-        int remaining = limit;
+        long remaining = limit;
         // The current batch of key values is built in here. If we have fewer keys, we will shorten the array,
         // but that will only happen during the last loop iteration.
         String[] keys = new String[batchSize];
@@ -299,7 +301,7 @@ public class CursorConnection extends SolrConnection {
      * 
      * @throws IOException 
      */
-    private void processBatch(List<JsonObject> resultList, String table, int remaining, String keyField, String[] keys,
+    private void processBatch(List<JsonObject> resultList, String table, long remaining, String keyField, String[] keys,
             String fields, List<SolrFilter> criteria) throws IOException {
         // We need to add an "IN" clause to the query to specify the keys.
         criteria.add(SolrFilter.IN(keyField, keys));
@@ -331,7 +333,7 @@ public class CursorConnection extends SolrConnection {
      * 
      * @throws IOException
      */
-    public List<JsonObject> getRecords(String table, int limit, int batchSize, String keyField, Collection<String> keyValues, 
+    public List<JsonObject> getRecords(String table, long limit, int batchSize, String keyField, Collection<String> keyValues, 
             String fields, SolrFilter... criteria) throws IOException {
         return this.getRecords(table, limit, batchSize, keyField, keyValues, fields, Arrays.asList(criteria));
     }
@@ -356,7 +358,7 @@ public class CursorConnection extends SolrConnection {
      * 
      * @throws IOException
      */
-    public Map<String, JsonObject> getRecordMap(String table, int limit, int batchSize, Collection<String> keyValues, 
+    public Map<String, JsonObject> getRecordMap(String table, long limit, int batchSize, Collection<String> keyValues, 
             String fields, SolrFilter... criteria) throws IOException {
         String keyField = this.dataMap.getTable(table).getKeyField();
         List<JsonObject> records = this.getRecords(table, limit, batchSize, keyField, keyValues, fields, criteria);
@@ -384,7 +386,7 @@ public class CursorConnection extends SolrConnection {
      * 
      * @throws IOException
      */
-    public List<JsonObject> getRecords(String table, int limit, String fields, SolrFilter... criteria) throws IOException {
+    public List<JsonObject> getRecords(String table, long limit, String fields, SolrFilter... criteria) throws IOException {
         return this.getRecords(table, limit, fields, Arrays.asList(criteria));
     }
 
@@ -451,7 +453,7 @@ public class CursorConnection extends SolrConnection {
      * 
      * @throws IOException
      */
-    public List<JsonObject> getRecords(String table, int limit, String fields, Collection<SolrFilter> criteria) throws IOException {
+    public List<JsonObject> getRecords(String table, long limit, String fields, Collection<SolrFilter> criteria) throws IOException {
         // Save the row limit.
         this.rowLimit = limit;
         // Convert the user-friendly table name to its SOLR name and build the request.
@@ -548,8 +550,8 @@ public class CursorConnection extends SolrConnection {
         boolean done = false;
         while (! done) {
             // Compute the row count for the parameters. Note we also figure out the total number of requested rows left.
-            int rowMax = this.getChunkSize();
-            int rowsLeft = this.rowLimit - this.getChunkPosition();
+            long rowMax = this.getChunkSize();
+            long rowsLeft = this.rowLimit - this.getChunkPosition();
             if (rowMax > rowsLeft)
                 rowMax = rowsLeft;
             // Build the full request.
