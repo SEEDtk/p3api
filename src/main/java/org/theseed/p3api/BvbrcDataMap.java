@@ -180,7 +180,7 @@ public class BvbrcDataMap {
     /**
      * This is the most basic type of mapped field: one that has a user-friendly name.
      */
-    public static class MappedField implements IField{
+    public static class MappedField implements IField {
 
         /** internal field name */
         private String internalName;
