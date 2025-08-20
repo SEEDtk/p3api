@@ -120,7 +120,7 @@ public class BvbrcDataMap {
         private String targetTable;
         /** source field internal name */
         private String sourceField;
-        /** target field user-friendly name */
+        /** target field internal name */
         private String targetField;
 
         /**
@@ -140,7 +140,7 @@ public class BvbrcDataMap {
          * 
          * @param targetTableName   user-friendly name of the target table
          * @param sourceFieldName   internal name of the source field
-         * @param targetFieldName   user-friendly name of the target field
+         * @param targetFieldName   internal name of the target field
          */
         public DerivedField(String targetTableName, String sourceFieldName, String targetFieldName) {
             this.targetTable = targetTableName;
@@ -156,7 +156,7 @@ public class BvbrcDataMap {
         }
 
         /**
-         * @return the user-friendly name of the source field
+         * @return the internal name of the source field
          */
         @Override
         public String getInternalName() {
@@ -164,7 +164,7 @@ public class BvbrcDataMap {
         }
 
         /**
-         * @return the user-friendly name of the target field
+         * @return the internal name of the target field
          */
         public String getTargetField() {
             return targetField;
@@ -268,8 +268,8 @@ public class BvbrcDataMap {
          * Construct a table descriptor with derived fields but no mappings.
          * 
          * @param internalName  the internal name of the table
-         * @param sortField     the sort field for the table
-         * @param keyField      the key field for the table
+         * @param sortField     the internal name of the sort field for the table
+         * @param keyField      the internal name of the key field for the table
          * @param derivations   an array of derived-field strings, each containing a user-friendly
          *                      derived field name, the target table name, the source field name, 
          *                      and the target field name, comma-delimited

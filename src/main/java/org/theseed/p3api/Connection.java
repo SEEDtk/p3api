@@ -6,6 +6,7 @@ package org.theseed.p3api;
 import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -36,7 +37,7 @@ public abstract class Connection {
     /** logging facility */
     protected static Logger log = LoggerFactory.getLogger(Connection.class);
     /** parameter buffer */
-    private StringBuilder buffer;
+    private final StringBuilder buffer;
     /** table used in current request (for trace messages) */
     private String table;
     /** last request sent; used in chunking and in error messages */
@@ -50,9 +51,9 @@ public abstract class Connection {
     /** time of last NCBI query */
     private long lastNcbiQuery = System.currentTimeMillis();
     /** NCBI API key */
-    private String apiKey;
+    private final String apiKey;
     /** executor for cookie policy */
-    private Executor executor;
+    private final Executor executor;
     /** maximum retries */
     public static final int MAX_TRIES = 5;
     /** maximum length of a key list (in characters) */
@@ -135,7 +136,7 @@ public abstract class Connection {
         while (! done) {
             // Query the server for the data.
             long start = System.currentTimeMillis();
-            Response resp = null;
+            Response resp;
             try {
                 // Submit the request.
                 log.debug("Submitting request {}.", request.toString());
@@ -245,7 +246,7 @@ public abstract class Connection {
      *
      * @param timeout 	the timeout to set, in seconds
      */
-    public void setTimeout(int timeout) {
+    public final void setTimeout(int timeout) {
         this.timeout = timeout * 1000;
     }
 
@@ -286,7 +287,7 @@ public abstract class Connection {
     /**
      * Specify the position of the next data chunk.
      */
-    protected void setChunkPosition(int chunk) {
+    protected final void setChunkPosition(int chunk) {
         this.chunk = chunk;
     }
 
@@ -316,7 +317,7 @@ public abstract class Connection {
     /**
      * @param table the table to set
      */
-    protected void setTable(String table) {
+    protected final void setTable(String table) {
         this.table = table;
     }
 
@@ -330,7 +331,7 @@ public abstract class Connection {
     /**
      * @return the apiKey
      */
-    protected String getApiKey() {
+    protected final String getApiKey() {
         return apiKey;
     }
 

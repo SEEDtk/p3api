@@ -289,17 +289,17 @@ public class CursorTest {
         testFile = new File("data", "83332.12.gto");
         Genome testGenome = new Genome(testFile);
         // We will ask for all RNA and CDS features in 83332.12, and compare the sequences.
-        List<JsonObject> results = p3.getRecords("feature", 6000, "patric_id,feature_type,annotation,annotation_source,dna_sequence,protein_sequence",
+        List<JsonObject> results = p3.getRecords("feature", 6000, "feature_id,feature_type,annotation,annotation_source,dna_sequence,protein_sequence",
                 SolrFilter.EQ("genome_id", "83332.12"), SolrFilter.IN("feature_type", "CDS", "tRNA"),
                 SolrFilter.EQ("annotation_source", "PATRIC"));
         assertThat(results.size(), lessThanOrEqualTo(6000));
         // Loop through the features found, comparing sequences.
         for (JsonObject result : results) {
-            assertThat(KeyBuffer.getString(result, "patric_id"), startsWith("fig|83332.12"));
+            assertThat(KeyBuffer.getString(result, "feature_id"), startsWith("fig|83332.12"));
             assertThat(KeyBuffer.getString(result, "annotation_source"), equalTo("PATRIC"));
             assertThat(KeyBuffer.getString(result, "feature_type"), anyOf(equalTo("CDS"), equalTo("tRNA")));
             // Get the DNA sequence from the genome.
-            String fid = KeyBuffer.getString(result, "patric_id");
+            String fid = KeyBuffer.getString(result, "feature_id");
             Feature feat = testGenome.getFeature(fid);
             String dna = KeyBuffer.getString(result, "dna_sequence");
             assertThat(fid, dna, equalTo(feat.getDna()));

@@ -11,11 +11,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +54,8 @@ public class CursorConnection extends SolrConnection {
     private static final String[] DEFAULT_FILTER = { "*:*" };
     /** maximum number of records to retrieve */
     public static final long MAX_LIMIT = 4000000000L;
+    /** batch size for derived queries */
+    public static final int DERIVED_BATCH_SIZE = 500;
 
     /**
      * This enum defines the keys used and their default values.
@@ -103,16 +108,14 @@ public class CursorConnection extends SolrConnection {
 
         /* field list for the derivation query (comma-delimited) */
         private final String fieldList;
-        /** user-friendly name of the target table's data field */
-        private final String targetField;
         /** internal name of the source table's linking field */
         private final String linkField;
-        /** user-friendly name of the source table's linking field */
-        private final String linkFieldName;
-        /** user-friendly name of the target table */
+        /** internal name of the target table */
         private final String targetTableName;
-        /** user-friendly name of the target table's key */
+        /** internal name of the target table's key */
         private final String targetKeyField;
+        /** internal name of the target table's data field */
+        private final String targetField;
 
         /**
          * Construct a derived field action from the component data items.
@@ -122,24 +125,25 @@ public class CursorConnection extends SolrConnection {
          * @throws IOException 
          */
         public DerivedFieldAction(BvbrcDataMap dataMap, BvbrcDataMap.DerivedField descriptor) throws IOException {
-            this.targetTableName = descriptor.getTargetTable();
+            String targetTableUserName = descriptor.getTargetTable();
             // Get the table descriptor from the data map.
-            BvbrcDataMap.Table table = dataMap.getTable(this.targetTableName);
-            // The target key field is the user-friendly key name.
+            BvbrcDataMap.Table table = dataMap.getTable(targetTableUserName);
+            // Get the internal name of the target table.
+            this.targetTableName = table.getInternalName();
+            // The target key field is the internal key name.
             this.targetKeyField = table.getKeyField();
-            // We need the field containing the derived value here. Again, it is user-friendly.
+            // We need the field containing the derived value here. Again, it is an internal name.
             this.targetField = descriptor.getTargetField();
-            // The link field is the source field name.
+            // The link field is the source field internal name.
             this.linkField = descriptor.getInternalName();
-            // Build the field list for the target table query.
+            // Build the field list for the target table query. The target table query is unmapped,
+            // so we are using all internal names.
             this.fieldList = this.targetKeyField + "," + this.targetField;
-            // Find the user-friendly link field name (if any).
-            this.linkFieldName = table.getUserFieldName(this.linkField);
         }
 
         /**
          * Process this derived field for a query and update the output records. This must be done BEFORE
-         * doing the 
+         * doing the field mappings, since everything is done unmapped here!
          * 
          * @param sourceName    user-friendly name of this field
          * @param records       list of output records to update
@@ -148,54 +152,83 @@ public class CursorConnection extends SolrConnection {
          */
         public void updateDerivedField(String sourceName, List<JsonObject> records) throws IOException {
             // We will begin by building a map of all the required key values. These are the values found in the
-            // linking field.
-            Map<String, String> keyValues = new HashMap<>(records.size() * 4 / 3 + 1);
-            // We'll track the maximum key length here.
-            int maxKeyLength = 0;
+            // linking field. Each value is mapped to the list of records containing it.
+            Map<String, List<JsonObject>> keyRecords = new HashMap<>(records.size() * 4 / 3 + 1);
             for (JsonObject record : records) {
-                String key = KeyBuffer.getString(record, this.linkFieldName);
+                String key = KeyBuffer.getString(record, this.linkField);
                 if (! key.isEmpty()) {
-                    keyValues.put(key, null);
-                    if (key.length() > maxKeyLength)
-                        maxKeyLength = key.length();
+                    List<JsonObject> recordList = keyRecords.computeIfAbsent(key, k -> new ArrayList<>(2));
+                    recordList.add(record);
                 }
             }
-            // Now we execute the linking query. We compute the batch size from the maximum key length.
-            int batchSize = 20000 / (maxKeyLength + 6);
-            this.updateKeyValues(keyValues, records.size(), batchSize);
-            // Now use the key-value map to update the records.
-            for (JsonObject record : records) {
-                String key = KeyBuffer.getString(record, this.linkFieldName);
-                if (! key.isEmpty()) {
-                    String value = keyValues.get(key);
-                    if (value != null)
-                        record.put(sourceName, value);
-                }
-            }
+            // Now we execute the linking query.
+            this.updateKeyValues(keyRecords, sourceName);
         }
 
         /**
-         * Execute the linking query and update the key-value map.
+         * Execute the linking query and update the records for each key found.
          * 
-         * @param keyValues     key-value map to update
-         * @param size          number of records expected
-         * @param batchSize     optimized batch size to use
+         * @param keyRecords     key-value map to update
+         * @param sourceName     user-friendly name of this field
          * 
          * @throws IOException 
          */
-        private void updateKeyValues(Map<String, String> keyValues, int size, int batchSize) throws IOException {
-            // Execute the linking query.
-            List<JsonObject> linkRecords = CursorConnection.this.getRecords(this.targetTableName, size, batchSize, this.targetKeyField, keyValues.keySet(),
-                this.fieldList);
-            // Run through the records, filling in values.
-            for (JsonObject linkRecord : linkRecords) {
-                String key = KeyBuffer.getString(linkRecord, this.targetKeyField);
-                String value = KeyBuffer.getString(linkRecord, this.targetField);
-                keyValues.put(key, value);
+        private void updateKeyValues(Map<String, List<JsonObject>> keyRecords, String sourceName) throws IOException {
+            // We have to process the keys in batches to keep from overrunning the query buffer. This list
+            // will hold each set of keys.
+            List<String> keyBatch = new ArrayList<>(CursorConnection.DERIVED_BATCH_SIZE);
+            for (String key : keyRecords.keySet()) {
+                // Insure there is room in the batch.
+                if (keyBatch.size() >= CursorConnection.DERIVED_BATCH_SIZE) {
+                    // We have filled the batch, so we can process it.
+                    this.processKeyBatch(keyRecords, keyBatch, sourceName);
+                    // Clear the batch for the next round.
+                    keyBatch.clear();
+                }
+                // Add the key to the batch.
+                keyBatch.add(key);
             }
+            // Process the residual batch.
+            if (! keyBatch.isEmpty())
+                this.processKeyBatch(keyRecords, keyBatch, sourceName);
         }
 
+        /**
+         * Process a batch of keys using the linking query. When the corrected value is found, we store it
+         * in all the records containing the key.
+         * 
+         * @param keyRecords    map of key values to records containing the value
+         * @param keyBatch      list of key values to process
+         * @param sourceName    user-friendly name of this field
+         */
+        private void processKeyBatch(Map<String, List<JsonObject>> keyRecords, List<String> keyBatch, String sourceName) throws IOException {
+            // Execute the linking query. The linking query is unmapped and operates in a single batch, so it is very different
+            // from our normal query process.
+            Request request = CursorConnection.this.createRequest(this.targetTableName);
+            String keyString = keyBatch.stream().map(x -> SolrFilter.quote(x))
+                    .collect(Collectors.joining(" OR ", this.targetKeyField + ":(", ")"));
+            NameValuePair keyPair = new BasicNameValuePair("q", keyString);
+            NameValuePair fldPair = new BasicNameValuePair("fl", this.fieldList);
+            NameValuePair rowPair = new BasicNameValuePair("rows", String.valueOf(CursorConnection.DERIVED_BATCH_SIZE));
+            request.bodyForm(keyPair, fldPair, rowPair);
+            // Now we execute the query.
+            JsonObject results = CursorConnection.this.getResults(request);
+            // Here we have a response. We need the number found and the actual records.
+            JsonObject response = (JsonObject) results.get("response");
+            JsonArray docs = response.getCollectionOrDefault(SpecialKeys.DOCS);
+            log.debug("Found {} records during derived-field query for {} of {} keys.", docs.size(), keyBatch.size(), keyRecords.size());
+            // Run through the records, filling in values.
+            for (Object doc : docs) {
+                JsonObject linkRecord = (JsonObject) doc;
+                String key = KeyBuffer.getString(linkRecord, this.targetKeyField);
+                String value = KeyBuffer.getString(linkRecord, this.targetField);
+                for (JsonObject record : keyRecords.get(key))
+                    record.put(sourceName, value);
+            }
+        }
+        
     }
+
 
 
     // CONSTRUCTORS AND METHODS
