@@ -10,7 +10,24 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.in;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -219,7 +236,7 @@ public class CursorTest {
                 SolrFilter.GE("patric_cds", 3000),
                 SolrFilter.LT("patric_cds", 5000));
         assertThat(genomeList.size(), lessThanOrEqualTo(5000));
-        Set<String> genomeIds = new HashSet<String>();
+        Set<String> genomeIds = new HashSet<>();
         for (JsonObject record : genomeList) {
             assertThat(KeyBuffer.getString(record, "genus"), equalTo("Mycobacterium"));
             assertThat(KeyBuffer.getInt(record, "patric_cds"), allOf(greaterThanOrEqualTo(3000), lessThan(5000)));
