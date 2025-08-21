@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -41,7 +42,7 @@ public class CursorConnection extends SolrConnection {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CursorConnection.class);
+    protected static final Logger log = LoggerFactory.getLogger(CursorConnection.class);
     /** authorization token */
     protected String authToken;
     /** bv-brc data map */
@@ -50,6 +51,10 @@ public class CursorConnection extends SolrConnection {
     private long rowLimit;
     /** constant parameters */
     private String constantParms;
+    /** map from internal names to user-friendly names */
+    private final Map<String, String> reverseMap;
+    /** map from user-friendly names to derived field actions */
+    private final Map<String, DerivedFieldAction> derivedMap;
     /** default filter string */
     private static final String[] DEFAULT_FILTER = { "*:*" };
     /** maximum number of records to retrieve */
@@ -229,8 +234,6 @@ public class CursorConnection extends SolrConnection {
         
     }
 
-
-
     // CONSTRUCTORS AND METHODS
 
     /**
@@ -242,6 +245,9 @@ public class CursorConnection extends SolrConnection {
         String apiUrl = P3Connection.getApiUrl();
         this.setup(token, apiUrl);
         this.dataMap = dataMap;
+        this.reverseMap = new TreeMap<>();
+        this.derivedMap = new HashMap<>();
+        this.rowLimit = MAX_LIMIT;
     }
 
     /**
@@ -279,16 +285,36 @@ public class CursorConnection extends SolrConnection {
      */
     public List<JsonObject> getRecords(String table, long limit, int batchSize, String keyField, Collection<String> keyValues,
             String fields, Collection<SolrFilter> criteria) throws IOException {
+        List<JsonObject> retVal = new ArrayList<>();
+        this.getRecords(table, limit, batchSize, keyField, keyValues, fields, criteria, retVal::add);
+        return retVal;
+    }
+
+    /**
+     * Process a bunch of records from a table using a key field. This is essentially a relationship
+     * crossing. We take as input a list of key values and the name of a key field, then run the
+     * query for each key value. A batch size is specified that limits the number of key values in
+     * each query. The batch size is responsible for preventing parameter buffer overrun and
+     * ensuring that the queries can be processed efficiently. Thus, the larger the key size, and
+     * the larger the number of expected records per key, the smaller the batch size should be.
+     * 
+     * @param table         user-friendly table name
+     * @param limit         maximum number of rows to return
+     * @param batchSize     maximum number of key values to include in each query
+     * @param keyField      user-friendly name of the key field
+     * @param keyValues     list of key values
+     * @param fields        comma-delimited list of fields to return
+     * @param criteria      collection of filters to apply
+     * @param consumer      method to apply to each returned record
+     * 
+     * @throws IOException
+     */
+    public void getRecords(String table, long limit, int batchSize, String keyField, Collection<String> keyValues,
+            String fields, Collection<SolrFilter> criteria, Consumer<JsonObject> consumer) throws IOException {
         // Copy the filter list. This list is usually small, and copying it allows us to modify it when processing
         // a query batch. Our modification will be to add the IN clause and then remove it.
         List<SolrFilter> filterList = new ArrayList<>(criteria.size() + 1);
         filterList.addAll(criteria);
-        // We store the resulting records in here. We initialize it to the smaller of the limit and twice the batch
-        // size, which is a compromise between memory usage and performance.
-        int arraySize = batchSize * 2;
-        if (batchSize * 2 > limit)
-            arraySize = (int) limit;
-        List<JsonObject> retVal = new ArrayList<>(arraySize);
         // Each batch query will return a number of records less than or equal to the limit. The remaining
         // limit is tracked in here, and is used to limit the next batch query.
         long remaining = limit;
@@ -302,9 +328,9 @@ public class CursorConnection extends SolrConnection {
             String key = iter.next();
             // Insure there is room for this key.
             if (numKeys >= batchSize) {
-                // We have filled the batch, so we can process it.
-                this.processBatch(retVal, table, remaining, keyField, keys, fields, filterList);
-                remaining = limit - retVal.size();
+                // We have filled the batch, so we can process it. We reduce the remaining-records count by
+                // the number of records processed.
+                remaining -= this.processBatch(consumer, table, remaining, keyField, keys, fields, filterList);
                 // Reset for the next batch.
                 numKeys = 0;
             }
@@ -315,10 +341,8 @@ public class CursorConnection extends SolrConnection {
         // If there are any remaining keys, process them as well.
         if (numKeys > 0 && remaining > 0) {
             keys = Arrays.copyOf(keys, numKeys);
-            this.processBatch(retVal, table, remaining, keyField, keys, fields, filterList);
+            this.processBatch(consumer, table, remaining, keyField, keys, fields, filterList);
         }
-        // Return the records found.
-        return retVal;
     }
 
     /**
@@ -331,19 +355,19 @@ public class CursorConnection extends SolrConnection {
      * @param keys          array of desired key values
      * @param fields        comma-delimited list of fields to return
      * @param criteria      list of filters to apply; this is modified and restored by the method
+     * @param consumer      method to apply to each returned record
      * 
      * @throws IOException 
      */
-    private void processBatch(List<JsonObject> resultList, String table, long remaining, String keyField, String[] keys,
+    private long processBatch(Consumer<JsonObject> consumer, String table, long remaining, String keyField, String[] keys,
             String fields, List<SolrFilter> criteria) throws IOException {
         // We need to add an "IN" clause to the query to specify the keys.
         criteria.add(SolrFilter.IN(keyField, keys));
         // Now we execute the query.
-        List<JsonObject> batchResults = this.getRecords(table, remaining, fields, criteria);
-        // Add the results to the result list.
-        resultList.addAll(batchResults);
+        long retVal = this.getRecords(table, remaining, fields, criteria, consumer);
         // Restore the criteria list.
         criteria.removeLast();
+        return retVal;
     }
 
     /**
@@ -487,17 +511,64 @@ public class CursorConnection extends SolrConnection {
      * @throws IOException
      */
     public List<JsonObject> getRecords(String table, long limit, String fields, Collection<SolrFilter> criteria) throws IOException {
+        List<JsonObject> retVal = new ArrayList<>();
+        this.getRecords(table, limit, fields, criteria, retVal::add);
+        return retVal;
+    }
+
+    /**
+     * Process records from a table using the BVBRC data map. The client specifies the user-friendly
+     * table name, a list of fields (also using user-friendly names), a limit, and one or more filters
+     * (again, using user-friendly names). Each record is processed individually by a user-provided callback
+     * (consumer).
+     * 
+     * @param table     user-friendly table name
+     * @param limit     maximum number of rows to return
+     * @param fields    comma-delimiter list of user-friendly field names
+     * @param criteria  collection of user-friendly criteria
+     * @param consumer  method to apply to each returned record
+     * 
+     * @throws IOException
+     */
+    public long getRecords(String table, long limit, String fields, Collection<SolrFilter> criteria, Consumer<JsonObject> consumer) throws IOException {
         // Save the row limit.
         this.rowLimit = limit;
-        // Convert the user-friendly table name to its SOLR name and build the request.
+        // Get the SOLR table information and set up the field mappings.
         BvbrcDataMap.Table solrTable = this.dataMap.getTable(table);
-        // Create the field list. We also translate to internal names here, and we require that the main key be included.
-        // Here is where we also set up the reverse map for undoing field-name translations, and the derived-value action
-        // tables.
-        Map<String, String> reverseMap = new TreeMap<>();
-        Map<String, DerivedFieldAction> derivedMap = new HashMap<>();
+        String allFields = this.getAllFields(table, fields, solrTable);
+        // Set up the constant parameters. These are used on every query, even after we find the cursor mark.
+        this.constantParms = "fl=" + allFields + "&sort=" + solrTable.getInternalSortField() + "+asc";
+        // Now we need to set up the filters. The filters all go in the "q" parameter, which
+        // is what we store in the parameter buffer.
+        String[] filterStrings = SolrFilter.toStrings(this.dataMap, table, criteria);
+        if (filterStrings.length == 0)
+            filterStrings = DEFAULT_FILTER;
+        this.bufferAppend("q=", StringUtils.join(filterStrings, " AND "));
+        // Form the full request using the filter and other one-time parameters.
+        Request request = this.requestBuilder(solrTable.getInternalName());
+        // Process the results.
+        return this.getResponse(request, consumer);
+    }
+
+    /**
+     * Analyze the requested fields for a SOLR query and set up all the mappings.
+     * 
+     * @param table         user-friendly name of the target table
+     * @param fields        comma-delimited list of user-friendly field names
+     * @param solrTable     SOLR table information
+     * 
+     * @return              a string containing all the fields to retrieve
+     * 
+     * @throws IOException
+     */
+    private String getAllFields(String table, String fields, BvbrcDataMap.Table solrTable) throws IOException {
+        // Initialize the translation maps.
+        this.reverseMap.clear();
+        this.derivedMap.clear();
+        // Set up the list of fields we want to retrieve. We always need the internal key field.
         Set<String> fieldSet = new TreeSet<>();
         fieldSet.add(solrTable.getInternalKeyField());
+        // Now process all the requested fields. We also set up the mapping process here.
         for (String field : StringUtils.split(fields, ',')) {
             BvbrcDataMap.IField fieldInfo = solrTable.getInternalFieldData(field);
             if (fieldInfo == null)
@@ -519,37 +590,7 @@ public class CursorConnection extends SolrConnection {
             }
         }
         String allFields = StringUtils.join(fieldSet, ',');
-        // Set up the constant parameters. These are used on every query, even after we find the cursor mark.
-        this.constantParms = "fl=" + allFields + "&sort=" + solrTable.getInternalSortField() + "+asc";
-        // Now we need to set up the filters. The filters all go in the "q" parameter, which
-        // is what we store in the parameter buffer.
-        String[] filterStrings = SolrFilter.toStrings(this.dataMap, table, criteria);
-        if (filterStrings.length == 0)
-            filterStrings = DEFAULT_FILTER;
-        this.bufferAppend("q=", StringUtils.join(filterStrings, " AND "));
-        // Form the full request using the filter and other one-time parameters.
-        Request request = this.requestBuilder(solrTable.getInternalName());
-        // Get the results.
-        List<JsonObject> retVal = this.getResponse(request);
-        // Next we need to update the derived fields.
-        for (var actionEntry : derivedMap.entrySet()) {
-            String sourceName = actionEntry.getKey();
-            DerivedFieldAction action = actionEntry.getValue();
-            action.updateDerivedField(sourceName, retVal);
-        }
-        // Now we fix the field names in the returned records. Note that if a field is not in the reverse
-        // map, it will remain under its internal name. We only do this if the reverse map is nonempty.
-        if (! reverseMap.isEmpty()) {
-            for (JsonObject record : retVal) {
-                for (var reverseMapEntry : reverseMap.entrySet()) {
-                    String internalName = reverseMapEntry.getKey();
-                    String userFriendlyName = reverseMapEntry.getValue();
-                    if (record.containsKey(internalName))
-                        record.put(userFriendlyName, record.remove(internalName));
-                }
-            }
-        }
-        return retVal;
+        return allFields;
     }
 
 
@@ -566,9 +607,20 @@ public class CursorConnection extends SolrConnection {
         return retVal;
     }
 
-    @Override
-	protected List<JsonObject> getResponse(Request request) {
-	    List<JsonObject> retVal = new ArrayList<>();
+    /**
+     * Process the response from a SOLR request. We get the records from the response a chunk at a time,
+     * fix the fields, and pass the results to a consumer.
+     * 
+     * @param request       request to process
+     * @param consumer      method to apply to each returned record
+     * 
+     * @return the numnber of records processed
+     * 
+     * @throws IOException
+     */
+	protected long getResponse(Request request, Consumer<JsonObject> consumer) throws IOException {
+        // We'll count the number of records processed in here.
+        long retVal = 0;
 	    // Set up to loop through the chunks of response.
 	    this.setChunkPosition(0);
         // Set up for progress messages if we go long.
@@ -599,7 +651,7 @@ public class CursorConnection extends SolrConnection {
             long now = System.currentTimeMillis();
             if (now - lastMsg > 5000) {
                 // If we are taking too long, log a message.
-                log.info("Found {} records so far in {} query.", retVal.size(), this.getTable());
+                log.info("Found {} records so far in {} query.", retVal, this.getTable());
                 lastMsg = now;
             }
             // Update the cursor mark for next time.
@@ -614,10 +666,30 @@ public class CursorConnection extends SolrConnection {
             // Update the chunk position.
             this.setChunkPosition(numReturned);
             // Save the actual records.
+            List<JsonObject> records = new ArrayList<>(docs.size());
             for (Object doc : docs)
-                retVal.add((JsonObject) doc);
+                records.add((JsonObject) doc);
+            // Next we need to update the derived fields.
+            for (var actionEntry : derivedMap.entrySet()) {
+                String sourceName = actionEntry.getKey();
+                DerivedFieldAction action = actionEntry.getValue();
+                action.updateDerivedField(sourceName, records);
+            }
+            // Now we fix the field names in the returned records and pass them to the consumer.
+            // Note that if a field is not in the reverse, it will remain under its internal
+            // name.
+            for (JsonObject record : records) {
+                for (var reverseMapEntry : reverseMap.entrySet()) {
+                    String internalName = reverseMapEntry.getKey();
+                    String userFriendlyName = reverseMapEntry.getValue();
+                    if (record.containsKey(internalName))
+                        record.put(userFriendlyName, record.remove(internalName));
+                }
+                consumer.accept(record);
+                retVal++;
+            }
         }
-        log.debug("Fetched {} records in {}ms.", retVal.size(), System.currentTimeMillis() - start);
+        log.debug("Processed {} records in {}ms.", retVal, System.currentTimeMillis() - start);
         return retVal;
     }
 

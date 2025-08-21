@@ -36,7 +36,7 @@ public abstract class SolrConnection extends Connection {
 
 	// FIELDS
 	/** logging facility */
-	protected static Logger log = LoggerFactory.getLogger(SolrConnection.class);
+	private static final Logger log = LoggerFactory.getLogger(SolrConnection.class);
 	/** data API url */
 	private String url;
 	/** chunk size */
@@ -44,15 +44,10 @@ public abstract class SolrConnection extends Connection {
 	/** name of the feature files */
 	public static final String JSON_FILE_NAME = "genome_feature.json";
 	/** genome dump directory filter */
-	public static final FileFilter GENOME_FILTER = new FileFilter() {
-
-	    @Override
-	    public boolean accept(File pathname) {
-	        File gFile = new File(pathname, SolrConnection.JSON_FILE_NAME);
-	        return gFile.canRead();
-	    }
-
-	};
+	public static final FileFilter GENOME_FILTER = (File pathname) -> {
+            File gFile = new File(pathname, SolrConnection.JSON_FILE_NAME);
+            return gFile.canRead();
+        };
 	/** pattern for extracting return ranges */
 	private static final Pattern RANGE_INFO = Pattern.compile("items \\d+-(\\d+)/(\\d+)");
 	/** map of table names to sort fields (may be needed for cursors) */
@@ -144,8 +139,8 @@ public abstract class SolrConnection extends Connection {
 	 *
 	 * @return a JSON object containing the results of the request
 	 */
-	protected List<JsonObject> getResponse(Request request) {
-	    List<JsonObject> retVal = new ArrayList<JsonObject>();
+	protected final List<JsonObject> getResponse(Request request) {
+	    List<JsonObject> retVal = new ArrayList<>();
 	    // Set up to loop through the chunks of response.
 	    this.setChunkPosition(0);
 	    boolean done = false;
@@ -165,8 +160,8 @@ public abstract class SolrConnection extends Connection {
 	            String value = range.getValue();
 	            Matcher rMatcher = RANGE_INFO.matcher(value);
 	            if (rMatcher.matches()) {
-	                this.setChunkPosition(Integer.valueOf(rMatcher.group(1)));
-	                int total = Integer.valueOf(rMatcher.group(2));
+	                this.setChunkPosition(Integer.parseInt(rMatcher.group(1)));
+	                int total = Integer.parseInt(rMatcher.group(2));
 	                done = (this.getChunkPosition() >= total);
 	            } else {
 	                log.debug("Range string did not match: \"{}\".", value);

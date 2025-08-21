@@ -45,7 +45,7 @@ public class JsonDumpDirectory extends GenomeSource {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(JsonDumpDirectory.class);
+    private static final Logger log = LoggerFactory.getLogger(JsonDumpDirectory.class);
     /** map of genome IDs to dump directories */
     private Map<String, File> gMap;
     /** connection to PATRIC for taxon data */

@@ -45,7 +45,7 @@ public class CoreGenome extends Genome {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CoreGenome.class);
+    private static final Logger log = LoggerFactory.getLogger(CoreGenome.class);
     /** list of valid domains */
     public static final Set<String> DOMAINS = (Set<String>) Stream.of("Bacteria", "Archaea", "Eukaryota", "Viruses")
               .collect(Collectors.toCollection(HashSet::new));

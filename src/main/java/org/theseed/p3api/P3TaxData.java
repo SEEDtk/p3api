@@ -25,7 +25,7 @@ public class P3TaxData {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(P3TaxData.class);
+    private static final Logger log = LoggerFactory.getLogger(P3TaxData.class);
     /** set of taxon IDs associated with genera */
     private Set<String> genera;
     /** set of taxon IDs associated with families */

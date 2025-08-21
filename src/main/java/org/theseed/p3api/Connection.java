@@ -35,7 +35,7 @@ public abstract class Connection {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(Connection.class);
+    private static final Logger log = LoggerFactory.getLogger(Connection.class);
     /** parameter buffer */
     private final StringBuilder buffer;
     /** table used in current request (for trace messages) */

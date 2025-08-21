@@ -11,8 +11,6 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.theseed.genome.Contig;
 import org.theseed.sequence.DnaKmers;
 import org.theseed.sequence.ISequence;
@@ -30,8 +28,6 @@ import org.theseed.sequence.SequenceKmers;
 public class SeqRead {
 
     // FIELDS
-    /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(SeqRead.class);
     /** label for this read */
     private String label;
     /** left sequence string */
@@ -399,6 +395,7 @@ public class SeqRead {
         /**
          * @return the sequence label (with the direction indicator removed)
          */
+        @Override
         public String getLabel() {
             return this.label;
         }
@@ -413,6 +410,7 @@ public class SeqRead {
         /**
          * @return the sequence string
          */
+        @Override
         public String getSequence() {
             return this.seq;
         }
@@ -478,7 +476,7 @@ public class SeqRead {
             // Form the sequence out of the two pieces.
             this.sequence = SeqRead.this.lseq + "<>" + SeqRead.this.rseq;
             // Create the hash set.
-            this.kmerSet = new HashSet<String>(this.sequence.length() * 8 / 3);
+            this.kmerSet = new HashSet<>(this.sequence.length() * 8 / 3);
             // Fill in the kmers.
             this.processSequence(SeqRead.this.lseq);
             this.processSequence(SeqRead.this.rseq);
@@ -492,11 +490,11 @@ public class SeqRead {
         private void processSequence(String sequence) {
             String original = sequence.toLowerCase();
             String rDna = Contig.reverse(original);
-            int K = DnaKmers.kmerSize();
-            int n = original.length() - K;
+            int kSize = DnaKmers.kmerSize();
+            int n = original.length() - kSize;
             for (int i = 0; i <= n; i++) {
-                this.kmerSet.add(original.substring(i, i + K));
-                this.kmerSet.add(rDna.substring(i, i + K));
+                this.kmerSet.add(original.substring(i, i + kSize));
+                this.kmerSet.add(rDna.substring(i, i + kSize));
             }
         }
 

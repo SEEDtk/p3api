@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -29,6 +31,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -46,7 +49,7 @@ public class P3Connection extends SolrConnection {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(Connection.class);
+    private static final Logger log = LoggerFactory.getLogger(Connection.class);
     /** security token */
     private String authToken;
     /** default URL */
@@ -73,9 +76,9 @@ public class P3Connection extends SolrConnection {
         // INTERNAL FIELDS
 
         /** name of key field */
-        private String key;
+        private final String key;
         /** real name of table */
-        private String realName;
+        private final String realName;
 
         private Table(String name, String key) {
             this.key = key;
@@ -148,7 +151,7 @@ public class P3Connection extends SolrConnection {
      *
      * @param token		an authorization token, or NULL if the connection is to be unauthorized.
      */
-    protected void setup(String token, String url) {
+    protected final void setup(String token, String url) {
     	// Set up the URL and the chunk size.
         this.apiSetup(url);
         // If the user is not logged in, this will be null and we won't be able to access
@@ -197,7 +200,7 @@ public class P3Connection extends SolrConnection {
     public JsonObject getRecord(Table table, String key, String fields) {
         JsonObject retVal = null;
         List<JsonObject> recordList = this.query(table, fields, Criterion.EQ(table.getKey(), key));
-        if (recordList.size() > 0) {
+        if (! recordList.isEmpty()) {
             retVal = (JsonObject) recordList.get(0);
         }
         return retVal;
@@ -215,12 +218,12 @@ public class P3Connection extends SolrConnection {
     public Map<String, JsonObject> getRecords(Table table, Collection<String> keys, String fields) {
         String keyName = table.getKey();
         // Verify that we have the keyname.
-        Set<String> fieldSet = new TreeSet<String>();
+        Set<String> fieldSet = new TreeSet<>();
         fieldSet.add(keyName);
         Arrays.stream(StringUtils.split(fields, ',')).forEach(x -> fieldSet.add(x));
         String allFields = StringUtils.join(fieldSet, ',');
         List<JsonObject> records = getRecords(table, keyName, keys, allFields);
-        Map<String, JsonObject> retVal = new HashMap<String, JsonObject>(records.size());
+        Map<String, JsonObject> retVal = new HashMap<>(records.size());
         for (JsonObject record : records) {
             retVal.put(KeyBuffer.getString(record, keyName), record);
         }
@@ -241,7 +244,7 @@ public class P3Connection extends SolrConnection {
      */
     public List<JsonObject> getRecords(Table table, String keyName, Collection<String> keys, String fields,
             String... criteria) {
-        List<JsonObject> retVal = new ArrayList<JsonObject>(keys.size());
+        List<JsonObject> retVal = new ArrayList<>(keys.size());
         // Insure we have the key field in the field list.
         String realFields = fields;
         int kLoc = realFields.indexOf(keyName);
@@ -250,7 +253,7 @@ public class P3Connection extends SolrConnection {
                 (kEnd != fields.length() && realFields.charAt(kEnd) != ','))
             realFields += "," + keyName;
         // Only proceed if the user wants at least one record.
-        if (keys.size() > 0) {
+        if (! keys.isEmpty()) {
             // Build the key list in the main string buffer.
             this.clearBuffer();
             // Loop through the parameters, sending requests.
@@ -361,7 +364,7 @@ public class P3Connection extends SolrConnection {
                     tries++;
                     log.debug("Retrying genome ID request after " + e.toString());
                 }
-            } catch (Exception e) {
+            } catch (ParserConfigurationException | SAXException e) {
                 throw new RuntimeException("Error parsing XML for taxonomy query: " + e.toString());
             }
         }
@@ -375,7 +378,7 @@ public class P3Connection extends SolrConnection {
             if (gcNode == null)
                 log.warn("Genetic code information missing for {}.", taxId);
             else
-                gc = Integer.valueOf(gcNode.getTextContent());
+                gc = Integer.parseInt(gcNode.getTextContent());
             // Store the genetic code.
             genome.setGeneticCode(gc);
             // Everything is under the "Taxon" node.  We need to save all the
@@ -388,18 +391,14 @@ public class P3Connection extends SolrConnection {
                 log.warn("Invalid taxon tree returned for {}.", taxId);
             else {
                 NodeList children = rootTaxon.getChildNodes();
-                ArrayList<TaxItem> taxItems = new ArrayList<TaxItem>(30);
+                ArrayList<TaxItem> taxItems = new ArrayList<>(30);
                 for (int i = 0; i < children.getLength(); i++) {
                     Node child = children.item(i);
                     String type = child.getNodeName();
                     switch (type) {
-                    case "ScientificName" :
-                        leafName = child.getTextContent();
-                        break;
-                    case "Rank" :
-                        leafRank = child.getTextContent();
-                        break;
-                    case "LineageEx" :
+                    case "ScientificName" -> leafName = child.getTextContent();
+                    case "Rank" -> leafRank = child.getTextContent();
+                    case "LineageEx" -> {
                         // Here we have the full lineage, and we need to convert it to tax items.
                         NodeList lineageChildren = child.getChildNodes();
                         for (int j = 0; j < lineageChildren.getLength(); j++) {
@@ -414,20 +413,15 @@ public class P3Connection extends SolrConnection {
                                     Node grandChild = lineageItems.item(c);
                                     String subType = grandChild.getNodeName();
                                     switch (subType) {
-                                    case "TaxId" :
-                                        taxNum = Integer.valueOf(grandChild.getTextContent());
-                                        break;
-                                    case "ScientificName" :
-                                        taxName = grandChild.getTextContent();
-                                        break;
-                                    case "Rank" :
-                                        taxRank = grandChild.getTextContent();
-                                        break;
+                                        case "TaxId" -> taxNum = Integer.parseInt(grandChild.getTextContent());
+                                        case "ScientificName" -> taxName = grandChild.getTextContent();
+                                        case "Rank" -> taxRank = grandChild.getTextContent();
                                     }
                                 }
                                 TaxItem item = new TaxItem(taxNum, taxName, taxRank);
                                 taxItems.add(item);
                             }
+                        }
                         }
                     }
                 }

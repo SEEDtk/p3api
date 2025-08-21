@@ -27,7 +27,7 @@ public class CoreUtilities {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CoreUtilities.class);
+    private static final Logger log = LoggerFactory.getLogger(CoreUtilities.class);
     /** base organism directory */
     private File orgDir;
     /** cache of genome sequences */

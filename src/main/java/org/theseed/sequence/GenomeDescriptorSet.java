@@ -25,7 +25,7 @@ public class GenomeDescriptorSet implements Iterable<GenomeDescriptor> {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(GenomeDescriptorSet.class);
+    private static final Logger log = LoggerFactory.getLogger(GenomeDescriptorSet.class);
     /** similarity-based measures */
     public static int[] SIM_TYPES = new int[] { FinderType.SEED_SIMILARITY.ordinal(), FinderType.RNA_SIMILARITY.ordinal() };
     /** distance-based measures */

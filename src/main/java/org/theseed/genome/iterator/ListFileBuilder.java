@@ -26,7 +26,7 @@ public class ListFileBuilder implements IGenomeTarget {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(ListFileBuilder.class);
+    private static final Logger log = LoggerFactory.getLogger(ListFileBuilder.class);
     /** map of genome IDs to output lines */
     private Map<String, String> genomes;
     /** output file name */

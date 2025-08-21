@@ -16,8 +16,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.theseed.io.LineReader;
 
 /**
@@ -42,8 +40,6 @@ public class QzaSampleGroup extends FastqSampleGroup  {
     }
 
     // FIELDS
-    /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(QzaSampleGroup.class);
     /** zip file controller */
     private ZipFile controller;
 
@@ -53,7 +49,7 @@ public class QzaSampleGroup extends FastqSampleGroup  {
 
     @Override
     protected SortedMap<String, SampleDescriptor> computeSamples(File sampleDir) throws IOException {
-        Map<String, Pair> pairMap = new HashMap<String, Pair>();
+        Map<String, Pair> pairMap = new HashMap<>();
         // Get the enumeration of entries for this zip file and pull out the UUID.
         this.controller = new ZipFile(sampleDir);
         Enumeration<? extends ZipEntry> entries = this.controller.entries();
@@ -80,7 +76,7 @@ public class QzaSampleGroup extends FastqSampleGroup  {
             }
         }
         // Form all the pairs into samples.
-        SortedMap<String, SampleDescriptor> retVal = new TreeMap<String, SampleDescriptor>();
+        SortedMap<String, SampleDescriptor> retVal = new TreeMap<>();
         for (Map.Entry<String, Pair> pairEntry : pairMap.entrySet()) {
             String sampleId = pairEntry.getKey();
             retVal.put(sampleId, pairEntry.getValue().create(sampleId, this.controller));

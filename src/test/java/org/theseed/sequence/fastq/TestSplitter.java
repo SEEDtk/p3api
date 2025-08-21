@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 class TestSplitter {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(TestSplitter.class);
+    private static final Logger log = LoggerFactory.getLogger(TestSplitter.class);
 
 
     @Test

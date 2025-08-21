@@ -38,7 +38,7 @@ public class NcbiConnection extends Connection {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(NcbiConnection.class);
+    private static final Logger log = LoggerFactory.getLogger(NcbiConnection.class);
     /** current webenv where our ID history is stored */
     private String webenv;
     /** URL to use for current request */

@@ -6,8 +6,6 @@ package org.theseed.p3api;
 import java.util.List;
 
 import org.apache.http.client.fluent.Request;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -23,8 +21,6 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 public class RawP3Connection extends SolrConnection {
 
 	// FIELDS
-	/** logging facility */
-	protected static Logger log = LoggerFactory.getLogger(RawP3Connection.class);
 	/** URL for the SOLR API */
 	private static final String SOLR_API_URL = "https://www.bv-brc.org/api/";
 

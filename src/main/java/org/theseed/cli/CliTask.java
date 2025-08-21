@@ -29,7 +29,7 @@ public abstract class CliTask implements Comparable<CliTask> {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CliTask.class);
+    private static final Logger log = LoggerFactory.getLogger(CliTask.class);
     /** work folder for temporary files */
     private File workDir;
     /** workspace name */

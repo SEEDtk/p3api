@@ -10,6 +10,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.p3api.Connection;
 
 /**
@@ -23,6 +25,8 @@ import org.theseed.p3api.Connection;
 public class PaperConnection extends Connection {
 
     // FIELDS
+    /** logging facility */
+    private static final Logger log = LoggerFactory.getLogger(PaperConnection.class);
     /** saved request URL */
     private String paperUrl;
     /** maximum number of redirects */
@@ -54,7 +58,6 @@ public class PaperConnection extends Connection {
      * @throws ParseException
      */
     public String getPaper(String url) throws ParseException, IOException {
-        String retVal = null;
         // Insure we have no accumulated parameters.
         this.clearBuffer();
         // Create the request from the URL.
@@ -81,7 +84,7 @@ public class PaperConnection extends Connection {
             log.debug("Following redirect to {}.", this.paperUrl);
             resp = this.submitRequest(newReq);
         }
-        retVal = EntityUtils.toString(resp.getEntity());
+        String retVal = EntityUtils.toString(resp.getEntity());
         return retVal;
     }
 

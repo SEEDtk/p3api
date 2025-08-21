@@ -41,7 +41,7 @@ public class CoreOutputDirectory implements IGenomeTarget {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CoreOutputDirectory.class);
+    private static final Logger log = LoggerFactory.getLogger(CoreOutputDirectory.class);
     /** main organism directory */
     private OrganismDirectories orgDir;
     /** pattern for extracting feature type */

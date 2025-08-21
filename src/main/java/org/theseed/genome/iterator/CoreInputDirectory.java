@@ -10,8 +10,6 @@ import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.genome.core.CoreGenome;
@@ -28,8 +26,6 @@ import org.theseed.p3api.P3Genome.Details;
 public class CoreInputDirectory extends GenomeSource {
 
     // FIELDS
-    /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CoreInputDirectory.class);
     // organism directory handler
     private OrganismDirectories orgDir;
     // base directory name

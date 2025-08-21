@@ -31,7 +31,7 @@ public class ContigFastaBuilder implements IGenomeTarget {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(ContigFastaBuilder.class);
+    private static final Logger log = LoggerFactory.getLogger(ContigFastaBuilder.class);
     /** output directory name */
     private File outDir;
     /** map of genome IDs to file names */

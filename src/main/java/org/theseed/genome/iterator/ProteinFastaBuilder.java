@@ -37,7 +37,7 @@ public class ProteinFastaBuilder implements IGenomeTarget {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(ProteinFastaBuilder.class);
+    private static final Logger log = LoggerFactory.getLogger(ProteinFastaBuilder.class);
     /** temp directory containing saved FASTA files */
     private File tempDir;
     /** map of genome IDs to file names */

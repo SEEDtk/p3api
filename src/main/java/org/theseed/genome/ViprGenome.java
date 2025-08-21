@@ -37,7 +37,7 @@ import com.github.cliftonlabs.json_simple.JsonObject;
 public class ViprGenome extends Genome {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(ViprGenome.class);
+    private static final Logger log = LoggerFactory.getLogger(ViprGenome.class);
 
     /**
      * Initialize the genome.

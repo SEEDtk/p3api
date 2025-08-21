@@ -16,7 +16,7 @@ public class CliTaskException extends RuntimeException {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CliTaskException.class);
+    private static final Logger log = LoggerFactory.getLogger(CliTaskException.class);
     /** object type ID for serialization */
     private static final long serialVersionUID = -6647487357277570415L;
 

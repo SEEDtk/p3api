@@ -21,7 +21,7 @@ public class CopyTask extends CliTask {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(CopyTask.class);
+    private static final Logger log = LoggerFactory.getLogger(CopyTask.class);
 
     /**
      * Construct a copy task.

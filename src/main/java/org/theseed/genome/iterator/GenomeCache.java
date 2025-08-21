@@ -20,7 +20,7 @@ public class GenomeCache {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(GenomeCache.class);
+    private static final Logger log = LoggerFactory.getLogger(GenomeCache.class);
     /** underlying genome source */
     private GenomeSource genomes;
     /** hash map for the cache */

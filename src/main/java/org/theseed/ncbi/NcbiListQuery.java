@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
 /**
@@ -23,14 +21,10 @@ import org.w3c.dom.Element;
  */
 public class NcbiListQuery extends NcbiQuery {
 
-    // FIELDS
-    /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(NcbiListQuery.class);
-
     /** name of ID field to use */
-    private String idName;
+    private final String idName;
     /** list of field values for current query */
-    private List<String> values;
+    private final List<String> values;
 
     /**
      * Construct an NCBI list query.
@@ -41,7 +35,7 @@ public class NcbiListQuery extends NcbiQuery {
     public NcbiListQuery(NcbiTable table, String fieldName) {
         super(table);
         this.idName = fieldName;
-        this.values = new ArrayList<String>();
+        this.values = new ArrayList<>();
     }
 
     /**

@@ -17,8 +17,6 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -35,8 +33,6 @@ import org.xml.sax.SAXException;
 public class XmlUtils {
 
     // FIELDS
-    /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(XmlUtils.class);
     /** xml document builder */
     private static final DocumentBuilderFactory DOC_FACTORY =
             DocumentBuilderFactory.newInstance();
@@ -134,7 +130,7 @@ public class XmlUtils {
      * @param inList	node list containing one or more elements
      */
     private static List<Element> setup(NodeList inList) {
-        List<Element> retVal = new ArrayList<Element>(inList.getLength());
+        List<Element> retVal = new ArrayList<>(inList.getLength());
         for (int i = 0; i < inList.getLength(); i++) {
             Node node = inList.item(i);
             if (node.getNodeType() == Node.ELEMENT_NODE)
@@ -199,25 +195,23 @@ public class XmlUtils {
      */
     public static void cleanElement(Element element) {
         // This is essentially our processing stack.
-        Deque<Element> deferred = new ArrayDeque<Element>();
+        Deque<Element> deferred = new ArrayDeque<>();
         deferred.push(element);
         // Loop through the stack.
         while (! deferred.isEmpty()) {
             Element parent = deferred.removeLast();
             NodeList children = parent.getChildNodes();
             // Separate out the text and element children.
-            List<Node> textElements = new ArrayList<Node>(children.getLength());
+            List<Node> textElements = new ArrayList<>(children.getLength());
             for (int i = 0; i < children.getLength(); i++) {
                 Node child = children.item(i);
                 switch (child.getNodeType()) {
-                case Node.TEXT_NODE :
+                case Node.TEXT_NODE -> {
                     String context = child.getTextContent();
                     if (StringUtils.isBlank(context))
                         textElements.add(child);
-                    break;
-                case Node.ELEMENT_NODE :
-                    deferred.add((Element) child);
-                    break;
+                    }
+                case Node.ELEMENT_NODE -> deferred.add((Element) child);
                 }
             }
             // Delete the text children.

@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 class PaperTest {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(PaperTest.class);
+    private static final Logger log = LoggerFactory.getLogger(PaperTest.class);
 
 
     private static String[] LINKS = {

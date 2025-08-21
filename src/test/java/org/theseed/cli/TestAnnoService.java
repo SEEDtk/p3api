@@ -23,7 +23,7 @@ import org.theseed.genome.Genome;
 class TestAnnoService {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(TestAnnoService.class);
+    private static final Logger log = LoggerFactory.getLogger(TestAnnoService.class);
 
     @Test
     void testAnnotation() throws InterruptedException, IOException {

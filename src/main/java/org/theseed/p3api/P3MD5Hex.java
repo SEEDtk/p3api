@@ -30,7 +30,7 @@ public class P3MD5Hex extends MD5Hex {
     // FIELDS
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(P3MD5Hex.class);
+    private static final Logger log = LoggerFactory.getLogger(P3MD5Hex.class);
 
     /** connection to PATRIC */
     private P3Connection p3;

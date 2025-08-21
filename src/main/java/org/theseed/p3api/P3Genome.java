@@ -10,6 +10,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
 import org.theseed.genome.TaxItem;
@@ -24,6 +26,10 @@ import com.github.cliftonlabs.json_simple.JsonObject;
  *
  */
 public class P3Genome extends Genome {
+
+    // FIELDS
+    /** logging facility */
+    private static final Logger log = LoggerFactory.getLogger(P3Genome.class);
 
     /**
      * level of detail desired in the genome
@@ -94,7 +100,7 @@ public class P3Genome extends Genome {
      */
     public static Genome load(P3CursorConnection p3, String genome_id, Details detail, File cache) throws IOException {
         // If there is no cache, we simply call through to the API method.
-        Genome retVal = null;
+        Genome retVal;
         if (cache == null) {
             retVal = load(p3, genome_id, detail);
         } else {
@@ -163,9 +169,9 @@ public class P3Genome extends Genome {
                         SolrFilter.EQ("genome_id", genome_id), SolrFilter.EQ("annotation", "PATRIC"));
                 storeFeatures(p3, detail, retVal, fidList);
             }
-            if (P3Connection.log.isInfoEnabled()) {
+            if (log.isInfoEnabled()) {
                 long duration = System.currentTimeMillis() - start;
-                P3Connection.log.info("{} seconds to load {}.", String.format("%4.3f", duration / 1000.0), genome_id);
+                log.info("{} seconds to load {}.", String.format("%4.3f", duration / 1000.0), genome_id);
             }
         }
         return retVal;
@@ -210,7 +216,7 @@ public class P3Genome extends Genome {
                     feat.addGoTerm(goString);
                 // Process the translation according to the feature type.
                 switch (feat.getType()) {
-                case "CDS" :
+                case "CDS" -> {
                     // This is a protein. Check to see if we are storing the protein translation.
                     String protein = "";
                     if (wantSequences) {
@@ -224,8 +230,8 @@ public class P3Genome extends Genome {
                     }
                     if (protein != null)
                         feat.setProteinTranslation(protein);
-                    break;
-                case "rna" :
+                    }
+                case "rna" -> {
                     // This is an RNA.  Check for the SSU rRNA.
                     if (feat.getLocation().getLength() > genome.getSsuRRna().length() &&
                             RoleUtilities.SSU_R_RNA.matcher(feat.getPegFunction()).find()) {
@@ -241,7 +247,7 @@ public class P3Genome extends Genome {
                             }
                         }
                     }
-                    break;
+                    }
                 }
                 // Store the feature.
                 genome.addFeature(feat);
@@ -261,7 +267,7 @@ public class P3Genome extends Genome {
      */
     public static List<TaxItem> computeTaxItems(P3CursorConnection p3, Collection<String> taxIDs) throws IOException {
         Map<String, JsonObject> taxRecords = p3.getRecordMap("taxon", taxIDs.size(), 2000, taxIDs, "taxon_id,taxon_name,taxon_rank");
-        List<TaxItem> retVal = new ArrayList<TaxItem>(taxRecords.size());
+        List<TaxItem> retVal = new ArrayList<>(taxRecords.size());
         for (String taxID : taxIDs) {
             JsonObject taxRecord = taxRecords.get(taxID);
             // Note that if the taxonomic ID is invalid, we will get NULL from the above query.

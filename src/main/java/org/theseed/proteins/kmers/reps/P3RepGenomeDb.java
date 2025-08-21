@@ -31,7 +31,7 @@ public class P3RepGenomeDb {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(P3RepGenomeDb.class);
+    private static final Logger log = LoggerFactory.getLogger(P3RepGenomeDb.class);
 
 
     /**

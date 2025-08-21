@@ -42,7 +42,7 @@ public abstract class BaseGenomeProcessor extends BaseProcessor {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(BaseGenomeProcessor.class);
+    private static final Logger log = LoggerFactory.getLogger(BaseGenomeProcessor.class);
     /** input genome source */
     private GenomeSource source;
     /** set of genome IDs in the source */

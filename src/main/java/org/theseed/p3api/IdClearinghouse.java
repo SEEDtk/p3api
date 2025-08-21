@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class IdClearinghouse {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(IdClearinghouse.class);
+    private static final Logger log = LoggerFactory.getLogger(IdClearinghouse.class);
 
     /** default URL */
     private static final String CLEARINGHOUSE_URL = "https://clearinghouse.theseed.org/Clearinghouse/clearinghouse_services.cgi";

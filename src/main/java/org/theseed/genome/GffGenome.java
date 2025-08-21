@@ -26,7 +26,7 @@ public class GffGenome extends NewGenome {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(GffGenome.class);
+    private static final Logger log = LoggerFactory.getLogger(GffGenome.class);
     /** supported aliases */
     protected static final String[] ALIASES = new String[] { "Genbank", "GeneID", "locus_tag" };
 

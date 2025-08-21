@@ -47,7 +47,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(GenomeMultiDirectory.class);
+    private static final Logger log = LoggerFactory.getLogger(GenomeMultiDirectory.class);
     /** main directory name */
     private File masterDir;
     /** map of genome IDs to files */

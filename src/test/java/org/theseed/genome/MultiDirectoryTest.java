@@ -33,7 +33,7 @@ import org.theseed.p3api.P3Genome;
 public class MultiDirectoryTest {
 
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(MultiDirectoryTest.class);
+    private static final Logger log = LoggerFactory.getLogger(MultiDirectoryTest.class);
 
 
     @Test

@@ -28,7 +28,7 @@ public class NormalDirectorySource extends GenomeSource implements IGenomeTarget
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(NormalDirectorySource.class);
+    private static final Logger log = LoggerFactory.getLogger(NormalDirectorySource.class);
     /** genome directory to iterate over */
     private GenomeDirectory source;
 

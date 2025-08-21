@@ -30,7 +30,7 @@ public class PegFastaBuilder implements IGenomeTarget {
 
     // FIELDS
     /** logging facility */
-    protected static Logger log = LoggerFactory.getLogger(PegFastaBuilder.class);
+    private static final Logger log = LoggerFactory.getLogger(PegFastaBuilder.class);
     /** pattern for genome file names */
     private static final Pattern FASTA_PATTERN = Pattern.compile("(\\d+\\.\\d+)\\.faa");
 
