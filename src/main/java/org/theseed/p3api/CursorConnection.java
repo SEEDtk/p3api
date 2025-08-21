@@ -717,4 +717,21 @@ public class CursorConnection extends SolrConnection {
         return results;
     }
 
+    /**
+     * Get the descriptor for the specified named table.
+     * 
+     * @param table     name of the desired table
+     * 
+     * @return the table descriptor from the data map, or NULL if the table is not found
+     */
+    public BvbrcDataMap.Table getTableInfo(String table) {
+        BvbrcDataMap.Table retVal;
+        try {
+            retVal = this.dataMap.getTable(table);
+        } catch (IOException e) {
+            retVal = null;
+        }
+        return retVal;
+    }
+
 }
