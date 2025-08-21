@@ -12,6 +12,8 @@ import org.apache.commons.io.FileUtils;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.theseed.basic.ParseFailureException;
 import org.theseed.genome.Genome;
 import org.theseed.genome.GenomeDirectory;
@@ -22,8 +24,11 @@ import org.theseed.genome.GenomeDirectory;
  */
 public class TestTarget {
 
+    /** logging facility */
+    private static final Logger log = LoggerFactory.getLogger(TestTarget.class);
+
     @Test
-    public void test() throws IOException, ParseFailureException {
+    public void testCopyToDir() throws IOException, ParseFailureException {
         File sDir = new File("data", "gto_test");
         // Reset the target directory.
         File tDir = new File("data", "gto_target");
@@ -45,13 +50,23 @@ public class TestTarget {
     public void copyTest(File sDir, File tDir, IGenomeTarget targetDir)
             throws IOException, ParseFailureException {
         GenomeSource sourceDir = GenomeSource.Type.DIR.create(sDir);
-        for (Genome source : sourceDir)
+        for (Genome source : sourceDir) {
+            String testId = source.getId();
+            log.info("Copying {} to {}", testId, tDir);
             targetDir.add(source);
+            File testFile = new File(tDir, testId + ".gto");
+            assertThat(testFile.exists(), equalTo(true));
+            assertThat(testFile.canWrite(), equalTo(true));
+        }
         GenomeDirectory testDir = new GenomeDirectory(tDir);
         assertThat(testDir.size(), equalTo(sourceDir.size()));
         Set<String> testIds = testDir.getGenomeIDs();
-        for (String testId : testIds)
+        for (String testId : testIds) {
             assertThat(testId, testDir.contains(testId));
+            File testFile = new File(tDir, testId + ".gto");
+            assertThat(testFile.exists(), equalTo(true));
+            assertThat(testFile.canWrite(), equalTo(true));
+        }
         resetTarget(tDir);
     }
 
@@ -69,6 +84,7 @@ public class TestTarget {
         for (String genomeId : targetIds) {
             if (! genomeId.contentEquals("1079.16") && ! genomeId.contentEquals("1121447.3")) {
                 File gFile = new File(tDir, genomeId + ".gto");
+                assertThat(gFile.toString(), gFile.canWrite(), equalTo(true));
                 FileUtils.forceDelete(gFile);
             }
         }
