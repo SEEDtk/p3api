@@ -161,7 +161,7 @@ public class P3Genome extends Genome {
             // Process the features if we want them.
             if (detail.includesFeatures()) {
                 // Figure out if we need protein sequences, too.
-                String featureFields = "patric_id,sequence_id,start,end,strand,product,plfam_id,pgfam_id,figfam_id" +
+                String featureFields = "patric_id,sequence_id,start,end,strand,product,plfam_id,pgfam_id,figfam_id,feature_type" +
                         ",gi,gene,gene_id,refseq_locus_tag,go,uniprotkb_accession,protein_id,na_sequence_md5,aa_sequence_md5";
                 if (detail.includesProteins())
                     featureFields += ",aa_sequence";
@@ -222,7 +222,7 @@ public class P3Genome extends Genome {
                     if (wantSequences) {
                         // Here we are storing protein translations for all the features that have them.
                         protein = KeyBuffer.getString(fid, "aa_sequence");
-                    } else if (feat.getFunction().contentEquals("Phenylalanyl-tRNA synthetase alpha chain (EC 6.1.1.20)")) {
+                    } else if (feat.getFunction().contentEquals(RoleUtilities.SEED_FUNCTION)) {
                         // We always store the PheS protein.
                         JsonObject pRecord = p3.getRecord("sequence", KeyBuffer.getString(fid, "aa_sequence_md5"), "sequence");
                         if (pRecord != null)

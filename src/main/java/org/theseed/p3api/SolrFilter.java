@@ -124,13 +124,17 @@ public abstract class SolrFilter {
      */
     protected static String quote(String value) {
         String retVal;
-        // If there are no special characters, we are fine.
-        if (! StringUtils.containsAny(value, SOLR_ESCAPE_CHARS))
+        // An empty value is quoted.
+        if (value == null || value.isEmpty())
+            retVal = "\"\"";
+        else if (! StringUtils.containsAny(value, SOLR_ESCAPE_CHARS)) {
+            // Here nothing needs to be escaped. We quote it if there are spaces,
+            // and leave it unquoted if it is a single word.
             if (! StringUtils.contains(value, ' '))
                 retVal = value;
             else
                 retVal = "\"" + value + "\"";
-        else {
+        } else {
             // Here we have to escape all the special characters. The replacement pattern prefixes
             // a backslash to each. We also put on the quotes.
             retVal = "\"" + value.replaceAll("([" + SOLR_ESCAPE_CHARS + "])", SOLR_ESCAPE_REPLACEMENT) + "\"";
