@@ -27,11 +27,11 @@ public class P3TaxData {
     /** logging facility */
     private static final Logger log = LoggerFactory.getLogger(P3TaxData.class);
     /** set of taxon IDs associated with genera */
-    private Set<String> genera;
+    private final Set<String> genera;
     /** set of taxon IDs associated with families */
-    private Set<String> families;
+    private final Set<String> families;
     /* map of taxon IDs associated with species to genetic codes */
-    private HashMap<String, Integer> species;
+    private final HashMap<String, Integer> species;
 
     /**
      * Construct a taxonomy database.
@@ -43,7 +43,7 @@ public class P3TaxData {
         log.info("Downloading taxonomic data.");
         List<JsonObject> taxonList = p3.query(Table.TAXONOMY,
                 "taxon_id,genetic_code", "eq(taxon_rank,species)");
-        this.species = new HashMap<String, Integer>(taxonList.size());
+        this.species = new HashMap<>(taxonList.size());
         for (JsonObject taxonData : taxonList) {
             String speciesId = KeyBuffer.getString(taxonData, "taxon_id");
             int gc = KeyBuffer.getInt(taxonData, "genetic_code");
