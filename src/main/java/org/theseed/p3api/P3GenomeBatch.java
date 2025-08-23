@@ -1,6 +1,7 @@
 package org.theseed.p3api;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +46,7 @@ public class P3GenomeBatch implements Iterable<Genome> {
      * @throws IOException
      */
     public P3GenomeBatch(P3CursorConnection p3, Collection<String> ids, P3Genome.Details level) throws IOException {
+        long start = System.currentTimeMillis();
         log.info("Loading {} genomes from BV-BRC.", ids.size());
         this.genomeMap = new HashMap<>(ids.size() * 4 / 3 + 1);
         // Get the genome and taxonomy records and create the genomes in the map.
@@ -54,7 +56,10 @@ public class P3GenomeBatch implements Iterable<Genome> {
         // If we are including features, get the features and add them to the genomes.
         if (level.includesFeatures())
             this.addFeatures(p3, level);
-        log.info("{} genomes loaded.", this.genomeMap.size());
+        if (log.isInfoEnabled()) {
+            Duration time = Duration.ofMillis(System.currentTimeMillis() - start);
+            log.info("{} genomes loaded in {}.", this.genomeMap.size(), time);
+        }
     }
 
     /**
@@ -140,14 +145,18 @@ public class P3GenomeBatch implements Iterable<Genome> {
      */
     private void addContigs(P3CursorConnection p3, P3Genome.Details level) throws IOException {
         // Compute the necessary fields. The only tricky part is if we need the sequence itself.
+        // If we do, we will reduce the batch size to prevent the response from being insanely large.
         StringBuilder fieldsBuf = new StringBuilder(60);
+        int batchSize;
         fieldsBuf.append("sequence_id,genome_id,accession,description,");
-        if (level.includesContigs()) 
+        if (level.includesContigs()) {
             fieldsBuf.append("sequence");
-        else
+            batchSize = 25;
+        } else {
             fieldsBuf.append("length");
-        // Get the contigs for our set of genomes.
-        p3.getRecords("contig", CursorConnection.MAX_LIMIT, 1000, "genome_id", this.genomeMap.keySet(),
+            batchSize = 1000;
+        }
+        p3.getRecords("contig", CursorConnection.MAX_LIMIT, batchSize, "genome_id", this.genomeMap.keySet(),
                 fieldsBuf.toString(), Collections.emptyList(), (x -> this.processContig(x, level)));
     }
 

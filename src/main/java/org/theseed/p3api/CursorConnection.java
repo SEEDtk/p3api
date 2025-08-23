@@ -623,8 +623,6 @@ public class CursorConnection extends SolrConnection {
         long retVal = 0;
 	    // Set up to loop through the chunks of response.
 	    this.setChunkPosition(0);
-        // Set up for progress messages if we go long.
-        long lastMsg = System.currentTimeMillis();
         // Note that we assume the parmString is nonempty, because a default filter is passed in if it is empty.
         String parmString = this.getBasicParms() + "&" + this.constantParms;
         // Start with an unknown cursor mark.
@@ -648,12 +646,6 @@ public class CursorConnection extends SolrConnection {
             long numFound = (long) response.getLong(SpecialKeys.NUMFOUND);
             JsonArray docs = response.getCollectionOrDefault(SpecialKeys.DOCS);
             log.debug("Chunk at position {} returned {} of {} records.", this.getChunkPosition(), docs.size(), numFound);
-            long now = System.currentTimeMillis();
-            if (now - lastMsg > 5000) {
-                // If we are taking too long, log a message.
-                log.info("Found {} records so far in {} query.", retVal, this.getTable());
-                lastMsg = now;
-            }
             // Update the cursor mark for next time.
             cursorMark = (String) results.getStringOrDefault(SpecialKeys.NEXT_CURSOR_MARK);
             // Here we check to see if we are done. We are done if there is no cursor, if the number of

@@ -221,7 +221,7 @@ public abstract class SolrConnection extends Connection {
 	 *
 	 * @param chunkSize 	the proposed chunk size to set
 	 */
-	protected void setChunkSize(int chunkSize) {
+	public void setChunkSize(int chunkSize) {
 		this.chunkSize = chunkSize;
 	}
 

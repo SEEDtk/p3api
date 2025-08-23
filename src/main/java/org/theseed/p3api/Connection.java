@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -50,6 +51,16 @@ public abstract class Connection {
     private long ncbiSpeed;
     /** time of last NCBI query */
     private long lastNcbiQuery = System.currentTimeMillis();
+    /** time of last status message */
+    private long lastStatusMessage;
+    /** number of bytes downloaded */
+    private long byteCount;
+    /** number of requests processed */
+    private int requestCount;
+    /** number of retries */
+    private int retryCount;
+    /** number of milliseconds between status messages */
+    private long messageGap;
     /** NCBI API key */
     private final String apiKey;
     /** executor for cookie policy */
@@ -60,14 +71,20 @@ public abstract class Connection {
     protected static final int MAX_LEN = 50000;
     /** default timeout interval in milliseconds */
     protected static final int DEFAULT_TIMEOUT = 3 * 60 * 1000;
+    /** warning threshold for response length */
+    protected static final int WARN_CONTENT_LENGTH = 10000000;
+    /** gap between status messages, in ms */
+    private static final long DEFAULT_MESSAGE_GAP = 5000;
 
     /**
-     *
+     * Construct a connection object. This initializes all our tracking stuff and
+     * the NCBI throttling timers, but the subclass must handle the actual connecting.
      */
     public Connection() {
         // Default the trace stuff.
         this.setTable("<none>");
         this.setChunkPosition(0);
+        this.messageGap = DEFAULT_MESSAGE_GAP;
         // Default the timeout.
         this.setTimeout(DEFAULT_TIMEOUT);
         // Read the API key.
@@ -78,6 +95,11 @@ public abstract class Connection {
         if (this.getApiKey() != null) {
             this.ncbiSpeed = 200;
         }
+        // Set the counters.
+        this.lastStatusMessage = System.currentTimeMillis();
+        this.requestCount = 0;
+        this.retryCount = 0;
+        this.byteCount = 0;
         // Create the parameter buffer.
         this.buffer = new StringBuilder(MAX_LEN);
         // Set up a client configuration to prevent the NCBI cookie message.
@@ -87,6 +109,18 @@ public abstract class Connection {
                 .disableRedirectHandling()
                 .build();
         this.executor = Executor.newInstance(httpClient);
+    }
+
+    /**
+     * Set the log-message gap to the specified number of seconds.
+     * 
+     * @param seconds   number of seconds for the message gap, or 0 to turn off trace messages
+     */
+    public void setMessageGap(int seconds) {
+        if (seconds <= 0)
+            this.messageGap = Long.MAX_VALUE;
+        else
+            this.messageGap = seconds * 1000;
     }
 
     /**
@@ -130,6 +164,9 @@ public abstract class Connection {
      */
     protected HttpResponse submitRequest(Request request) {
         HttpResponse retVal = null;
+        // Set the last-message time if this is the first request.
+        if (this.requestCount == 0)
+            this.lastStatusMessage = System.currentTimeMillis();
         // We will retry after certain errors.  These variables manage the retrying.
         int tries = 0;
         boolean done = false;
@@ -141,8 +178,15 @@ public abstract class Connection {
                 // Submit the request.
                 log.debug("Submitting request {}.", request.toString());
                 resp = this.executor.execute(request);
+                this.requestCount++;
+                long now = System.currentTimeMillis();
+                if (log.isInfoEnabled() && now - this.lastStatusMessage >= this.messageGap) {
+                    log.info("Processed {} requests ({} retries) so far, {} bytes downloaded.", this.requestCount, this.retryCount, 
+                        FileUtils.byteCountToDisplaySize(this.byteCount));
+                    this.lastStatusMessage = now;
+                }
                 // Check the response.
-                retVal = resp.returnResponse();
+                retVal = this.extractResponse(resp);
                 if (log.isDebugEnabled()) {
                     log.debug(String.format("%2.3f seconds for HTTP request %s (position %d, try %d).",
                             (System.currentTimeMillis() - start) / 1000.0, this.getTable(), this.getChunkPosition(), tries));
@@ -151,21 +195,19 @@ public abstract class Connection {
                 if (code < 400) {
                     // Here we succeeded.  Stop the loop.
                     done = true;
+                    this.byteCount += retVal.getEntity().getContentLength();
                 } else if (tries >= MAX_TRIES || code == 403) {
                     // Here we have tried too many times or it is an unrecoverable error.  Build a display string for the URL.
                     throwHttpError(retVal.getStatusLine().getReasonPhrase());
                 } else if (code == 429) {
-                    // Here we are being throttled. Sleep and try again.
+                    // Here we are being throttled. Sleep with exponential backoff and try again.
                     tries++;
-                    log.debug("Pausing for retry after error code 429.");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        log.warn("Interrupting during throttle wait.");
-                    }
+                    this.retryCount++;
+                    this.pauseForRetry(tries);
                 } else {
                     // We have a server error, try again.
                     tries++;
+                    this.retryCount++;
                     if (log.isDebugEnabled()) {
                         String message = EntityUtils.toString(retVal.getEntity());
                         log.debug("Retrying after error code {}: {}.", code, message);
@@ -180,6 +222,46 @@ public abstract class Connection {
                     tries++;
                     log.debug("Retrying after {}.", e.toString());
                 }
+            }
+        }
+        return retVal;
+    }
+
+    /**
+     * Pause for a retry. The initial pause is one second. Each subsequent retry increases the amount
+     * to a max of 16 seconds.
+     * 
+     * @param tries     number of tries so far on this request
+     */
+    private void pauseForRetry(int tries) {
+        long backoff = (long) Math.min(1000 * Math.pow(2, tries - 1), 16000); // max 16 seconds
+        log.debug("Pausing for {} ms before retry after error code 429.", backoff);
+        try {
+            Thread.sleep(backoff);
+        } catch (InterruptedException e) {
+            log.warn("Interrupting during throttle wait.");
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    /**
+     * Process the response. Along the way, we issue a warning if it is very long, as that
+     * will cause the program to appear to hang while we unspool it.
+     * 
+     * @param resp      the response object to check
+     * 
+     * @return the downloaded response from the request
+     * 
+     * @throws IOException 
+     */
+    private HttpResponse extractResponse(Response resp) throws IOException {        
+        HttpResponse retVal = resp.returnResponse();
+        if (retVal.getEntity() != null) {
+            long len = retVal.getEntity().getContentLength();
+            long now = System.currentTimeMillis();
+            if (len > WARN_CONTENT_LENGTH && now - this.lastStatusMessage > this.messageGap) {
+                log.info("Response length was {} bytes, which caused a delay.", len);
+                this.lastStatusMessage = now;
             }
         }
         return retVal;

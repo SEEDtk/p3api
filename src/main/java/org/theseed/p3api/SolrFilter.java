@@ -14,7 +14,7 @@ public abstract class SolrFilter {
 
     // FIELDS
     /** field name */
-    private String fieldName;
+    private final String fieldName;
     /** field value */
     private String fieldValue;
     /** pattern for matching numeric values */
@@ -42,7 +42,7 @@ public abstract class SolrFilter {
      *
      * @param value     the value to filter for
      */
-    protected void setValue(String value) {
+    protected final void setValue(String value) {
         this.fieldValue = smartQuote(value);
     }
 
@@ -167,7 +167,7 @@ public abstract class SolrFilter {
     protected static class In extends SolrFilter {
 
         /** array of values for the filter */
-        private String[] values;
+        private final String[] values;
 
         public In(String field, String[] values) {
             super(field);
@@ -215,9 +215,9 @@ public abstract class SolrFilter {
         /** high-limit bracket */
         private String highBracket;
         /** low value for filtering */
-        private String lowValue;
+        private final String lowValue;
         /** high value for filtering */
-        private String highValue;
+        private final String highValue;
 
         public Rel(String field, boolean inclusive, String low, String high) {
             super(field);
