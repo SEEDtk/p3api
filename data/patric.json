@@ -18,6 +18,9 @@
 		"name": "genome_feature",
 		"key": "patric_id",
 		"sort": "feature_id",
+		"requirements": [
+			{ "op": "eq", "value": "feature_id,*" }
+		],
 		"map": {
 			"feature_id":"patric_id",
 			"annotation_source":"annotation",

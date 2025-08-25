@@ -86,7 +86,7 @@ public class CursorTest {
             SolrFilter.LE("feature_length", 10000),
             SolrFilter.EQ("annotation", "Phenylalanyl-tRNA synthetase")
         };
-        String[] queries = SolrFilter.toStrings(dataMap, "feature", Arrays.asList(filters));
+        String[] queries = SolrFilter.toStrings(featureTable, Arrays.asList(filters));
         assertThat(queries[0], equalTo("patric_id:12345"));
         assertThat(queries[1], equalTo("-annotation:manual"));
         assertThat(queries[2], equalTo("feature_length:[1000 TO *}"));
@@ -247,8 +247,7 @@ public class CursorTest {
         // are multiple batches, we put the batch size at 75.
         p3.setChunkSize(25000);
         results = p3.getRecords("feature", 1000000, 75, "genome_id", genomeIds,
-                "patric_id,feature_type,genome_id,product", SolrFilter.EQ("feature_type", "CDS"),
-                SolrFilter.EQ("annotation_source", "PATRIC"));
+                "patric_id,feature_type,genome_id,product", SolrFilter.EQ("feature_type", "CDS"));
         assertThat(results.size(), lessThanOrEqualTo(1000000));
         int count = 0;
         for (JsonObject record : results) {
@@ -292,8 +291,7 @@ public class CursorTest {
         // getRecords here.
         long count = p3.getRecords("feature", 6000, "feature_id,feature_type,annotation,annotation_source,dna_sequence,protein_sequence",
                 Arrays.asList(
-                    SolrFilter.EQ("genome_id", "83332.12"), SolrFilter.IN("feature_type", "CDS", "tRNA"),
-                    SolrFilter.EQ("annotation_source", "PATRIC")
+                    SolrFilter.EQ("genome_id", "83332.12"), SolrFilter.IN("feature_type", "CDS", "tRNA")
                 ), x -> processProtein(testGenome, x));
         assertThat(count, lessThanOrEqualTo(6000L));
     }

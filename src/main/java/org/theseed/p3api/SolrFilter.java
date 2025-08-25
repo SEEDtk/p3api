@@ -73,16 +73,14 @@ public abstract class SolrFilter {
     /**
      * Compute the internal field name.
      * 
-     * @param dataMap       BV-BRC data map for converting field names
-     * @param table         table containing this filter's field
+     * @param table         descriptor of the table containing this filter's field
      *
      * @return the internal name of this filter's field
      * 
      * @throws IOException
      */
-    protected String getInternalFieldName(BvbrcDataMap dataMap, String table) throws IOException {
-        BvbrcDataMap.Table tbl = dataMap.getTable(table);
-        String retVal = tbl.getInternalFieldName(this.fieldName);
+    protected String getInternalFieldName(BvbrcDataMap.Table table) throws IOException {
+        String retVal = table.getInternalFieldName(this.fieldName);
         if (retVal == null)
             throw new IOException("Field " + this.fieldName + " of " + table + " is illegal in a filter.");
         return retVal;
@@ -91,25 +89,23 @@ public abstract class SolrFilter {
     /**
      * @return the query string for this filter
      * 
-     * @param dataMap       BV-BRC data map for converting field names
-     * @param table         table containing this filter's field
+     * @param solrTable         descriptor of the table containing this filter's field
      */
-    public abstract String toString(BvbrcDataMap dataMap, String table) throws IOException;
+    public abstract String toString(BvbrcDataMap.Table solrTable) throws IOException;
 
     /**
      * Convert a filter list to an array of query strings.
      * 
-     * @param dataMap   the data map to use for fixing up the field names
-     * @param table     the name of the table containing the fields
+     * @param table     descriptor of the table containing the fields
      * @param criteria  the collection of criteria to convert
      * 
      * @throws IOException 
      */
-    public static String[] toStrings(BvbrcDataMap dataMap, String table, Collection<SolrFilter> criteria) throws IOException {
+    public static String[] toStrings(BvbrcDataMap.Table table, Collection<SolrFilter> criteria) throws IOException {
         String[] retVal = new String[criteria.size()];
         int i = 0;
         for (SolrFilter filter : criteria) {
-            retVal[i] = filter.toString(dataMap, table);
+            retVal[i] = filter.toString(table);
             i++;
         }
         return retVal;
@@ -155,8 +151,8 @@ public abstract class SolrFilter {
         }
 
         @Override
-        public String toString(BvbrcDataMap dataMap, String table) throws IOException {            
-            return this.getInternalFieldName(dataMap, table) + ":" + this.getValue();
+        public String toString(BvbrcDataMap.Table table) throws IOException {            
+            return this.getInternalFieldName(table) + ":" + this.getValue();
         }
 
     }
@@ -175,9 +171,9 @@ public abstract class SolrFilter {
         }
 
         @Override
-        public String toString(BvbrcDataMap dataMap, String table) throws IOException {
+        public String toString(BvbrcDataMap.Table table) throws IOException {
             StringBuilder retVal = new StringBuilder();
-            retVal.append(this.getInternalFieldName(dataMap, table)).append(":(");
+            retVal.append(this.getInternalFieldName(table)).append(":(");
             for (int i = 0; i < values.length; i++) {
                 if (i > 0) retVal.append(" OR ");
                 retVal.append(quote(values[i]));
@@ -199,8 +195,8 @@ public abstract class SolrFilter {
         }
 
         @Override
-        public String toString(BvbrcDataMap dataMap, String table) throws IOException {
-            return "-" + this.getInternalFieldName(dataMap, table) + ":" + this.getValue();
+        public String toString(BvbrcDataMap.Table table) throws IOException {
+            return "-" + this.getInternalFieldName(table) + ":" + this.getValue();
         }
 
     }
@@ -236,8 +232,8 @@ public abstract class SolrFilter {
         }
 
         @Override
-        public String toString(BvbrcDataMap dataMap, String table) throws IOException {
-            return this.getInternalFieldName(dataMap, table) + ":" + this.lowBracket + this.lowValue + " TO " + this.highValue + this.highBracket;
+        public String toString(BvbrcDataMap.Table table) throws IOException {
+            return this.getInternalFieldName(table) + ":" + this.lowBracket + this.lowValue + " TO " + this.highValue + this.highBracket;
         }
 
     }

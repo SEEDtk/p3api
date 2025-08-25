@@ -3,8 +3,10 @@ package org.theseed.p3api;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -15,6 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonException;
 import com.github.cliftonlabs.json_simple.JsonKey;
 import com.github.cliftonlabs.json_simple.JsonObject;
@@ -25,6 +28,11 @@ import com.github.cliftonlabs.json_simple.Jsoner;
  * which allows different users to have different maps. The mapping converts table and field names
  * from user-friendly equivalents to the internal database names, and specifies the sort order and
  * key fields for each table.
+ * 
+ * In addition to the mappings, you can also specify required filters for each field. These can only
+ * be EQ and NE filters. In the JSON file, each filter is specified as a hash with the fields "op"
+ * and "value", where "op" is the operator (either "eq" or "ne") and "value" is the user-friendly
+ * name of the field to filter on, a comma, and then the value to filter for (or against).
  */
 public class BvbrcDataMap {
 
@@ -35,20 +43,25 @@ public class BvbrcDataMap {
     private Map<String, Table> tableMap;
     /** empty mapping object */
     private static final JsonObject EMPTY_MAP = new JsonObject();
+    /** empty list object */
+    private static final JsonArray EMPTY_LIST = new JsonArray();
+    /** empty requirement array */
+    private static final String[] EMPTY_REQUIREMENT = new String[0];
     /** default data map */
     public static final BvbrcDataMap DEFAULT_DATA_MAP = new BvbrcDataMap(Map.of(
-        "genome", new Table("genome", "genome_id", "genome_id"),
-        "genome_amr", new Table("genome_amr", "id", "id"),
-        "feature", new Table("genome_feature", "feature_id", "patric_id",
+        "genome", new Table("genome", "genome_id", "genome_id", EMPTY_REQUIREMENT),
+        "genome_amr", new Table("genome_amr", "id", "id", EMPTY_REQUIREMENT),
+        "feature", new Table("genome_feature", "feature_id", "patric_id", 
+                new String[] { "eq patric_id,*" },
                 "aa_sequence,sequence,aa_sequence_md5,sequence",
                 "na_sequence,sequence,na_sequence_md5,sequence"),
-        "taxon", new Table("taxonomy", "taxon_id", "taxon_id"),
-        "contig", new Table("genome_sequence", "sequence_id", "sequence_id"),
-        "sequence", new Table("feature_sequence", "md5", "md5"),
-        "subsystem_item", new Table("subsystem", "id", "id"),
-        "family", new Table("protein_family_ref", "family_id", "family_id"),
-        "subsystem", new Table("subsystem_ref", "subsystem_name", "subsystem_name"),
-        "special_gene", new Table("sp_gene", "id", "id")
+        "taxon", new Table("taxonomy", "taxon_id", "taxon_id", EMPTY_REQUIREMENT),
+        "contig", new Table("genome_sequence", "sequence_id", "sequence_id", EMPTY_REQUIREMENT),
+        "sequence", new Table("feature_sequence", "md5", "md5", EMPTY_REQUIREMENT),
+        "subsystem_item", new Table("subsystem", "id", "id", EMPTY_REQUIREMENT),
+        "family", new Table("protein_family_ref", "family_id", "family_id", EMPTY_REQUIREMENT),
+        "subsystem", new Table("subsystem_ref", "subsystem_name", "subsystem_name", EMPTY_REQUIREMENT),
+        "special_gene", new Table("sp_gene", "id", "id", EMPTY_REQUIREMENT)
     ));
 
     /**
@@ -60,10 +73,13 @@ public class BvbrcDataMap {
         KEY("id"),
         SORT(""),
         NAME(""),
+        REQUIREMENTS(EMPTY_LIST),
         /** derived-field keys */
         TABLE(""),
         SOURCE(""),
-        VALUE("");
+        VALUE(""),
+        /** requirement keys */
+        OP("eq");
 
         /** default value */
         private final Object m_value;
@@ -226,6 +242,8 @@ public class BvbrcDataMap {
         private String keyFieldName;
         /** internal name of sort field */
         private String sortField;
+        /** list of required filters */
+        private final List<SolrFilter> requiredFilters;
 
         /**
          * Construct a table descriptor for the specified table using a JSON object. Note that
@@ -259,9 +277,44 @@ public class BvbrcDataMap {
                     }
                     case JsonObject jsonObject -> this.fieldMap.put(fieldName, new DerivedField(jsonObject));
                     default -> {
+                        // Everything other than a string or a hash is treated as comments.
                     }
                 }
             }
+            // Finally, we process the required filters.
+            JsonArray jsonReqs = json.getCollectionOrDefault(DataKey.REQUIREMENTS);
+            this.requiredFilters = new java.util.ArrayList<>(jsonReqs.size());
+            for (var reqObj : jsonReqs) {
+                JsonObject reqEntry = (JsonObject) reqObj;
+                String reqOpString = reqEntry.getStringOrDefault(DataKey.OP);
+                String reqValue = reqEntry.getStringOrDefault(DataKey.VALUE);
+                SolrFilter retVal = computeFilter(this.name, reqOpString, reqValue);
+                this.requiredFilters.add(retVal);
+            }
+        }
+
+        /**
+         * Compute a requirement filter from the operator and value.
+         * 
+         * @param internalName      friendly name for this table, to be used in error messages
+         * @param reqOpString       requirement operator ("eq" or "ne")
+         * @param reqValue          requirement value (must be name and value, comma-delimited)
+         * 
+         * @return a filter object to add to the requirements list
+         */
+        private static SolrFilter computeFilter(String internalName, String reqOpString, String reqValue) {
+            if (StringUtils.isBlank(reqValue))
+                throw new IllegalArgumentException("Missing required filter value for " + internalName);
+            String[] parts = StringUtils.split(reqValue, ',');
+            if (parts.length != 2)
+                throw new IllegalArgumentException("Invalid required filter value for " + internalName + ": " + reqValue);
+            SolrFilter retVal;
+            switch (reqOpString) {
+                case "eq" -> retVal = SolrFilter.EQ(parts[0], parts[1]);
+                case "ne" -> retVal = SolrFilter.NE(parts[0], parts[1]);
+                default -> throw new IllegalArgumentException("Invalid filter operator for " + internalName + ": " + reqOpString);
+            }
+            return retVal;
         }
 
         /**
@@ -270,24 +323,56 @@ public class BvbrcDataMap {
          * @param internalName  the internal name of the table
          * @param sortField     the internal name of the sort field for the table
          * @param keyField      the internal name of the key field for the table
+         * @param requirements  an array of requirement strings, each containing a filter, with the operator, a space, and the data value
          * @param derivations   an array of derived-field strings, each containing a user-friendly
          *                      derived field name, the target table name, the source field name, 
          *                      and the target field name, comma-delimited
          * 
          * @return the specified table descriptor
          */
-        public Table(String internalName, String sortField, String keyField, String... derivations) {
+        public Table(String internalName, String sortField, String keyField, String[] requirementStrings, String... derivations) {
+            // Set the major attributes.
             this.name = internalName;
             this.fieldMap = new ConcurrentHashMap<>();
             this.sortField = sortField;
             this.keyField = keyField;
             this.keyFieldName = keyField;
+            // Process the field mappings and derivations.
             for (String derivation : derivations) {
                 String[] parts = StringUtils.split(derivation, ',');
                 if (parts.length != 4)
                     throw new IllegalArgumentException("Derived field specification must have four parts: " + derivation);
                 this.fieldMap.put(parts[0], new DerivedField(parts[1], parts[2], parts[3]));
             }
+            // Process the requirement strings.
+            this.requiredFilters = new ArrayList<>(requirementStrings.length);
+            for (String reqString : requirementStrings) {
+                String[] parts = StringUtils.split(reqString, ' ');
+                if (parts.length != 2)
+                    throw new IllegalArgumentException("Invalid requirement string: " + reqString);
+                String reqOpString = parts[0];
+                String reqValue = parts[1];
+                SolrFilter retVal = computeFilter(this.name, reqOpString, reqValue);
+                this.requiredFilters.add(retVal);
+            }
+        }
+
+        /**
+         * Get the requirement strings for this table.
+         * 
+         * @param dataMap  the data map to use for resolving field names
+         * @return an array of requirement strings
+         * 
+         * @throws IOException
+         */
+        public String[] getRequirements() throws IOException {
+            String[] retVal = new String[this.requiredFilters.size()];
+            int i = 0;
+            for (SolrFilter filter : this.requiredFilters) {
+                retVal[i] = filter.toString(this);
+                i++;
+            }
+            return retVal;
         }
 
         /**
@@ -464,3 +549,5 @@ public class BvbrcDataMap {
     }
     
 }
+
+

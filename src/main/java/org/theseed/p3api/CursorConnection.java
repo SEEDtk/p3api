@@ -540,10 +540,16 @@ public class CursorConnection extends SolrConnection {
         this.constantParms = "fl=" + allFields + "&sort=" + solrTable.getInternalSortField() + "+asc";
         // Now we need to set up the filters. The filters all go in the "q" parameter, which
         // is what we store in the parameter buffer.
-        String[] filterStrings = SolrFilter.toStrings(this.dataMap, table, criteria);
+        String[] filterStrings = SolrFilter.toStrings(solrTable, criteria);
         if (filterStrings.length == 0)
             filterStrings = DEFAULT_FILTER;
         this.bufferAppend("q=", StringUtils.join(filterStrings, " AND "));
+        // The requirements are added on as "fq" parameters.
+        filterStrings = solrTable.getRequirements();
+        if (filterStrings.length > 0) {
+            for (String filter : filterStrings)
+                this.bufferAppend("&fq=", filter);
+        }
         // Form the full request using the filter and other one-time parameters.
         Request request = this.requestBuilder(solrTable.getInternalName());
         // Process the results.
