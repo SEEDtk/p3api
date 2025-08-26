@@ -3,13 +3,12 @@
  */
 package org.theseed.cli;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,12 +52,13 @@ class TestAnnoService {
                 while (! done && ! ok) {
                     var jobMap = status.getStatus(tasks);
                     String taskStatus = jobMap.get(taskId);
-                    if (taskStatus == null || taskStatus.contentEquals(StatusTask.FAILED))
+                    if (null == taskStatus)
                         done = true;
-                    else if (taskStatus.contentEquals(StatusTask.COMPLETED))
-                        ok = true;
-                    else
-                        Thread.sleep(1000);
+                    else switch (taskStatus) {
+                        case StatusTask.FAILED -> done = true;
+                        case StatusTask.COMPLETED -> ok = true;
+                        default -> this.pause(1000);
+                    }
                 }
                 assertThat("Task ID = " + taskId, ok);
                 File gtoFile = task.getResultFile();
@@ -73,4 +73,7 @@ class TestAnnoService {
         }
     }
 
+    private void pause(int millis) throws InterruptedException {
+        Thread.sleep(millis);
+    }
 }

@@ -31,13 +31,13 @@ public abstract class CliTask implements Comparable<CliTask> {
     /** logging facility */
     private static final Logger log = LoggerFactory.getLogger(CliTask.class);
     /** work folder for temporary files */
-    private File workDir;
+    private final File workDir;
     /** workspace name */
     private String workspace;
     /** ID of this task */
     private String taskId;
     /** name of this job */
-    private String jobName;
+    private final String jobName;
     /** suffix for CLI commands */
     private static String suffix = null;
     /** priority list of CLI command suffixes */
@@ -95,7 +95,7 @@ public abstract class CliTask implements Comparable<CliTask> {
         List<String> retVal = null;
         try {
             retVal = ProcessUtils.runProgram(program, parms);
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             throw new CliTaskException(this, "Error executing " + command + ": " + e.toString());
         }
         // Throw an error if it failed.
@@ -173,7 +173,7 @@ public abstract class CliTask implements Comparable<CliTask> {
     /**
      * @param workspace the workspace to set
      */
-    public void setWorkspace(String workspace) {
+    public final void setWorkspace(String workspace) {
         this.workspace = workspace;
     }
 
