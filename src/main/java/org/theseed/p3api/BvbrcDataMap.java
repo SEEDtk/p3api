@@ -34,7 +34,7 @@ import com.github.cliftonlabs.json_simple.Jsoner;
  * and "value", where "op" is the operator (either "eq" or "ne") and "value" is the user-friendly
  * name of the field to filter on, a comma, and then the value to filter for (or against).
  */
-public class BvbrcDataMap {
+public class BvbrcDataMap implements Iterable<Map.Entry<String, BvbrcDataMap.Table>> {
 
     // FIELDS
     /** logging facility */
@@ -547,7 +547,12 @@ public class BvbrcDataMap {
     public int size() {
         return this.tableMap.size();
     }
-    
+
+    @Override
+    public Iterator<Map.Entry<String, Table>> iterator() {
+        return this.tableMap.entrySet().iterator();
+    }
+
 }
 
 
