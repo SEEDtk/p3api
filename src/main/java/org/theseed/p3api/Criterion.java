@@ -31,7 +31,7 @@ public class Criterion {
      */
     public static String fix(String value) {
         // Delete special characters.  It's a SOLR thing.
-        StringBuffer retVal = new StringBuffer(value.length());
+        StringBuilder retVal = new StringBuilder(value.length());
         char last = 'X';
         for (int i = 0; i < value.length(); i++) {
             char curr = value.charAt(i);

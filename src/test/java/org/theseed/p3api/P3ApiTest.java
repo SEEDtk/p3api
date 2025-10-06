@@ -1,12 +1,6 @@
 package org.theseed.p3api;
 
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.fail;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,6 +12,20 @@ import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.closeTo;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.Test;
 import org.theseed.genome.Contig;
 import org.theseed.genome.Feature;
 import org.theseed.genome.Genome;
@@ -97,7 +105,7 @@ public class P3ApiTest
         assertThat(KeyBuffer.getString(genome, "genome_id"), equalTo("1803814.4"));
         assertThat(KeyBuffer.getString(genome, "genome_name"), equalTo("Theionarchaea archaeon DG-70-1"));
         assertThat(KeyBuffer.getInt(genome, "contigs"), equalTo(194));
-        Collection<String> idList = new ArrayList<String>();
+        Collection<String> idList = new ArrayList<>();
         idList.add("1803813.4");
         idList.add("1803814.4");
         Map<String, JsonObject> genomeMap = p3.getRecords(Table.GENOME, idList, "genome_id,genome_name,contigs");
@@ -121,7 +129,7 @@ public class P3ApiTest
         assertThat(KeyBuffer.getString(feature2, "patric_id"), equalTo("fig|1798516.3.peg.45"));
         assertThat(KeyBuffer.getString(feature2, "product"),
                 equalTo("LSU ribosomal protein L31p @ LSU ribosomal protein L31p, zinc-independent"));
-        Collection<String> genomeList = new ArrayList<String>();
+        Collection<String> genomeList = new ArrayList<>();
         genomeList.add("226186.12");
         genomeList.add("300852.9");
         List<JsonObject> contigs = p3.getRecords(Table.CONTIG, "genome_id", genomeList, "sequence_id,length");
@@ -131,35 +139,22 @@ public class P3ApiTest
             String seqId = KeyBuffer.getString(contig, "sequence_id");
             int len = KeyBuffer.getInt(contig, "length");
             switch (genomeId) {
-            case "226186.12" :
+            case "226186.12" -> {
                 switch (seqId) {
-                case "NC_004703" :
-                    assertThat(len, equalTo(33038));
-                    break;
-                case "NC_004663" :
-                    assertThat(len, equalTo(6260361));
-                    break;
-                default :
-                    fail("Incorrect sequence ID " + seqId + " for 226186.12.");
+                    case "NC_004703" -> assertThat(len, equalTo(33038));
+                    case "NC_004663" -> assertThat(len, equalTo(6260361));
+                    default -> fail("Incorrect sequence ID " + seqId + " for 226186.12.");
                 }
-                break;
-            case "300852.9" :
+                }
+            case "300852.9" -> {
                 switch (seqId) {
-                case "NC_006463" :
-                    assertThat(len, equalTo(9322));
-                    break;
-                case "NC_006462" :
-                    assertThat(len, equalTo(256992));
-                    break;
-                case "NC_006461" :
-                    assertThat(len, equalTo(1849742));
-                    break;
-                default :
-                    fail("Incorrect sequence ID " + seqId + " for 300852.9.");
+                    case "NC_006463" -> assertThat(len, equalTo(9322));
+                    case "NC_006462" -> assertThat(len, equalTo(256992));
+                    case "NC_006461" -> assertThat(len, equalTo(1849742));
+                    default -> fail("Incorrect sequence ID " + seqId + " for 300852.9.");
                 }
-                break;
-            default :
-                fail("Incorrect genome ID " + genomeId + ".");
+                }
+            default -> fail("Incorrect genome ID " + genomeId + ".");
             }
             idList = Arrays.asList("84725.3", "2698204.3", "86473.136", "1526414.4", "1766800.6", "2508882.3", "1069448.9");
             features = p3.getRecords(Table.FEATURE, "genome_id", idList, "patric_id,pgfam_id",
@@ -169,29 +164,11 @@ public class P3ApiTest
                 String fid = KeyBuffer.getString(feat, "patric_id");
                 String fam = KeyBuffer.getString(feat, "pgfam_id");
                 switch (fid) {
-                case "fig|84725.3.peg.3359" :
-                case "fig|86473.136.peg.768" :
-                case "fig|1766800.6.peg.890" :
-                    assertThat(fam, equalTo(""));
-                    break;
-                case "fig|1069448.9.peg.2010" :
-                case "fig|2508882.3.peg.652" :
-                case "fig|2698204.3.peg.309" :
-                    assertThat(fam, equalTo("PGF_00038706"));
-                    break;
-                case "fig|84725.3.peg.6636" :
-                case "fig|1526414.4.peg.127" :
-                case "fig|1766800.6.peg.3951" :
-                case "fig|2698204.3.peg.2176" :
-                case "fig|1069448.9.peg.3497" :
-                case "fig|2508882.3.peg.2353" :
-                    assertThat(fam, equalTo("PGF_02019462"));
-                    break;
-                case "fig|1526414.4.peg.1156" :
-                    assertThat(fam, equalTo("PGF_02019462"));
-                    break;
-                default :
-                    fail("Incorrect feature ID " + fid + " from filtered query.");
+                case "fig|84725.3.peg.3359", "fig|86473.136.peg.768", "fig|1766800.6.peg.890" -> assertThat(fam, equalTo(""));
+                case "fig|1069448.9.peg.2010", "fig|2508882.3.peg.652", "fig|2698204.3.peg.309" -> assertThat(fam, equalTo("PGF_00038706"));
+                case "fig|84725.3.peg.6636", "fig|1526414.4.peg.127", "fig|1766800.6.peg.3951", "fig|2698204.3.peg.2176", "fig|1069448.9.peg.3497", "fig|2508882.3.peg.2353" -> assertThat(fam, equalTo("PGF_02019462"));
+                case "fig|1526414.4.peg.1156" -> assertThat(fam, equalTo("PGF_02019462"));
+                default -> fail("Incorrect feature ID " + fid + " from filtered query.");
                 }
             }
         }

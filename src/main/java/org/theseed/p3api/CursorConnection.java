@@ -1,6 +1,8 @@
 package org.theseed.p3api;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -539,8 +541,10 @@ public class CursorConnection extends SolrConnection {
         // Set up the constant parameters. These are used on every query, even after we find the cursor mark.
         this.constantParms = "fl=" + allFields + "&sort=" + solrTable.getInternalSortField() + "+asc";
         // Now we need to set up the filters. The filters all go in the "q" parameter, which
-        // is what we store in the parameter buffer.
+        // is what we store in the parameter buffer. These need to be escaped.
         String[] filterStrings = SolrFilter.toStrings(solrTable, criteria);
+        for (int i = 0; i < filterStrings.length; i++)
+            filterStrings[i] = URLEncoder.encode(filterStrings[i], StandardCharsets.UTF_8);
         if (filterStrings.length == 0)
             filterStrings = DEFAULT_FILTER;
         this.bufferAppend("q=", StringUtils.join(filterStrings, " AND "));
