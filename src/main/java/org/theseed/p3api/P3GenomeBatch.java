@@ -236,57 +236,61 @@ public class P3GenomeBatch implements Iterable<Genome> {
         // Get the feature ID and find our containing genome.
         String fid = KeyBuffer.getString(xrecord, "patric_id");
         Genome genome = this.genomeMap.get(Feature.genomeOf(fid));
-        // Build the feature object.
-        String function = KeyBuffer.getString(xrecord, "product");
-        String contigId = KeyBuffer.getString(xrecord, "sequence_id");
-        String strand = KeyBuffer.getString(xrecord, "strand");
-        int left = KeyBuffer.getInt(xrecord, "start");
-        int right = KeyBuffer.getInt(xrecord, "end");
-        String type = KeyBuffer.getString(xrecord, "feature_type");
-        Feature feat = new Feature(fid, function, contigId, strand, left, right);
-        // Figure out if this feature includes a protein or could be an SSU rRNA. These
-        // are the situations where we need to track the MD5s.
-        switch (type) {
-            case "CDS", "mat_peptide" -> {
-                // Get the protein MD5. We will keep this protein if proteins are included or it is a potential seed
-                // protein.
-                if (level.includesProteins() || function.equals(RoleUtilities.SEED_FUNCTION)) {
-                    String protMd5 = KeyBuffer.getString(xrecord, "aa_sequence_md5");
-                    // If the MD5 value is missing, we ignore it.
-                    if (! StringUtils.isBlank(protMd5))
-                        proteinMD5s.computeIfAbsent(protMd5, k -> new ArrayList<>(2)).add(feat);
+        if (genome == null) {
+            log.warn("Feature {} is not relevant to the genome map.", fid);
+        } else {
+            // Build the feature object.
+            String function = KeyBuffer.getString(xrecord, "product");
+            String contigId = KeyBuffer.getString(xrecord, "sequence_id");
+            String strand = KeyBuffer.getString(xrecord, "strand");
+            int left = KeyBuffer.getInt(xrecord, "start");
+            int right = KeyBuffer.getInt(xrecord, "end");
+            String type = KeyBuffer.getString(xrecord, "feature_type");
+            Feature feat = new Feature(fid, function, contigId, strand, left, right);
+            // Figure out if this feature includes a protein or could be an SSU rRNA. These
+            // are the situations where we need to track the MD5s.
+            switch (type) {
+                case "CDS", "mat_peptide" -> {
+                    // Get the protein MD5. We will keep this protein if proteins are included or it is a potential seed
+                    // protein.
+                    if (level.includesProteins() || function.equals(RoleUtilities.SEED_FUNCTION)) {
+                        String protMd5 = KeyBuffer.getString(xrecord, "aa_sequence_md5");
+                        // If the MD5 value is missing, we ignore it.
+                        if (! StringUtils.isBlank(protMd5))
+                            proteinMD5s.computeIfAbsent(protMd5, k -> new ArrayList<>(2)).add(feat);
+                    }
+                }
+                case "rRNA", "misc_RNA" -> {
+                    // Get the DNA MD5. We will keep this rRNA if it is an SSU rRNA.
+                    if (RoleUtilities.SSU_R_RNA.matcher(function).find()) {
+                        String dnaMd5 = KeyBuffer.getString(xrecord, "na_sequence_md5");
+                        // If the MD5 value is missing, we ignore it.
+                        if (! StringUtils.isBlank(dnaMd5))
+                            dnaMD5s.computeIfAbsent(dnaMd5, k -> new ArrayList<>(2)).add(genome);
+                    }
                 }
             }
-            case "rRNA", "misc_RNA" -> {
-                // Get the DNA MD5. We will keep this rRNA if it is an SSU rRNA.
-                if (RoleUtilities.SSU_R_RNA.matcher(function).find()) {
-                    String dnaMd5 = KeyBuffer.getString(xrecord, "na_sequence_md5");
-                    // If the MD5 value is missing, we ignore it.
-                    if (! StringUtils.isBlank(dnaMd5))
-                        dnaMD5s.computeIfAbsent(dnaMd5, k -> new ArrayList<>(2)).add(genome);
-                }
-            }
+            // Set the protein families.
+            feat.setPlfam(KeyBuffer.getString(xrecord, "plfam_id"));
+            feat.setPgfam(KeyBuffer.getString(xrecord, "pgfam_id"));
+            feat.setFigfam(KeyBuffer.getString(xrecord, "figfam_id"));
+            // Add the aliases.
+            feat.addAlias("gi", KeyBuffer.getString(xrecord, "gi"));
+            feat.addAlias("gene_name", KeyBuffer.getString(xrecord, "gene"));
+            feat.addAlias("LocusTag", KeyBuffer.getString(xrecord, "refseq_locus_tag"));
+            feat.addAlias("Uniprot", KeyBuffer.getString(xrecord, "uniprotkb_accession"));
+            feat.addAlias("protein_id", KeyBuffer.getString(xrecord, "protein_id"));
+            // Store the gene name.
+            String geneId = KeyBuffer.getString(xrecord, "gene_id");
+            if (geneId.length() > 0 && ! geneId.contentEquals("0"))
+                feat.addAlias("GeneID", geneId);
+            // Add in the GO terms.
+            String[] goTermList = KeyBuffer.getStringList(xrecord, "go");
+            for (String goString : goTermList)
+                feat.addGoTerm(goString);
+            // Add the feature to the genome.
+            genome.addFeature(feat);
         }
-        // Set the protein families.
-        feat.setPlfam(KeyBuffer.getString(xrecord, "plfam_id"));
-        feat.setPgfam(KeyBuffer.getString(xrecord, "pgfam_id"));
-        feat.setFigfam(KeyBuffer.getString(xrecord, "figfam_id"));
-        // Add the aliases.
-        feat.addAlias("gi", KeyBuffer.getString(xrecord, "gi"));
-        feat.addAlias("gene_name", KeyBuffer.getString(xrecord, "gene"));
-        feat.addAlias("LocusTag", KeyBuffer.getString(xrecord, "refseq_locus_tag"));
-        feat.addAlias("Uniprot", KeyBuffer.getString(xrecord, "uniprotkb_accession"));
-        feat.addAlias("protein_id", KeyBuffer.getString(xrecord, "protein_id"));
-        // Store the gene name.
-        String geneId = KeyBuffer.getString(xrecord, "gene_id");
-        if (geneId.length() > 0 && ! geneId.contentEquals("0"))
-            feat.addAlias("GeneID", geneId);
-        // Add in the GO terms.
-        String[] goTermList = KeyBuffer.getStringList(xrecord, "go");
-        for (String goString : goTermList)
-            feat.addGoTerm(goString);
-        // Add the feature to the genome.
-        genome.addFeature(feat);
     }
 
 
