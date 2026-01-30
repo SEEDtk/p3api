@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -110,7 +111,7 @@ public abstract class SolrConnection extends Connection {
 	protected void apiSetup(String url) {
 		this.setUrl(url);
         // Insure that it ends in a slash.
-        if (! StringUtils.endsWith(this.getUrl(), "/")) this.setUrl(this.getUrl() + "/");
+        if (! Strings.CS.endsWith(this.getUrl(), "/")) this.setUrl(this.getUrl() + "/");
         // Set the default chunk size and build the parm buffer.
         this.setChunkSize(25000);
 	}

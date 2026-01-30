@@ -14,18 +14,20 @@ import java.util.Queue;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.counters.CountMap;
 import org.theseed.gff.ViprKeywords;
 import org.theseed.io.TabbedLineReader;
 import org.theseed.io.TabbedLineReader.Line;
-import org.theseed.p3api.P3Connection;
 import org.theseed.p3api.IdClearinghouse;
 import org.theseed.p3api.KeyBuffer;
+import org.theseed.p3api.P3Connection;
 import org.theseed.proteins.DnaTranslator;
 import org.theseed.sequence.FastaInputStream;
 import org.theseed.sequence.Sequence;
+
 import com.github.cliftonlabs.json_simple.JsonObject;
 
 /**
@@ -97,7 +99,7 @@ public class ViprGenome extends Genome {
          */
         public Collection<ViprGenome> Load(File proteinGff, File contigFasta) throws IOException {
             // Create a map of GenBank IDs to genome objects.
-            this.virusMap = new HashMap<String, ViprGenome>();
+            this.virusMap = new HashMap<>();
             // Here we build the genomes and create the contigs.
             log.info("Reading contigs from FASTA file {}.", contigFasta);
             try (FastaInputStream contigStream = new FastaInputStream(contigFasta)) {
@@ -126,17 +128,17 @@ public class ViprGenome extends Genome {
             // It may also contain a swissprot alias, and one or more GO terms (as values of "Ontology_term").  The final
             // record consists of four lines:  "##FASTA", ">" followed by a genbank genome ID, ">" followed by a protein
             // function, and the protein DNA sequence.  We will need DNA translators for the latter.
-            this.xlateMap = new HashMap<Integer, DnaTranslator>();
+            this.xlateMap = new HashMap<>();
             // The initial proteins are read from the beginning of the file.  The sequence and function data is read from
             // the end.  The only way to associate them is via the order in which they appear, so we store the prototype
             // features in this queue.
-            this.features = new LinkedList<Feature>();
+            this.features = new LinkedList<>();
             // These counters map tracks the number of features produced per genome/type and is used to compute feature IDs.  The
             // key is the genbank genome ID.
-            this.pegCounts = new CountMap<String>();
-            this.mpCounts = new CountMap<String>();
+            this.pegCounts = new CountMap<>();
+            this.mpCounts = new CountMap<>();
             // Initialize the taxonomy map.
-            this.lineageMap = new HashMap<Integer, TaxItem[]>();
+            this.lineageMap = new HashMap<>();
             // Get the server connections.
             this.p3 = new P3Connection();
             this.idServer = new IdClearinghouse();
@@ -184,7 +186,7 @@ public class ViprGenome extends Genome {
                 }
             }
             // Filter out the partial genomes.
-            Collection<ViprGenome> retVal = new ArrayList<ViprGenome>(virusMap.size());
+            Collection<ViprGenome> retVal = new ArrayList<>(virusMap.size());
             for (ViprGenome vGenome : virusMap.values()) {
                 if (vGenome.getId() == null)
                     log.warn("No proteins or metadata found for virus with genbank ID {}.", vGenome.getSourceId());
@@ -208,7 +210,7 @@ public class ViprGenome extends Genome {
                 throw new RuntimeException("Incomplete FASTA in GFF3 file.");
             String contig = feat.getLocation().getContigId();
             String found = line.get(0).substring(1) + ".";
-            if (! StringUtils.startsWith(contig, found))
+            if (! Strings.CS.startsWith(contig, found))
                 throw new RuntimeException("FASTA label for virus is " + found + " but contig is " + contig + ".");
             // Read the next label line and get the functional assignment.
             line = proteinStream.next();
@@ -222,7 +224,7 @@ public class ViprGenome extends Genome {
             line = proteinStream.next();
             if (line == null)
                 throw new RuntimeException("No data line for FASTA in GFF3 file.");
-            String protein = StringUtils.removeEnd(xlate.pegTranslate(line.get(0).toLowerCase()), "*");
+            String protein = Strings.CS.removeEnd(xlate.pegTranslate(line.get(0).toLowerCase()), "*");
             feat.setProteinTranslation(protein);
         }
 

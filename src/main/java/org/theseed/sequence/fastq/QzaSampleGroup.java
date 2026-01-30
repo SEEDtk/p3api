@@ -16,6 +16,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.theseed.io.LineReader;
 
 /**
@@ -34,7 +35,7 @@ public class QzaSampleGroup extends FastqSampleGroup  {
 
         @Override
         public boolean accept(File pathname) {
-            return (pathname.isFile() && StringUtils.endsWith(pathname.getName(), ".qza"));
+            return (pathname.isFile() && Strings.CS.endsWith(pathname.getName(), ".qza"));
         }
 
     }

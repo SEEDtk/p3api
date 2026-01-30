@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.closeTo;
@@ -325,7 +325,7 @@ public class P3ApiTest
         File gCache = new File("data/cache");
         // Clean the cache.
         for (File file : gCache.listFiles())
-            if (StringUtils.endsWith(file.getName(), ".gto"))
+            if (Strings.CS.endsWith(file.getName(), ".gto"))
                     file.delete();
         // Read in a random genome.
         P3CursorConnection p3 = new P3CursorConnection();
