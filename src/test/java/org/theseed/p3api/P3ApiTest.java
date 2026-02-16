@@ -93,7 +93,7 @@ public class P3ApiTest
         assertThat(KeyBuffer.getDouble(genome, "gc_content"), closeTo(55.05, 0.005));
         String[] taxonomy = KeyBuffer.getStringList(genome, "taxon_lineage_names");
         assertThat(taxonomy, arrayContaining("cellular organisms", "Bacteria", "Bacteria incertae sedis", "Bacteria candidate phyla",
-                "Patescibacteria group", "Parcubacteria group", "Candidatus Kaiserbacteria",
+                "Patescibacteria group", "Parcubacteria group", "Candidatus Kaiseribacteriota",
                 "Candidatus Kaiserbacteria bacterium RIFCSPLOWO2_01_FULL_55_19"));
         List<JsonObject> genomes = p3.query(Table.GENOME, "genome_id,genome_name,contigs", Criterion.IN("genome_id", "1803813.4", "1803814.4"));
         assertThat(genomes.size(), equalTo(2));
