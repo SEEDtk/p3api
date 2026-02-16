@@ -48,21 +48,26 @@ public class BvbrcDataMap implements Iterable<Map.Entry<String, BvbrcDataMap.Tab
     /** empty requirement array */
     private static final String[] EMPTY_REQUIREMENT = new String[0];
     /** default data map */
-    public static final BvbrcDataMap DEFAULT_DATA_MAP = new BvbrcDataMap(Map.of(
-        "genome", new Table("genome", "genome_id", "genome_id", EMPTY_REQUIREMENT),
-        "genome_amr", new Table("genome_amr", "id", "id", EMPTY_REQUIREMENT),
-        "feature", new Table("genome_feature", "feature_id", "patric_id", 
+    public static final BvbrcDataMap DEFAULT_DATA_MAP;
+    static { Map<String, Table> map = new HashMap<>(20);
+
+        map.put("genome", new Table("genome", "genome_id", "genome_id", EMPTY_REQUIREMENT));
+        map.put("genome_amr", new Table("genome_amr", "id", "id", EMPTY_REQUIREMENT));
+        map.put("feature", new Table("genome_feature", "feature_id", "patric_id", 
                 new String[] { "eq patric_id,*" },
                 "aa_sequence,sequence,aa_sequence_md5,sequence",
-                "na_sequence,sequence,na_sequence_md5,sequence"),
-        "taxon", new Table("taxonomy", "taxon_id", "taxon_id", EMPTY_REQUIREMENT),
-        "contig", new Table("genome_sequence", "sequence_id", "sequence_id", EMPTY_REQUIREMENT),
-        "sequence", new Table("feature_sequence", "md5", "md5", EMPTY_REQUIREMENT),
-        "subsystem_item", new Table("subsystem", "id", "id", EMPTY_REQUIREMENT),
-        "family", new Table("protein_family_ref", "family_id", "family_id", EMPTY_REQUIREMENT),
-        "subsystem", new Table("subsystem_ref", "subsystem_name", "subsystem_name", EMPTY_REQUIREMENT),
-        "special_gene", new Table("sp_gene", "id", "id", EMPTY_REQUIREMENT)
-    ));
+                "na_sequence,sequence,na_sequence_md5,sequence"));
+        map.put("taxon", new Table("taxonomy", "taxon_id", "taxon_id", EMPTY_REQUIREMENT));
+        map.put("contig", new Table("genome_sequence", "sequence_id", "sequence_id", EMPTY_REQUIREMENT));
+        map.put("sequence", new Table("feature_sequence", "md5", "md5", EMPTY_REQUIREMENT));
+        map.put("subsystem_item", new Table("subsystem", "id", "id", EMPTY_REQUIREMENT));
+        map.put("family", new Table("protein_family_ref", "family_id", "family_id", EMPTY_REQUIREMENT));
+        map.put("subsystem", new Table("subsystem_ref", "subsystem_name", "subsystem_name", EMPTY_REQUIREMENT));
+        map.put("special_gene", new Table("sp_gene", "id", "id", EMPTY_REQUIREMENT));
+        map.put("pathway_item", new Table("pathway", "id", "id", EMPTY_REQUIREMENT));
+        map.put("pathway", new Table("pathway_ref", "pathway_id", "pathway_id", EMPTY_REQUIREMENT));
+        DEFAULT_DATA_MAP = new BvbrcDataMap(map);
+    }
 
     /**
      * This enum defines the keys used in the table objects.
