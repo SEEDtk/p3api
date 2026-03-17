@@ -17,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.genome.Annotation;
@@ -43,7 +44,7 @@ public class CoreOutputDirectory implements IGenomeTarget {
     /** logging facility */
     private static final Logger log = LoggerFactory.getLogger(CoreOutputDirectory.class);
     /** main organism directory */
-    private OrganismDirectories orgDir;
+    private final OrganismDirectories orgDir;
     /** pattern for extracting feature type */
     private static final Pattern FEATURE_TYPE = Pattern.compile("fig\\|\\d+\\.\\d+\\.(\\w+)\\.\\d+");
 
@@ -102,9 +103,9 @@ public class CoreOutputDirectory implements IGenomeTarget {
             }
         }
         // We are going to process features next.  We will collect the feature types in here.
-        Map<String, List<Feature>> typeMap = new HashMap<String, List<Feature>>(10);
+        Map<String, List<Feature>> typeMap = new HashMap<>(10);
         // Prepare a large list for pegs.
-        typeMap.put("peg", new ArrayList<Feature>(4000));
+        typeMap.put("peg", new ArrayList<>(4000));
         // Set up some counters.
         int fidCount = 0;
         int annoCount = 0;
@@ -116,7 +117,7 @@ public class CoreOutputDirectory implements IGenomeTarget {
             for (Feature feat : genome.getFeatures()) {
                 // First, get the feature type from the feature ID.
                 String fid = feat.getId();
-                List<Feature> flist = typeMap.computeIfAbsent(getFidType(fid), x -> new ArrayList<Feature>());
+                List<Feature> flist = typeMap.computeIfAbsent(getFidType(fid), x -> new ArrayList<>());
                 flist.add(feat);
                 fidCount++;
                 // Process the annotations.
@@ -171,14 +172,15 @@ public class CoreOutputDirectory implements IGenomeTarget {
                     // Now write the TBL record.
                     Map<String, NavigableSet<String>> aliasMap = feat.getAliasMap();
                     String aliases = "";
-                    if (aliasMap != null && aliasMap.size() > 0) {
-                        List<String> aliasList = new ArrayList<String>(aliasMap.size());
+                    if (aliasMap != null && ! aliasMap.isEmpty()) {
+                        List<String> aliasList = new ArrayList<>(aliasMap.size());
                         for (var aliasEntry : aliasMap.entrySet()) {
                             String aliasType = aliasEntry.getKey();
                             String prefix = (aliasType.equals("misc") ? "" : aliasType + "|");
                             for (String alias : aliasEntry.getValue())
                                 aliasList.add(prefix + alias);
                         }
+                        aliases = StringUtils.join(aliasList, "\t");
                     }
                     Location loc = feat.getLocation();
                     tblStream.println(fid + "\t" + loc.toSeedString() + "\t" + aliases);
@@ -233,6 +235,6 @@ public class CoreOutputDirectory implements IGenomeTarget {
 
     @Override
     public Set<String> getGenomeIDs() {
-        return new TreeSet<String>(this.orgDir.getIDs());
+        return new TreeSet<>(this.orgDir.getIDs());
     }
 }

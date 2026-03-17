@@ -136,6 +136,7 @@ public abstract class GenomeSource implements Iterable<Genome> {
     /**
      * @return an iterator for this genome source
      */
+    @Override
     public final Iterator<Genome> iterator() {
         return this.new Iter();
     }
@@ -147,7 +148,7 @@ public abstract class GenomeSource implements Iterable<Genome> {
     public class Iter implements Iterator<Genome> {
 
         /** iterator for genome IDs */
-        private Iterator<String> idIter;
+        final private Iterator<String> idIter;
         /** next genome to return */
         private Genome nextGenome;
 

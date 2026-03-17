@@ -53,15 +53,15 @@ public class CoreGenome extends Genome {
     protected static final Set<String> PROTEINS = (Set<String>) Stream.of("peg", "mp")
             .collect(Collectors.toCollection(HashSet::new));
     /** empty protein map (for non-proteins) */
-    private static final Map<String, String> EMPTY_MAP = new HashMap<String, String>(5);
+    private static final Map<String, String> EMPTY_MAP = new HashMap<>(5);
     /** empty alias set */
     private static final Set<String> NO_ALIASES = Collections.emptySet();
     /** organism directory */
-    private File orgDir;
+    private final File orgDir;
     /** connection to PATRIC */
-    private P3Connection p3;
+    private final P3Connection p3;
     /** completeness flag */
-    private boolean complete;
+    private final boolean complete;
 
     /**
      * Construct a coreSEED genome from a genome directory.
@@ -104,7 +104,7 @@ public class CoreGenome extends Genome {
         else {
             try (LineReader annoStream = new LineReader(annoFile)) {
                 // We will accumulate the annotation in here.
-                List<String> annotation = new ArrayList<String>(10);
+                List<String> annotation = new ArrayList<>(10);
                 // Loop through the input.  We process an annotation at each "//" marker.
                 int lineCount = 0;
                 for (String line : annoStream) {
@@ -121,7 +121,7 @@ public class CoreGenome extends Genome {
                                 TextStringBuilder comment = new TextStringBuilder(300);
                                 for (int i = 3; i < annotation.size(); i++)
                                     comment.appendSeparator('\n').append(annotation.get(i));
-                                double timeStamp = Double.valueOf(annotation.get(1));
+                                double timeStamp = Double.parseDouble(annotation.get(1));
                                 feat.addAnnotation(comment.toString(), timeStamp, annotation.get(2));
                             }
                         }
@@ -155,7 +155,7 @@ public class CoreGenome extends Genome {
             taxId = StringUtils.substringBefore(this.getId(), ".");
         }
         // Convert the tax ID to a number.
-        int taxIdNum = Integer.valueOf(taxId);
+        int taxIdNum = Integer.parseInt(taxId);
         // Read the domain from the taxonomy file.
         String domain;
         String taxonomy = this.readFlag("TAXONOMY");
@@ -201,8 +201,8 @@ public class CoreGenome extends Genome {
         // Now we do the same thing with protein families, but this is tricky since both types are in the
         // same file.
         log.debug("Processing protein families.");
-        Map<String, String> gFamilyMap = new HashMap<String, String>(functionMap.size());
-        Map<String, String> lFamilyMap = new HashMap<String, String>(functionMap.size());
+        Map<String, String> gFamilyMap = new HashMap<>(functionMap.size());
+        Map<String, String> lFamilyMap = new HashMap<>(functionMap.size());
         File famFile = new File(this.orgDir, "pattyfams.txt");
         if (! famFile.exists())
             log.warn("No protein family file found in {}.", this.orgDir);
@@ -213,7 +213,7 @@ public class CoreGenome extends Genome {
                     String famId = line.get(1);
                     if (famId.startsWith("PGF"))
                         gFamilyMap.put(fid, famId);
-                    else
+                    else if (famId.startsWith("PLF"))
                         lFamilyMap.put(fid, famId);
                 }
             }
@@ -236,10 +236,10 @@ public class CoreGenome extends Genome {
                 if (PROTEINS.contains(typeDir.getName()))
                     proteinMap = this.readProteins(typeDir);
                 else if (asFlag)
-                    proteinMap = new HashMap<String, String>();
+                    proteinMap = new HashMap<>();
                 // Get the locations and the aliases.
-                Map<String, Location> locationMap = new HashMap<String, Location>();
-                Map<String, Collection<String>> aliasMap = new HashMap<String, Collection<String>>();
+                Map<String, Location> locationMap = new HashMap<>();
+                Map<String, Collection<String>> aliasMap = new HashMap<>();
                 File tblFile = new File(typeDir, "tbl");
                 if (! tblFile.exists()) {
                     // Here we have no location data.  We have to create dummy locations for
@@ -277,7 +277,7 @@ public class CoreGenome extends Genome {
                                         proteinMap.put(fid, fields[2]);
                                     } else if (fields.length >= 3 && ! rnaFlag) {
                                         // Here we have aliases.
-                                        aliases = new ArrayList<String>(fields.length - 2);
+                                        aliases = new ArrayList<>(fields.length - 2);
                                         for (int i = 2; i < fields.length; i++) {
                                             if (! fields[i].isEmpty())
                                                 aliases.add(fields[i]);
@@ -328,13 +328,13 @@ public class CoreGenome extends Genome {
      * @throws FileNotFoundException
      */
     private Map<String, String> readProteins(File typeDir) throws FileNotFoundException {
-        Map<String, String> retVal = null;
+        Map<String, String> retVal;
         File proteinFile = new File(typeDir, "fasta");
         if (! proteinFile.exists()) {
             log.warn("No FASTA file found in protein directory {}.", typeDir);
             retVal = Collections.emptyMap();
         } else {
-            retVal = new HashMap<String, String>(2000);
+            retVal = new HashMap<>(2000);
             try (FastaInputStream inStream = new FastaInputStream(proteinFile)) {
                 for (Sequence peg : inStream)
                     retVal.put(peg.getLabel(), peg.getSequence());
@@ -407,7 +407,7 @@ public class CoreGenome extends Genome {
      * @return a string map read from the file
      */
     protected Map<String, String> readMap(File mapFile, int width) {
-        Map<String, String> retVal = new HashMap<String, String>();
+        Map<String, String> retVal = new HashMap<>();
         if (! mapFile.exists())
             log.warn("No {} file found in genome directory {}.", mapFile, this.orgDir);
         else {
@@ -444,7 +444,7 @@ public class CoreGenome extends Genome {
      * @return a string set read from the file
      */
     protected Set<String> readSet(File setFile) {
-        Set<String> retVal = new HashSet<String>();
+        Set<String> retVal = new HashSet<>();
         if (setFile.exists()) {
             try (TabbedLineReader setStream = new TabbedLineReader(setFile, 1)) {
                 for (TabbedLineReader.Line line : setStream)

@@ -3,9 +3,6 @@
  */
 package org.theseed.genome;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -16,6 +13,11 @@ import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +57,7 @@ public class MultiDirectoryTest {
         assertThat(gList.size(), greaterThan(10));
         // Connect to PATRIC and add the genomes.
         P3CursorConnection p3 = new P3CursorConnection();
-        Map<String, Genome> saved = new HashMap<String, Genome>(gList.size());
+        Map<String, Genome> saved = new HashMap<>(gList.size());
         for (String genomeId : gList) {
             Genome genome = P3Genome.load(p3, genomeId, P3Genome.Details.STRUCTURE_ONLY);
             multiDir.add(genome);
@@ -120,14 +122,14 @@ public class MultiDirectoryTest {
         File mDir = new File("data", "newMaster");
         GenomeDirectory base = new GenomeDirectory(gtDir);
         GenomeMultiDirectory master = GenomeMultiDirectory.create(mDir, true);
-        Map<String, Genome> saved = new HashMap<String, Genome>();
+        Map<String, Genome> saved = new HashMap<>();
         for (Genome genome : base) {
             saved.put(genome.getId(), genome);
             master.add(genome);
         }
         // Now verify it against the same directory as a source.
-        GenomeSource.Type[] types = new GenomeSource.Type[] { GenomeSource.Type.MASTER, GenomeSource.Type.DIR, GenomeSource.Type.PATRIC };
-        File[] files = new File[] { mDir, gtDir, new File("data/gto_test", "pList.tbl") };
+        GenomeSource.Type[] types = new GenomeSource.Type[] { GenomeSource.Type.PATRIC, GenomeSource.Type.MASTER, GenomeSource.Type.DIR };
+        File[] files = new File[] { new File("data/gto_test", "pList.tbl"), mDir, gtDir };
         for (int i = 0; i < types.length; i++) {
             String label = types[i].toString();
             log.info("Processing source type {}.", label);
@@ -137,7 +139,7 @@ public class MultiDirectoryTest {
                 checkSaved(saved, genome);
         }
         // Do it again with filtering.
-        Set<String> badGenomes = new TreeSet<String>();
+        Set<String> badGenomes = new TreeSet<>();
         badGenomes.add("1079.16");
         badGenomes.add("1206109.5");
         badGenomes.add("83333.1");

@@ -106,7 +106,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
         // Get the subdirectory list.
         File[] subDirs = this.masterDir.listFiles(File::isDirectory);
         // Create the file map.
-        this.gtoMap = new TreeMap<String, File>();
+        this.gtoMap = new TreeMap<>();
         // Loop through the sub-directories.
         for (File subDir : subDirs) {
             try {
@@ -148,6 +148,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
      *
      * @throws IOException
      */
+    @Override
     public void remove(String genomeId) throws IOException {
         File gFile = this.gtoMap.get(genomeId);
         // Only proceed if the genome is found.
@@ -180,6 +181,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
      *
      * @param gto	genome to add
      */
+    @Override
     public void add(Genome genome) throws IOException {
         // Insure there is room.
         if (this.newDirSize >= MAX_FILES_PER_DIRECTORY) {
@@ -191,9 +193,11 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
         // Check for an existing version.
         String genomeId = genome.getId();
         File gFile = this.gtoMap.get(genomeId);
-        boolean newGenome = (gFile == null);
-        if (newGenome)
+        boolean newGenome = false;
+        if (gFile == null) {
             gFile = new File(this.newDir, genomeId + EXTENSION);
+            newGenome = true;
+        }
         // Note we write using GZIP compression.
         try (FileOutputStream outStream = new FileOutputStream(gFile);
                 GZIPOutputStream zipStream = new GZIPOutputStream(outStream);
@@ -225,7 +229,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
     public class Iter implements Iterator<Genome> {
 
         /** main hash iterator */
-        private Iterator<Map.Entry<String, File>> iter;
+        final private Iterator<Map.Entry<String, File>> iter;
         /** last entry returned */
         private Map.Entry<String, File> curr;
 
@@ -311,6 +315,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
      *
      * @param genomeId	ID of genome to check
      */
+    @Override
      public boolean contains(String genomeId) {
          return this.gtoMap.containsKey(genomeId);
      }
@@ -352,7 +357,7 @@ public class GenomeMultiDirectory implements Iterable<Genome>, IGenomeTarget {
 
     @Override
     public Set<String> getGenomeIDs() {
-        return new TreeSet<String>(this.getIDs());
+        return new TreeSet<>(this.getIDs());
     }
 
 }

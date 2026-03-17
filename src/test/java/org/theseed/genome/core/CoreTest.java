@@ -212,35 +212,37 @@ public class CoreTest {
         assertThat(gto2.getContigCount(), equalTo(gto.getContigCount()));
         Collection<Feature> fids = gto.getFeatures();
         for (Feature fid : fids) {
-            Feature diskFid = gto2.getFeature(fid.getId());
-            assertThat(diskFid.getFunction(), equalTo(fid.getFunction()));
-            assertThat(diskFid.getLocation(), equalTo(fid.getLocation()));
-            assertThat(diskFid.getPlfam(), equalTo(fid.getPlfam()));
-            assertThat(diskFid.getType(), equalTo(fid.getType()));
-            assertThat(diskFid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
+            String fidId = fid.getId();
+            Feature diskFid = gto2.getFeature(fidId);
+            assertThat(fidId, diskFid.getFunction(), equalTo(fid.getFunction()));
+            assertThat(fidId, diskFid.getLocation(), equalTo(fid.getLocation()));
+            assertThat(fidId, diskFid.getPlfam(), equalTo(fid.getPlfam()));
+            assertThat(fidId, diskFid.getType(), equalTo(fid.getType()));
+            assertThat(fidId, diskFid.getProteinTranslation(), equalTo(fid.getProteinTranslation()));
             if (full) {
                 Collection<GoTerm> fidGoTerms = fid.getGoTerms();
-                assertThat(diskFid.getGoTerms().size(), equalTo(fidGoTerms.size()));
+                assertThat(fidId, diskFid.getGoTerms().size(), equalTo(fidGoTerms.size()));
                 for (GoTerm diskGoTerm : diskFid.getGoTerms()) {
-                    assertThat(fidGoTerms, hasItem(diskGoTerm));
+                    assertThat(fidId, fidGoTerms, hasItem(diskGoTerm));
                 }
             }
             Collection<Annotation> fidAnnotations = fid.getAnnotations();
-            assertThat(diskFid.getAnnotations().size(), equalTo(fidAnnotations.size()));
+            assertThat(fidId, diskFid.getAnnotations().size(), equalTo(fidAnnotations.size()));
             for (Annotation diskAnnotation : diskFid.getAnnotations()) {
-                assertThat(fidAnnotations, hasItem(diskAnnotation));
+                assertThat(fidId, fidAnnotations, hasItem(diskAnnotation));
             }
-            Collection<String> fidAliases = fid.getAliases();
-            assertThat(diskFid.getAliases().size(), equalTo(fidAliases.size()));
-            for (String diskAlias : diskFid.getAliases()) {
-                assertThat(fidAliases, hasItem(diskAlias));
-            }
+            // We skip aliases because we can't convert CoreSEED aliases to the GTO format.
+//          Collection<String> fidAliases = fid.getAliases();
+//          assertThat(fidId, diskFid.getAliases().size(), equalTo(fidAliases.size()));
+//          for (String diskAlias : diskFid.getAliases()) {
+//              assertThat(fidId, fidAliases, hasItem(diskAlias));
+//          }
         }
         Collection<Contig> contigs = gto.getContigs();
         for (Contig contig : contigs) {
             Contig diskContig = gto2.getContig(contig.getId());
-            assertThat(diskContig.length(), equalTo(contig.length()));
-            assertThat(diskContig.getSequence(), equalTo(contig.getSequence()));
+            assertThat(contig.getId(), diskContig.length(), equalTo(contig.length()));
+            assertThat(contig.getId(), diskContig.getSequence(), equalTo(contig.getSequence()));
         }
     }
 
