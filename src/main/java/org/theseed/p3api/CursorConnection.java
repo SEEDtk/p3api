@@ -651,10 +651,18 @@ public class CursorConnection extends SolrConnection {
             String body = parmString + "&cursorMark=" + cursorMark + "&rows=" + rowMax;
             request.bodyString(body, ContentType.APPLICATION_FORM_URLENCODED);
             JsonObject results = this.getResults(request);
-            // Here we have a response. We need the number found and the actual records.
+            // Here we have a response. We need the number found and the actual records. We have to do some special
+            // handling here because the response may be missing if there are no records.
             JsonObject response = (JsonObject) results.get("response");
-            long numFound = (long) response.getLong(SpecialKeys.NUMFOUND);
-            JsonArray docs = response.getCollectionOrDefault(SpecialKeys.DOCS);
+            long numFound;
+            JsonArray docs;
+            if (response == null) {
+                numFound = 0;
+                docs = new JsonArray();
+            } else {
+                numFound = (long) response.getLong(SpecialKeys.NUMFOUND);
+                docs = response.getCollectionOrDefault(SpecialKeys.DOCS);
+            }
             log.debug("Chunk at position {} returned {} of {} records.", this.getChunkPosition(), docs.size(), numFound);
             // Update the cursor mark for next time.
             cursorMark = (String) results.getStringOrDefault(SpecialKeys.NEXT_CURSOR_MARK);
