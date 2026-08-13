@@ -139,6 +139,7 @@ public class P3Genome extends Genome {
         if (genomeData == null)
             log.info("Genome {} not found in PATRIC.", genome_id);
         else {
+            log.debug("Genome {} found in PATRIC. Loading at detail level {}.", genome_id, detail);
             // Create the genome object.
             retVal = new P3Genome(genome_id);
             // Load the taxonomy data.
