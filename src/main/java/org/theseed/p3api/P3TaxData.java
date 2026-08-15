@@ -3,6 +3,8 @@
  */
 package org.theseed.p3api;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -10,7 +12,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.theseed.p3api.P3Connection.Table;
 
 import com.github.cliftonlabs.json_simple.JsonObject;
 
@@ -38,11 +39,16 @@ public class P3TaxData {
      *
      * @param p3	PATRIC connection to use
      */
-    public P3TaxData(P3Connection p3) {
+    public P3TaxData(P3CursorConnection p3) {
         // Get all the species.
         log.info("Downloading taxonomic data.");
-        List<JsonObject> taxonList = p3.query(Table.TAXONOMY,
-                "taxon_id,genetic_code", "eq(taxon_rank,species)");
+        List<JsonObject> taxonList;
+        try {
+            taxonList = p3.getRecords("taxon", P3CursorConnection.MAX_LIMIT,
+                    "taxon_id,genetic_code", SolrFilter.EQ("taxon_rank", "species"));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         this.species = new HashMap<>(taxonList.size());
         for (JsonObject taxonData : taxonList) {
             String speciesId = KeyBuffer.getString(taxonData, "taxon_id");
@@ -63,9 +69,13 @@ public class P3TaxData {
      *
      * @return a set of taxon IDs for the named rank
      */
-    public static Set<String> getRankSet(P3Connection p3, String rank) {
+    public static Set<String> getRankSet(P3CursorConnection p3, String rank) {
         List<JsonObject> taxonList;
-        taxonList = p3.query(Table.TAXONOMY, "taxon_id", "eq(taxon_rank," + rank + ")");
+        try {
+            taxonList = p3.getRecords("taxon", P3CursorConnection.MAX_LIMIT, "taxon_id", SolrFilter.EQ("taxon_rank", rank));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         Set<String> retVal = taxonList.stream().map(x -> KeyBuffer.getString(x, "taxon_id")).collect(Collectors.toSet());
         log.info("{} {} taxons tabulated.", retVal.size(), rank);
         return retVal;

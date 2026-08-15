@@ -4,8 +4,7 @@
 package org.theseed.p3api;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
+import static org.hamcrest.Matchers.equalTo;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -16,7 +15,7 @@ class TaxTest {
 
     @Test
     void testTaxonomyLoader() {
-        P3Connection p3 = new P3Connection();
+        P3CursorConnection p3 = new P3CursorConnection();
         P3TaxData taxData = new P3TaxData(p3);
         assertThat(taxData.checkSpecies("1423"), equalTo(11));
         assertThat(taxData.checkSpecies("13373"), equalTo(11));
