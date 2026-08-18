@@ -29,7 +29,7 @@ import org.theseed.p3api.P3Genome;
  *
  * The first positional parameter is the genome source file or directory.
  *
- * The command-line option are as follows:
+ * The command-line options are as follows:
  *
  * -h	display command-line usage
  * -v	display more frequent log messages
