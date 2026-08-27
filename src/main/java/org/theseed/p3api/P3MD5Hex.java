@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.theseed.genome.Contig;
 import org.theseed.p3api.P3Connection.Table;
 import org.theseed.sequence.MD5Hex;
+
 import com.github.cliftonlabs.json_simple.JsonObject;
 
 /**
@@ -33,7 +34,7 @@ public class P3MD5Hex extends MD5Hex {
     private static final Logger log = LoggerFactory.getLogger(P3MD5Hex.class);
 
     /** connection to PATRIC */
-    private P3Connection p3;
+    private final P3Connection p3;
 
     public P3MD5Hex() throws NoSuchAlgorithmException {
         super();
@@ -51,7 +52,7 @@ public class P3MD5Hex extends MD5Hex {
     public String genomeMD5(String genomeId) throws UnsupportedEncodingException {
         Collection<JsonObject> contigData = p3.query(Table.CONTIG, "sequence_id,sequence", Criterion.EQ("genome_id", genomeId));
         Collection<Contig> contigs = contigData.stream().map(x -> new Contig(x, 11)).collect(Collectors.toSet());
-        return sequenceMD5(contigs);
+        return contigMD5(contigs);
     }
 
     /**
@@ -63,11 +64,11 @@ public class P3MD5Hex extends MD5Hex {
      * @throws UnsupportedEncodingException
      */
     public Map<String,String> genomeMD5s(Collection<String> genomes) throws UnsupportedEncodingException {
-        Map<String,String> retVal = new HashMap<String,String>(genomes.size());
+        Map<String,String> retVal = new HashMap<>(genomes.size());
         // This map associates contigs with genome IDs.
-        Map<String,Collection<Contig>> genomeMap = new HashMap<String,Collection<Contig>>(genomes.size());
+        Map<String,Collection<Contig>> genomeMap = new HashMap<>(genomes.size());
         for (String genomeId : genomes)
-            genomeMap.put(genomeId, new ArrayList<Contig>(100));
+            genomeMap.put(genomeId, new ArrayList<>(100));
         // Now read in the contigs.
         List<JsonObject> contigObjects = p3.getRecords(Table.CONTIG, "genome_id", genomes, "sequence_id,sequence");
         log.debug("Processing {} contigs.", contigObjects.size());
@@ -80,9 +81,9 @@ public class P3MD5Hex extends MD5Hex {
         log.debug("Processing {} genomes.", genomeMap.size());
         for (Map.Entry<String,Collection<Contig>> genomeData : genomeMap.entrySet()) {
             Collection<Contig> contigs = genomeData.getValue();
-            if (contigs.size() > 0) {
+            if (! contigs.isEmpty()) {
                 String genomeId = genomeData.getKey();
-                String md5 = this.sequenceMD5(contigs);
+                String md5 = this.contigMD5(contigs);
                 retVal.put(genomeId, md5);
             }
         }
