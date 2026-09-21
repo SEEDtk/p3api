@@ -28,7 +28,7 @@ public class NcbiFilterQuery extends NcbiQuery {
     /** minimum date for date filtering */
     private LocalDate minDate;
     /** parameter map */
-    private Map<String, String> parmMap;
+    private final Map<String, String> parmMap;
     /** constant for publication date type */
     public static final String PUB_DATE = "pdat";
     /** constant for completion date type */
@@ -40,7 +40,7 @@ public class NcbiFilterQuery extends NcbiQuery {
     /** constant for modification date type */
     public static final String MOD_DATE = "mdat";
     /** set of valid date types */
-    private static final Set<String> VALID_DATE_TYPES = new TreeSet<String>(Arrays.asList(MOD_DATE,
+    private static final Set<String> VALID_DATE_TYPES = new TreeSet<>(Arrays.asList(MOD_DATE,
             ENTREZ_DATE, CREATE_DATE, COMPLETE_DATE, PUB_DATE));
 
     /**
@@ -53,7 +53,7 @@ public class NcbiFilterQuery extends NcbiQuery {
         this.minDate = null;
         this.dateType = null;
         // We use a tree map because the number of parameters is expected to be small.
-        this.parmMap = new TreeMap<String, String>();
+        this.parmMap = new TreeMap<>();
     }
 
     /**

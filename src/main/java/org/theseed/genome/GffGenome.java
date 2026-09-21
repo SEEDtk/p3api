@@ -49,11 +49,11 @@ public class GffGenome extends NewGenome {
             // This will hold the genome ID.
             String genomeId = null;
             // This will track the number of features of each type.
-            CountMap<String> fTypes = new CountMap<String>();
+            CountMap<String> fTypes = new CountMap<>();
             // This will track the number of contigs.
             int contigCount = 0;
             // This will map Refseq IDs to contigs.
-            Map<String, Contig> contigMap = new HashMap<String, Contig>(100);
+            Map<String, Contig> contigMap = new HashMap<>(100);
             // Loop through the GFF records.
             for (GffReader.Line line : gffStream) {
                 if (line.getType().contentEquals("region")) {

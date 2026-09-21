@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.theseed.basic.ParseFailureException;
@@ -46,7 +47,7 @@ public class GenomeDescriptorSet implements Iterable<GenomeDescriptor> {
      * Initialize a genome descriptor set.
      */
     private void init() {
-        this.idMap = new TreeMap<String, GenomeDescriptor>();
+        this.idMap = new TreeMap<>();
     }
 
     /**
@@ -190,10 +191,8 @@ public class GenomeDescriptorSet implements Iterable<GenomeDescriptor> {
                 retVal = true;
             else if (this.genome == null)
                 retVal = true;
-            else if (this.genome.compareTo(newRefGenome) > 0)
-                retVal = true;
-            else
-                retVal = false;
+            else 
+                retVal = (this.genome.compareTo(newRefGenome) > 0);
             if (retVal) {
                 this.proximity = newProx;
                 this.genome = newRefGenome;
@@ -298,10 +297,8 @@ public class GenomeDescriptorSet implements Iterable<GenomeDescriptor> {
                 merge = true;
             else if (x2.genome == null)
                 merge = false;
-            else if (this.genome.compareTo(x2.genome) > 0)
-                merge = true;
             else
-                merge = false;
+                merge = (this.genome.compareTo(x2.genome) > 0);
             if (merge) {
                 this.proximity = x2.proximity;
                 this.genome = x2.genome;
@@ -329,7 +326,7 @@ public class GenomeDescriptorSet implements Iterable<GenomeDescriptor> {
     /**
      * @return the number of genomes described by this set
      */
-    public int size() {
+    final public int size() {
         return this.idMap.size();
     }
 
@@ -345,7 +342,7 @@ public class GenomeDescriptorSet implements Iterable<GenomeDescriptor> {
      *
      * @return TRUE if the genome is truly new, else FALSE
      */
-    public boolean add(GenomeDescriptor e) {
+    public final boolean add(GenomeDescriptor e) {
         boolean retVal = false;
         String genomeId = e.getId();
         if (! this.idMap.containsKey(genomeId)) {

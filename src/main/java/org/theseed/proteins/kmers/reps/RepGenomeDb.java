@@ -17,8 +17,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.theseed.genome.Genome;
 import org.theseed.genome.Feature;
+import org.theseed.genome.Genome;
 import org.theseed.proteins.Role;
 import org.theseed.proteins.RoleMap;
 import org.theseed.sequence.FastaInputStream;
@@ -77,7 +77,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      * @param protNames		array of names for the key protein (if empty, the default will be used)
      */
     public RepGenomeDb(int threshold, String... protNames) {
-        this.genomeMap = new HashMap<String, RepGenome>();
+        this.genomeMap = new HashMap<>();
         this.kmerSize = ProteinKmers.kmerSize();
         if (protNames.length == 0) {
             this.protName = DEFAULT_PROTEIN;
@@ -395,7 +395,7 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      * @return a sorted list of this database's representative genome objects
      */
     public SortedSet<RepGenome> sorted() {
-        return new TreeSet<RepGenome>(this.genomeMap.values());
+        return new TreeSet<>(this.genomeMap.values());
     }
 
     /**
@@ -422,19 +422,19 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      * @throws IOException
      */
     public void save(File saveFile) throws IOException {
-        FastaOutputStream writer = new FastaOutputStream(saveFile);
         // Start with the basic parameters.
-        String repDbLabel = String.format("Rep%d,K=%d", this.threshold, this.kmerSize);
-        String repDbComment = StringUtils.join(this.protAliases, " @ ");
-        Sequence repSequence = new Sequence(repDbLabel, repDbComment, "");
-        writer.write(repSequence);
-        // Now write the proteins.
-        for (RepGenome rep : this) {
-            repSequence = rep.toSequence();
+        try (FastaOutputStream writer = new FastaOutputStream(saveFile)) {
+            // Start with the basic parameters.
+            String repDbLabel = String.format("Rep%d,K=%d", this.threshold, this.kmerSize);
+            String repDbComment = StringUtils.join(this.protAliases, " @ ");
+            Sequence repSequence = new Sequence(repDbLabel, repDbComment, "");
             writer.write(repSequence);
+            // Now write the proteins.
+            for (RepGenome rep : this) {
+                repSequence = rep.toSequence();
+                writer.write(repSequence);
+            }
         }
-        // Close the stream.
-        writer.close();
     }
 
     /**
@@ -445,26 +445,26 @@ public class RepGenomeDb implements Iterable<RepGenome> {
      */
     public static RepGenomeDb load(File loadFile) throws IOException {
         RepGenomeDb retVal = null;
-        FastaInputStream reader = new FastaInputStream(loadFile);
         // Read the basic parameters.
-        Sequence header = reader.next();
-        String[] protNames = StringUtils.splitByWholeSeparator(header.getComment(), " @ ");
-        Matcher m = HEADER_PATTERN.matcher(header.getLabel());
-        if (! m.matches()) {
-            // Here we have an invalid header.  This is not a real load file.
-            reader.close();
-            throw new IOException("Invalid header in repGenome file.");
-        } else {
-            int threshold = Integer.valueOf(m.group(1));
-            int kmerSize = Integer.valueOf(m.group(2));
-            // Create the new database.  Note we have to update the global kmer size.
-            ProteinKmers.setKmerSize(kmerSize);
-            retVal = new RepGenomeDb(threshold, protNames);
+        try (FastaInputStream reader = new FastaInputStream(loadFile)) {
+            // Read the basic parameters.
+            Sequence header = reader.next();
+            String[] protNames = StringUtils.splitByWholeSeparator(header.getComment(), " @ ");
+            Matcher m = HEADER_PATTERN.matcher(header.getLabel());
+            if (! m.matches()) {
+                // Here we have an invalid header.  This is not a real load file.
+                reader.close();
+                throw new IOException("Invalid header in repGenome file.");
+            } else {
+                int threshold = Integer.parseInt(m.group(1));
+                int kmerSize = Integer.parseInt(m.group(2));
+                // Create the new database.  Note we have to update the global kmer size.
+                ProteinKmers.setKmerSize(kmerSize);
+                retVal = new RepGenomeDb(threshold, protNames);
+            }   // Now read in the representative genomes.
+            retVal.putGenomes(reader);
+            // All done.
         }
-        // Now read in the representative genomes.
-        retVal.putGenomes(reader);
-        // All done.
-        reader.close();
         return retVal;
     }
 

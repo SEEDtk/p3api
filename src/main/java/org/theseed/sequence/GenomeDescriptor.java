@@ -26,9 +26,9 @@ public class GenomeDescriptor implements Comparable<GenomeDescriptor> {
 
     // FIELDS
     /** genome ID */
-    private String genomeId;
+    private final String genomeId;
     /** genome name */
-    private String name;
+    private final String name;
     /** seed protein kmers */
     private ProteinKmers seedKmers;
     /** SSU rRNA kmers */
@@ -80,15 +80,15 @@ public class GenomeDescriptor implements Comparable<GenomeDescriptor> {
     public static class FileIter implements Iterator<GenomeDescriptor>, AutoCloseable {
 
         /** input stream for the file */
-        private TabbedLineReader reader;
+        private final TabbedLineReader reader;
         /** genome ID column index */
-        private int idCol;
+        private final int idCol;
         /** genome name column index */
-        private int nameCol;
+        private final int nameCol;
         /** seed protein column index */
-        private int seedCol;
+        private final int seedCol;
         /** 16s RNA column index */
-        private int rnaCol;
+        private final int rnaCol;
 
         /**
          * Construct a genome descriptor iterator for a file.

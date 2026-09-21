@@ -8,13 +8,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
+import org.junit.jupiter.api.Test;
 import org.theseed.io.LineReader;
 
 import com.github.cliftonlabs.json_simple.JsonArray;
 import com.github.cliftonlabs.json_simple.JsonObject;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import org.junit.jupiter.api.Test;
 
 /**
  * @author Bruce Parrello
@@ -24,7 +25,7 @@ public class TestPerlConverter  {
 
     @Test
     public void testConverter() throws IOException {
-        List<String> strings = new ArrayList<String>(50);
+        List<String> strings = new ArrayList<>(50);
         try (LineReader stringStream = new LineReader(new File("data", "q.tbl"))) {
             for (String string : stringStream) strings.add(string);
         }
