@@ -54,7 +54,7 @@ public class BvbrcDataMap implements Iterable<Map.Entry<String, BvbrcDataMap.Tab
         map.put("genome", new Table("genome", "genome_id", "genome_id", EMPTY_REQUIREMENT));
         map.put("genome_amr", new Table("genome_amr", "id", "id", EMPTY_REQUIREMENT));
         map.put("feature", new Table("genome_feature", "feature_id", "patric_id", 
-                new String[] { "eq patric_id,*" },
+                new String[] { "eq annotation,PATRIC" },
                 "aa_sequence,sequence,aa_sequence_md5,sequence",
                 "na_sequence,sequence,na_sequence_md5,sequence"));
         map.put("taxon", new Table("taxonomy", "taxon_id", "taxon_id", EMPTY_REQUIREMENT));
@@ -66,6 +66,7 @@ public class BvbrcDataMap implements Iterable<Map.Entry<String, BvbrcDataMap.Tab
         map.put("special_gene", new Table("sp_gene", "id", "id", EMPTY_REQUIREMENT));
         map.put("pathway_item", new Table("pathway", "id", "id", EMPTY_REQUIREMENT));
         map.put("pathway", new Table("pathway_ref", "pathway_id", "pathway_id", EMPTY_REQUIREMENT));
+        map.put("drug", new Table("antibiotics", "pubchem_cid", "antibiotic_name", EMPTY_REQUIREMENT));
         DEFAULT_DATA_MAP = new BvbrcDataMap(map);
     }
 
