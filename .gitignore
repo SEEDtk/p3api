@@ -2,3 +2,4 @@
 *.gtoz
 .DS_Store
 /.settings/
+deps.txt
